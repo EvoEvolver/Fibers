@@ -1,0 +1,8 @@
+.idea
+temp
+**/__pycache__/
+*.ec.*
+*.egg-info
+setup.py
+.run
+**/.pytest_cache/
