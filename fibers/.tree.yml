@@ -1,0 +1,10 @@
+sections:
+  Core:
+    - tree
+    - indexing
+  Auxiliary:
+    - file_helper
+    - model
+    - gui
+    - testing
+    - data_loader
