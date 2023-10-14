@@ -5,7 +5,7 @@ def analyze_tree_sparsity(tree: Tree):
     """
     Return the average number of children per node.
     """
-    nodes = tree.get_node_list()
+    nodes = tree.all_nodes()
     max_children = -1
     total_children = 0
     n_non_leaf_nodes = 0
@@ -31,7 +31,7 @@ def get_children_heavy_nodes(tree: Tree, min_children=8):
     """
     Return a list of nodes with at least min_children children.
     """
-    nodes = tree.get_node_list()
+    nodes = tree.all_nodes()
     heavy_nodes = []
     for node in nodes:
         n_children = len(node.children())

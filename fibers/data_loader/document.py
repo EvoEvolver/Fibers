@@ -39,5 +39,6 @@ class Document:
 
     def _to_tree(self, root: Node):
         root = root.new_child(self.title)
+        root.content = self.content
         for section in self.sections:
             section._to_tree(root)

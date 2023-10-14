@@ -1,0 +1,6 @@
+sections:
+  Indexing Implementation:
+    - key_phrase
+    - code
+  Anxiliary:
+    - vector_store

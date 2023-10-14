@@ -108,12 +108,12 @@ class Tree:
         self.add_child(path[-1], leaf, node)
         return node
 
-    def get_new_node_by_path(self, path: List[str]) -> Node:
+    def new_node_by_path(self, path: List[str]) -> Node:
         new_node = Node(self)
         self.add_node_by_path(path, new_node)
         return new_node
 
-    def get_node_list(self):
+    def all_nodes(self):
         return list(self.node_path.keys())
 
     def add_child(self, key: str, parent: Node, child: Node):
@@ -165,7 +165,7 @@ class Tree:
         tree = {
             "subtopics": {},
         }
-        nodes = self.get_node_list()
+        nodes = self.all_nodes()
         node_indexed = []
         i_node = 0
         for i, node in enumerate(nodes):
@@ -228,7 +228,7 @@ class Tree:
         :return: A new tree
         """
         new_tree = Tree(self.topic, rule_of_path=self.rule_of_path)
-        for node in self.get_node_list():
+        for node in self.all_nodes():
             new_path = self.get_node_path(node)
             new_tree.add_node_by_path(new_path, node_mapping(node, new_tree))
         return new_tree

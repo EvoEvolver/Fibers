@@ -4,21 +4,45 @@ from typing import List
 
 import numpy as np
 
+from fibers.indexing.vector_store import VectorStore
+from fibers.model.openai import get_embeddings
 from fibers.tree import Node
 
 
 class Indexing:
-    def __init__(self, nodes: Node):
-        pass
+    def __init__(self, nodes: List[Node]):
+        self.vector_store = VectorStore()
+        self.add_nodes(nodes)
 
-    def get_similarities(self, query: List[str], weights: List[float] = None,
-                         items=None) -> (
-            List[float], List[Node]):
-        raise NotImplementedError
+    def add_nodes(self, nodes: List[Node]):
+        vecs, nodes = self.get_vectors(nodes)
+        self.vector_store.add_vecs(vecs, nodes)
 
-    def get_top_k_nodes(self, query: List[str], weights: List[float] = None, k: int = 10,
+    def remove_nodes(self, nodes: List[Node]):
+        self.vector_store.remove_items(nodes)
+
+    def get_vectors(self, nodes: List[Node]) -> [List[np.ndarray], List[Node]]:
+        non_empty_nodes = []
+        contents = []
+        for node in nodes:
+            if len(node.content) > 0:
+                non_empty_nodes.append(node)
+                contents.append(node.content)
+        text_embeddings = get_embeddings(contents)
+        return text_embeddings, non_empty_nodes
+
+    def get_similarities(self, query, nodes=None) -> (List[float], List[Node]):
+        query_vector = self.get_query_vector(query)
+        similarities, nodes = self.vector_store.inner_product(query_vector, nodes)
+        return similarities, nodes
+
+    def get_query_vector(self, query) -> np.ndarray:
+        text_embedding = get_embeddings([query])
+        return np.array(text_embedding[0])
+
+    def get_top_k_nodes(self, query, k: int = 10,
                         items=None) -> List[Node]:
-        similarities, nodes = self.get_similarities(query, weights, items)
+        similarities, nodes = self.get_similarities(query, items)
         node_rank = np.argsort(similarities)[::-1]
         node_added = set()
         top_k_nodes = []
