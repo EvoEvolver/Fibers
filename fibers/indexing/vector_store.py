@@ -58,27 +58,34 @@ class VectorStore:
         if items is None:
             items = list(self.items_to_index.keys())
         indices = []
-        nodes = []
+        remaining_items = []
         for item in items:
             if item in self.removed_items:
                 continue
             vec_index_tuple = self.items_to_index[item]
             indices.extend(range(*vec_index_tuple))
-            nodes.append(item)
+            remaining_items.append(item)
 
+        items = remaining_items
+
+        # Decide the order of filtering by the number of items
         if len(items) > len(self.items_to_index) / 2:
             flatten_similarities = (self._vectors.dot(vec))[indices]
         else:
             flatten_similarities = self._vectors[indices].dot(vec)
 
+        # Batch normalization & Add bias
         average_similarity = np.average(flatten_similarities)
         flatten_similarities = flatten_similarities - average_similarity - 0.05
+        # Add non-linearity
         flatten_similarities = np.exp(flatten_similarities * 2)
+        # Apply weights
         flatten_similarities = flatten_similarities * np.array(self.weights)[indices]
-        summed_similarities = np.zeros(len(nodes))
-        for i in range(len(nodes)):
-            vec_index_tuple = self.items_to_index[nodes[i]]
+        # Sum by node
+        summed_similarities = np.zeros(len(items))
+        for i in range(len(items)):
+            vec_index_tuple = self.items_to_index[items[i]]
             summed_similarities[i] = np.sum(
                 flatten_similarities[vec_index_tuple[0]:vec_index_tuple[1]])
 
-        return summed_similarities, nodes
+        return summed_similarities, items
