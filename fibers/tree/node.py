@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Any
 
 if TYPE_CHECKING:
     from fibers.tree import Tree
@@ -119,6 +119,8 @@ class NodeResource:
         # Possible types: Tree, Node, Function, Class, Module
         self.resource_type = {}
 
+        self.indexing_resource = {}
+
     def has_type(self, resource_type):
         return resource_type in self.resource_type.values()
 
@@ -172,3 +174,6 @@ class NodeResource:
 
     def add_node(self, node, key: str):
         self.add_resource(node, "node", key)
+
+    def add_for_indexing(self, key: Any, resource: Any):
+        self.indexing_resource[key] = resource

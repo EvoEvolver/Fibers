@@ -33,7 +33,7 @@ class Indexing:
 
     def get_similarities(self, query, nodes=None) -> (List[float], List[Node]):
         query_vector = self.get_query_vector(query)
-        similarities, nodes = self.vector_store.inner_product(query_vector, nodes)
+        similarities, nodes = self.vector_store.get_similarities(query_vector, nodes)
         return similarities, nodes
 
     def get_query_vector(self, query) -> np.ndarray:

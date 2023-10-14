@@ -52,8 +52,7 @@ embedding_dim_using = model_to_embedding_dim[model_for_embedding]
 embedding_cache = None
 
 
-def flatten_nested_list(texts: list[list[str]], make_cache=False) \
-        -> (List[float], List[int]):
+def flatten_nested_list(texts: list[list[str]]) -> (List[float], List[int]):
     flattened_texts = []
     index_start = []
     for i, texts_ in enumerate(texts):
@@ -75,6 +74,9 @@ def get_embeddings(texts: list[str], make_cache=True) -> list[list[float]]:
     index_for_eval = []
     texts_without_cache = []
     for i, text in enumerate(texts):
+        if len(text) == 0:
+            embeddings.append(np.zeros(embedding_dim_using))
+            continue
         if hash_keys[i] not in embedding_cache:
             texts_without_cache.append(text)
             embeddings.append(None)

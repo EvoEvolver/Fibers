@@ -14,6 +14,8 @@ from fibers.tree import Node
 class KeyPhraseIndexing(Indexing):
     def get_vectors(self, nodes: List[Node]) -> [List[np.ndarray], List[Node]]:
         src_list, weights, nodes = self.prepare_src_weight_list(nodes)
+        for i in range(len(src_list)):
+            nodes[i].resource.add_for_indexing(self, src_list[i])
         flattened_src_list = []
         flattened_weights = []
         flattened_nodes = []
@@ -25,8 +27,8 @@ class KeyPhraseIndexing(Indexing):
             i += 1
         flattened_weights = np.array(flattened_weights)
         text_embeddings = get_embeddings(flattened_src_list)
-        text_embeddings = flattened_weights.T * np.array(text_embeddings)
-        return text_embeddings, nodes
+        #text_embeddings = np.array(text_embeddings) * flattened_weights[:, None]
+        return text_embeddings, flattened_nodes
 
     @staticmethod
     def process_node_with_content(nodes: List[Node]):
