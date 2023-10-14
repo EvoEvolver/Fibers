@@ -7,7 +7,7 @@ import numpy as np
 from fibers.helper.cache_manage import cached_function, save_cache
 from fibers.indexing import Indexing
 from fibers.model.chat import Chat
-from fibers.model.openai import get_embeddings
+from fibers.model.embedding import get_embeddings
 from fibers.tree import Node
 
 

@@ -4,9 +4,9 @@ import copy
 
 from fibers.debug.logger import Logger
 from fibers.gui.dictionary_viewer import show_document_with_key_gui
-from fibers.model.openai import (complete_chat as openai_complete_chat,
-                                  complete_chat_expensive as openai_complete_chat_expensive,
-                                  model_list as openai_model_list)
+from fibers.model.openai import (_complete_chat as openai_complete_chat,
+                                 _complete_chat_expensive as openai_complete_chat_expensive,
+                                 model_list as openai_model_list)
 from fibers.model.openllm import (complete_chat as openllm_complete_chat,
                                    complete_chat_expensive as openllm_complete_chat_expensive)
 

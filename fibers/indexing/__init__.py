@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 from fibers.indexing.vector_store import VectorStore
-from fibers.model.openai import get_embeddings
+from fibers.model.embedding import get_embeddings
 from fibers.tree import Node
 
 

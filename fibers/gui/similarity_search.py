@@ -2,7 +2,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 from fibers.gui.utlis import hypenate_texts
-from fibers.model.openai import get_embeddings, flatten_nested_list
+from fibers.model.embedding import flatten_nested_list, get_embeddings
 
 
 # see https://plotly.com/python/heatmaps/
