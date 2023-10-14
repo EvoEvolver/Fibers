@@ -1,19 +1,22 @@
 from fibers.data_loader.document import Document
+from fibers.helper.cache.cache_service import cache_service
 from fibers.indexing.key_phrase import KeyPhraseIndexing
+
+cache_service.set_main_here()
 
 tree_dict = {
     "title": "root",
     "sections": [
         {
-            "title": "section 1",
+            "title": "Quantum computing",
             "content": "Quantum computing can help predict your future"
         },
         {
-            "title": "section 2",
-            "content": "Numerical analysis is important for fluid dynamics"
+            "title": "Numerical analysis",
+            "content": "Numerical analysis is vital for fluid dynamics"
         },
         {
-            "title": "section 3",
+            "title": "Cohomoogy",
             "content": "Cohomoogy is important for topology"
         },
     ]
@@ -25,5 +28,5 @@ def test_search():
     indexing = KeyPhraseIndexing(tree.all_nodes())
     top_node = indexing.get_top_k_nodes("Quantum computing", 1)[0]
     assert top_node.content == "Quantum computing can help predict your future"
-    top_node = indexing.get_top_k_nodes("Cohomoogy helps topology", 1)[0]
+    top_node = indexing.get_top_k_nodes("Cohomoogy", 1)[0]
     assert top_node.content == "Cohomoogy is important for topology"

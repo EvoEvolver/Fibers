@@ -1,1 +1,1 @@
-from fibers.helper.cache_manage import CacheManager
+from fibers.helper.cache.cache_kv import CacheTableKV

@@ -5,8 +5,6 @@ import json
 import os
 from typing import Dict, Optional, List, Set
 
-from fibers.helper.utils import get_main_path
-
 
 def get_hash(input: any, type: str) -> str:
     return hashlib.sha1(json.dumps([input, type]).encode("utf-8")).hexdigest()
@@ -16,6 +14,7 @@ class Cache:
     """
     The class for storing cache.
     """
+
     def __init__(self, value, hash: str, input: any, type: str,
                  meta: Optional[Dict] = None):
         self.value = value
@@ -52,14 +51,8 @@ def serialize_cache_table(cache_table: Dict[str, Cache]):
     return json.dumps(res, indent=1)
 
 
-def get_cache_file_path(filepath: str):
-    return filepath + ".ec.json"
-
-
-class CacheManager:
-    def __init__(self, cache_path: str = None):
-        if cache_path is None:
-            cache_path = get_cache_file_path(get_main_path())
+class CacheTableKV:
+    def __init__(self, cache_path: str):
         self.cache_path = cache_path
         # Map from hash to cache
         self.cache_table: Dict[str, Cache] = self.load_cache_table()
@@ -78,6 +71,7 @@ class CacheManager:
         self.apply_cache_update()
         if len(self.cache_table) == 0:
             return
+        os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
         with open(self.cache_path, "w") as f:
             f.write(serialize_cache_table(self.cache_table))
 
@@ -139,7 +133,7 @@ class CacheManager:
 
     def refresh_cache(self, cache_type: str = ""):
         """
-        Refresh (delete) all cache of the given type. Usage: `with cache_manager.refresh_cache(cache_type):`.
+        Refresh (delete) all cache of the given type. Usage: `with cache_kv.refresh_cache(cache_type):`.
         :param cache_type: The type of cache to refresh. If type is "", then all cache will be
         refreshed
         :return: A context manager of the refresh
@@ -147,23 +141,8 @@ class CacheManager:
         return RefreshContext(self, cache_type)
 
 
-def save_cache():
-    cache_manager.save_all_cache_to_file()
-
-
-def save_used_cache():
-    n_remove = cache_manager.filter_unused_cache()
-    if n_remove > 0:
-        print(f"Removed {n_remove} unused cache")
-    cache_manager.save_all_cache_to_file()
-
-
-def discard_cache():
-    cache_manager.discard_cache_update()
-
-
 class RefreshContext:
-    def __init__(self, cache_manager_: CacheManager, cache_type: str = ""):
+    def __init__(self, cache_manager_: CacheTableKV, cache_type: str = ""):
         """
         :param cache_type: The type of cache to refresh. If type is "", then all cache will be
         refreshed
@@ -191,26 +170,3 @@ class RefreshContext:
         else:
             if not self.already_refreshed:
                 self.cache_manager.refresh_all = False
-
-
-def cached_function(cache_type: str):
-    """
-    A decorator with argument cache_type. Usage: `@cached_function(cache_type)`.
-    :param cache_type: An identifier of the cache type. It should be distinct from other cache types.
-    """
-
-    def cached_function_wrapper(func):
-        def func_wrapper(*args, **kwargs):
-            cache = cache_manager.read_cache((args, kwargs), cache_type)
-            if cache.is_valid():
-                return cache.value
-            res = func(*args, **kwargs)
-            cache.set_cache(res)
-            return res
-
-        return func_wrapper
-
-    return cached_function_wrapper
-
-
-cache_manager = CacheManager()

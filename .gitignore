@@ -1,7 +1,7 @@
 .idea
 temp
 **/__pycache__/
-*.ec.*
+**/.fibers_cache/
 *.egg-info
 setup.py
 .run

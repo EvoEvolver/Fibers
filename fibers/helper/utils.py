@@ -1,5 +1,9 @@
 import ast
+import os
+import sys
+
 from tenacity import retry, stop_after_attempt, wait_fixed
+
 
 def robust_json_parse(src: str):
     # find first {
@@ -13,9 +17,6 @@ def robust_json_parse(src: str):
     except:
         raise ValueError(f"Invalid json: {src}")
     return res
-
-
-import sys, os
 
 
 def debugger_is_active() -> bool:
