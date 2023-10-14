@@ -1,4 +1,4 @@
-from docinpy.decorator import example, todo
+from moduler.decorator import example, todo
 from fibers.testing.testing_modules.v_lab.beaker import Beaker
 
 """

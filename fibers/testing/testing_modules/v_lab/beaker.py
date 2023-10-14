@@ -1,5 +1,4 @@
-from docinpy.decorator import example
-
+from moduler.decorator import example
 
 class Beaker:
     """
