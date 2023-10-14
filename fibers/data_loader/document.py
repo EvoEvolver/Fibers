@@ -2,6 +2,9 @@ from __future__ import annotations
 from typing import List, Dict
 import json
 
+from fibers.tree import Tree, Node
+
+
 class Document:
     def __init__(self, title="", content="", sections=None):
         self.title = title
@@ -28,3 +31,13 @@ class Document:
     
     def __repr__(self):
         return f"<{self.__class__.__name__}> {self.title!r}"
+
+    def to_tree(self):
+        tree = Tree()
+        self._to_tree(tree.root)
+        return tree
+
+    def _to_tree(self, root: Node):
+        root = root.new_child(self.title)
+        for section in self.sections:
+            section._to_tree(root)
