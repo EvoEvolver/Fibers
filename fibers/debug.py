@@ -1,4 +1,4 @@
-from fibers.file_helper.cache_manage import cache_manager
+from fibers.helper.cache_manage import cache_manager
 from fibers.indexing.core import IndexingSearchLogger
 from fibers.model.chat import ChatLogger
 from fibers.utils import debugger_is_active

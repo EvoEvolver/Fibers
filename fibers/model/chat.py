@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 
-from fibers.file_helper.logger import Logger
+from fibers.helper.logger import Logger
 from fibers.gui.dictionary_viewer import show_document_with_key_gui
 from fibers.model.openai import (complete_chat as openai_complete_chat,
                                   complete_chat_expensive as openai_complete_chat_expensive,

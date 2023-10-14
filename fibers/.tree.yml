@@ -3,7 +3,7 @@ sections:
     - tree
     - indexing
   Auxiliary:
-    - file_helper
+    - helper
     - model
     - gui
     - testing
