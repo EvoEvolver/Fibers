@@ -1,6 +1,6 @@
 from fibers.helper.cache_manage import cache_manager
 from fibers.model.chat import ChatLogger
-from fibers.utils import debugger_is_active
+from fibers.helper.utils import debugger_is_active
 
 is_debug = debugger_is_active()
 

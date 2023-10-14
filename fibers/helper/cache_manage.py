@@ -3,9 +3,9 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from typing import Dict, Optional, List, Set, Callable
+from typing import Dict, Optional, List, Set
 
-from fibers.utils import get_main_path
+from fibers.helper.utils import get_main_path
 
 
 def get_hash(input: any, type: str) -> str:
