@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import TYPE_CHECKING, Dict, Any
+from typing import TYPE_CHECKING, Dict, Any, List
 
 if TYPE_CHECKING:
     from fibers.tree import Tree
@@ -56,6 +56,10 @@ class Node:
     def has_child(self, key: str):
         return self.tree.has_child(self, key)
 
+    @property
+    def is_empty(self):
+        return len(self.content) == 0
+
     """
     ## Functions for adding children of node
     """
@@ -103,6 +107,19 @@ class Node:
         """
         self.content = content
         return self
+
+    """
+    ## Section for extract related nodes
+    """
+
+    def get_nodes_in_subtree(self) -> List[Node]:
+        """
+        Return all the nodes in the subtree
+        """
+        nodes = [self]
+        for child in self.children().values():
+            nodes += child.get_nodes_in_subtree()
+        return nodes
 
     def __str__(self):
         if len(self.content) == 0:
