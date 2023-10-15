@@ -42,3 +42,6 @@ class Document:
         root.content = self.content
         for section in self.sections:
             section._to_tree(root)
+
+    def show_tree_gui(self):
+        self.to_tree().show_tree_gui()

@@ -3,6 +3,12 @@ import re
 from fibers.data_loader.document import Document
 
 
+def latex_to_doc(tex: str) -> Document:
+    tex = latex_to_markdown(tex)
+    doc, meta = process_latex_sections(tex)
+    return doc
+
+
 def latex_to_markdown(latex: str):
     # replace \textit{xxx} with *xxx*
     res = re.sub(r"\\textit{(.+?)}", r"*\1*", latex)
@@ -102,16 +108,9 @@ def to_paragraphs(text):
     return paragraphs
 
 
-def process_latex_into_standard(tex: str):
-    tex = latex_to_markdown(tex)
-    doc, meta = process_latex_sections(tex)
-    return doc, meta
-
-
 if __name__ == "__main__":
-    from pprint import pprint
     from fibers.testing.sample_paper import sample_paper
 
     tex = sample_paper
-    doc, meta = process_latex_into_standard(tex)
-    pprint(doc)
+    doc = latex_to_doc(tex)
+    doc.show_tree_gui()

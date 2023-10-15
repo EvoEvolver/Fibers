@@ -50,7 +50,6 @@ Output the indices of the children that satisfies the requirement, separated by 
 
 if __name__ == "__main__":
     from fibers.testing.testing_trees.loader import load_sample_tree
-    tree = load_sample_tree("dingzhen_world")
-    node = tree.root
-    related_nodes = pick_next(node, "The children that possibly include the answer to the question: What is the main industrial of Ganzi? You must pick at least one child.")
+    tree = load_sample_tree("dingzhen_world.json")
+    related_nodes = pick_next(tree.root, "The children that possibly include the answer to the question: What is the main industrial of Ganzi? You must pick at least one child.")
     print(related_nodes)
