@@ -15,7 +15,7 @@ class KeyPhraseIndexing(Indexing):
     def get_vectors(self, nodes: List[Node]) -> [List[np.ndarray], List[Node]]:
         src_list, weights, nodes = self.prepare_src_weight_list(nodes)
         for i in range(len(src_list)):
-            nodes[i].resource.add_for_indexing(self, src_list[i])
+            nodes[i].meta["__indexing_key_phrase"] = src_list[i]
         flattened_src_list = []
         flattened_weights = []
         flattened_nodes = []

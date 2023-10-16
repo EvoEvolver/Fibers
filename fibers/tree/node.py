@@ -62,6 +62,10 @@ class Node:
     def is_empty(self):
         return len(self.content) == 0
 
+    @property
+    def meta(self):
+        return self.resource.meta
+
     """
     ## Functions for adding children of node
     """
@@ -137,8 +141,8 @@ class NodeResource:
         self.resource = {}
         # Possible types: Tree, Node, Function, Class, Module
         self.resource_type = {}
-
-        self.indexing_resource = {}
+        # Metadata for storing information used by functions that process the node
+        self.meta = {}
 
     def has_type(self, resource_type):
         return resource_type in self.resource_type.values()
@@ -193,6 +197,3 @@ class NodeResource:
 
     def add_node(self, node, key: str):
         self.add_resource(node, "node", key)
-
-    def add_for_indexing(self, key: Any, resource: Any):
-        self.indexing_resource[key] = resource
