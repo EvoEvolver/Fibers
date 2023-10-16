@@ -1,12 +1,30 @@
 import re
+from fibers.tree import Tree, Node
 
-from fibers.data_loader.document import Document
 
-
-def latex_to_doc(tex: str) -> Document:
+def latex_to_tree(tex: str) -> Tree:
     tex = latex_to_markdown(tex)
-    doc, meta = process_latex_sections(tex)
-    return doc
+    tree = latex_to_raw_tree(tex)
+    divide_into_paragraphs(tree.root)
+    return tree
+
+
+def latex_to_raw_tree(tex: str):
+    abstract = re.findall(r"\\begin{abstract}(.+?)\\end{abstract}", tex, re.DOTALL)[0].strip()
+    title = re.findall(r"\\title{(.+?)}", tex, re.DOTALL)
+    if len(title) > 0:
+        title = title[0].strip()
+    else:
+        title = ""
+    tree = Tree(title)
+    node = tree.root.s(title).be(tex)
+    node.s("Abstract").be(abstract)
+    for i in range(0, 4):
+        process_section_level(i, 0, node)
+    # delete the content before first section in the root
+    # because it's usually irrelevant
+    node.content = ""
+    return tree
 
 
 def latex_to_markdown(latex: str):
@@ -55,31 +73,15 @@ def divide_text_into_section(section_level, tex):
     return content, sections
 
 
-def process_section_level(section_level, curr_level, doc: Document):
+def process_section_level(section_level, curr_level, node: Node):
     if section_level == curr_level:
-        content, subsections = divide_text_into_section(section_level, doc.content)
-        doc.content = content
+        content, subsections = divide_text_into_section(section_level, node.content)
+        node.content = content
         for subsection in subsections:
-            doc.sections.append(Document(subsection[0], subsection[1].strip(), []))
+            node.s(subsection[0]).be(subsection[1].strip())
     else:
-        for i, section in enumerate(doc.sections):
+        for i, section in enumerate(node.children().values()):
             process_section_level(section_level, curr_level + 1, section)
-
-
-def process_latex_sections(tex: str):
-    abs = re.findall(r"\\begin{abstract}(.+?)\\end{abstract}", tex, re.DOTALL)[0].strip()
-    title = re.findall(r"\\title{(.+?)}", tex, re.DOTALL)
-    if len(title) > 0:
-        title = title[0].strip()
-    else:
-        title = ""
-    doc = Document(title, tex, [])
-    for i in range(0, 4):
-        process_section_level(i, 0, doc)
-    # delete the content before first section in the root
-    # because it's usually irrelevant
-    doc.content = ""
-    return doc, {"abstract": abs, "title": title}
 
 
 def process_latex(latex: str):
@@ -99,6 +101,16 @@ def process_latex(latex: str):
     return res
 
 
+def divide_into_paragraphs(node: Node):
+    for child in node.children().values():
+        divide_into_paragraphs(child)
+    paragraphs = to_paragraphs(node.content)
+    if len(paragraphs) == 0:
+        return
+    for i, paragraph in enumerate(paragraphs):
+        node.s(f"Segment {i + 1}").be(paragraph)
+        node.meta["overlap_to_sibling"] = True
+
 def to_paragraphs(text):
     # separate by \n\n
     paragraphs = text.split("\n\n")
@@ -110,7 +122,6 @@ def to_paragraphs(text):
 
 if __name__ == "__main__":
     from fibers.testing.sample_paper import sample_paper
-
     tex = sample_paper
-    doc = latex_to_doc(tex)
+    doc = latex_to_tree(tex)
     doc.show_tree_gui()

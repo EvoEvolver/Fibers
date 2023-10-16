@@ -2,8 +2,8 @@ import json
 import os
 
 from fibers.data_loader.document import Document
-from fibers.data_loader.html_to_doc import html_to_doc
-from fibers.data_loader.markdown_to_doc import markdown_to_doc
+from fibers.data_loader.html_to_tree import html_to_tree
+from fibers.data_loader.markdown_to_tree import markdown_to_tree
 from fibers.tree import Tree
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -19,15 +19,14 @@ def load_sample_tree(path: str) -> Tree:
     match ext_name:
         case ".json":
             src_dict = json.loads(src)
-            doc = Document.from_dict(src_dict)
+            tree = Document.from_dict(src_dict).to_tree()
         case ".md":
             file_name = os.path.splitext(path)[0]
-            doc = markdown_to_doc(src, file_name)
+            tree = markdown_to_tree(src, file_name)
         case ".html":
-            doc = html_to_doc(src)
+            tree = html_to_tree(src)
         case _:
             raise ValueError(f"Unknown file extension {ext_name}")
-    tree = doc.to_tree()
     return tree
 
 

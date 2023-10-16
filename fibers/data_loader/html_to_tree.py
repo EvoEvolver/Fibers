@@ -5,61 +5,63 @@ import html2text
 import requests
 from bs4 import BeautifulSoup
 
-from fibers.data_loader.document import Document
+from fibers.tree import Tree, Node
 
 
-def url_to_doc(url: str) -> Document:
+def url_to_tree(url: str) -> Tree:
     html = requests.get(url).text
-    doc = html_to_doc(html)
-    return doc
+    return html_to_tree(html)
 
 
-def html_to_doc(html: str) -> Document:
+def html_to_tree(html: str) -> Tree:
     soup = BeautifulSoup(html, "html.parser")
     title = soup.find("title").text
     root = extract_article_root(soup)
-    doc = html_to_raw_doc(root, title=title)
-    html_to_markdown(doc)
-    return doc
+    tree = html_to_raw_tree(root, title=title)
+    html_to_markdown(tree.root)
+    return tree
 
 
-def html_to_raw_doc(soup: BeautifulSoup, title=""):
+def html_to_raw_tree(soup: BeautifulSoup, title="") -> Tree:
     hn_pattern = re.compile(r"h[1-6]")
-    curr_doc = Document(title, "", [])
-    root_doc = curr_doc
-    doc_stack = []
+    tree = Tree()
+    curr_node = tree.root.s(title)
+    node_stack = []
     curr_content = []
     curr_level = -1
     for child in soup.children:
         # check whether it's hn use regex
-        if child.name and hn_pattern.match(child.name):
-            set_content(curr_doc, curr_content)
+        if hasattr(child, "name") and child.name and hn_pattern.match(child.name):
+            set_content(curr_node, curr_content)
             this_level = int(child.name[1])
-            new_doc = Document(child.text, "", [])
             if this_level > curr_level:
-                curr_doc.sections.append(new_doc)
-                doc_stack.append((curr_doc, this_level))
+                new_node = curr_node.s(child.text)
+                node_stack.append((curr_node, this_level))
             else:
-                while len(doc_stack) > 0 and doc_stack[-1][1] > this_level:
-                    doc_stack.pop()
-                doc_stack[-1][0].sections.append(new_doc)
+                while len(node_stack) > 0 and node_stack[-1][1] > this_level:
+                    node_stack.pop()
+                parent_node = node_stack[-1][0]
+                new_node = parent_node.s(child.text)
 
             curr_content = []
             curr_level = this_level
-            curr_doc = new_doc
+            curr_node = new_node
         else:
             curr_content.append(str(child))
-    set_content(curr_doc, curr_content)
+    set_content(curr_node, curr_content)
 
-    return root_doc
+    return tree
 
-def set_content(doc: Document, contents: List):
+
+def set_content(node: Node, contents: List):
     n_segments = 0
     for segment in contents:
         if len(segment.strip()) == 0:
             continue
         n_segments += 1
-        doc.sections.append(Document(f"Segment {n_segments}", segment, []))
+        node_added = node.s(f"Segment {n_segments}").be(segment)
+        node_added.meta["overlap_to_sibling"] = True
+
 
 def bfs_on_soup(soup: BeautifulSoup):
     queue = [([], soup)]  # queue of (path, element) pairs
@@ -71,7 +73,6 @@ def bfs_on_soup(soup: BeautifulSoup):
                     queue.append(
                         (path + [child.name if child.name is not None else type(child)],
                          child))
-                    print(queue[-1][0])
                     yield path, child
 
 
@@ -97,17 +98,17 @@ def extract_article_root(soup: BeautifulSoup):
     return article_root
 
 
-html2text_hanlder = html2text.HTML2Text()
-html2text_hanlder.ignore_links = True
-html2text_hanlder.ignore_images = True
+html2text_handler = html2text.HTML2Text()
+html2text_handler.ignore_links = True
+html2text_handler.ignore_images = True
 
 
-def html_to_markdown(doc: Document):
-    doc.content = html2text_hanlder.handle(doc.content)
-    for section in doc.sections:
-        html_to_markdown(section)
+def html_to_markdown(root: Node):
+    root.content = html2text_handler.handle(root.content)
+    for child in root.children().values():
+        html_to_markdown(child)
 
 
 if __name__ == "__main__":
-    doc = url_to_doc("https://plato.stanford.edu/entries/feyerabend/")
-    doc.to_tree().show_tree_gui()
+    doc = url_to_tree("https://plato.stanford.edu/entries/feyerabend/")
+    doc.show_tree_gui()
