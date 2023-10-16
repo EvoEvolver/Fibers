@@ -1,4 +1,5 @@
 import re
+from typing import List
 
 import html2text
 import requests
@@ -32,7 +33,7 @@ def html_to_raw_doc(soup: BeautifulSoup, title=""):
     for child in soup.children:
         # check whether it's hn use regex
         if child.name and hn_pattern.match(child.name):
-            curr_doc.content = ("\n".join(curr_content)).strip()
+            set_content(curr_doc, curr_content)
             this_level = int(child.name[1])
             new_doc = Document(child.text, "", [])
             if this_level > curr_level:
@@ -46,12 +47,19 @@ def html_to_raw_doc(soup: BeautifulSoup, title=""):
             curr_content = []
             curr_level = this_level
             curr_doc = new_doc
-
         else:
             curr_content.append(str(child))
-    curr_doc.content = "\n".join(curr_content)
+    set_content(curr_doc, curr_content)
+
     return root_doc
 
+def set_content(doc: Document, contents: List):
+    n_segments = 0
+    for segment in contents:
+        if len(segment.strip()) == 0:
+            continue
+        n_segments += 1
+        doc.sections.append(Document(f"Segment {n_segments}", segment, []))
 
 def bfs_on_soup(soup: BeautifulSoup):
     queue = [([], soup)]  # queue of (path, element) pairs

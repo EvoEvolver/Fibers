@@ -53,7 +53,9 @@ class Node:
             return ""
         return node_path[-1]
 
-    def has_child(self, key: str):
+    def has_child(self, key: str = None):
+        if key is None:
+            return len(self.children()) > 0
         return self.tree.has_child(self, key)
 
     @property

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import os
+from typing import Callable
 
 from fibers.helper.cache.cache_embedding import CacheTableEmbed
 from fibers.helper.cache.cache_kv import CacheTableKV
@@ -62,11 +63,19 @@ class CacheService:
 cache_service = CacheService()
 
 
-def cached_function(cache_type: str):
+def cached_function(cache_type_or_function: str | Callable):
     """
-    A decorator with argument cache_type. Usage: `@cached_function(cache_type)`.
+    A decorator with argument cache_type. Usage: `@cached_function` or `@cached_function(cache_type)`.
     :param cache_type: An identifier of the cache type. It should be distinct from other cache types.
     """
+
+    if isinstance(cache_type_or_function, str):
+        cache_type = cache_type_or_function
+    else:
+        func = cache_type_or_function
+        # Get the function's module name
+        module = inspect.getmodule(func)
+        cache_type = module.__name__ + "." + func.__name__
 
     def cached_function_wrapper(func):
         def func_wrapper(*args, **kwargs):
@@ -79,4 +88,7 @@ def cached_function(cache_type: str):
 
         return func_wrapper
 
-    return cached_function_wrapper
+    if isinstance(cache_type_or_function, str):
+        return cached_function_wrapper
+    else:
+        return cached_function_wrapper(cache_type_or_function)
