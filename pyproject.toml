@@ -20,7 +20,8 @@ dependencies = [
     "html2text~=2020.1.16",
     "markdownify~=0.11.6",
     "bidict~=0.22.1",
-    "tenacity~=8.2.2"
+    "tenacity~=8.2.2",
+    "jsonlines",
 ]
 
 [project.optional-dependencies]

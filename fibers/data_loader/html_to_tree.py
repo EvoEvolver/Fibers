@@ -13,7 +13,7 @@ def url_to_tree(url: str) -> Tree:
     return html_to_tree(html)
 
 
-def html_to_tree(html: str) -> Tree:
+def html_to_tree(html: str, to_markdown=True) -> Tree:
     soup = BeautifulSoup(html, "html.parser")
     title = soup.find("title")
     if title:
@@ -22,7 +22,8 @@ def html_to_tree(html: str) -> Tree:
         title = ""
     root = extract_article_root(soup)
     tree = html_to_raw_tree(root, title=title)
-    html_to_markdown(tree.root)
+    if to_markdown:
+        html_to_markdown(tree.root)
     return tree
 
 
@@ -51,7 +52,7 @@ def html_to_raw_tree(soup: BeautifulSoup, title="") -> Tree:
             curr_level = this_level
             curr_node = new_node
         else:
-            curr_content.append(str(child))
+            curr_content.append(child)
     set_content(curr_node, curr_content)
 
     return tree
@@ -60,6 +61,11 @@ def html_to_raw_tree(soup: BeautifulSoup, title="") -> Tree:
 def set_content(node: Node, contents: List):
     n_segments = 0
     for segment in contents:
+        # judge if element is <p>
+        if hasattr(segment, "name") and segment.name == "p":
+            segment = segment.text
+        else:
+            segment = str(segment)
         if len(segment.strip()) == 0:
             continue
         n_segments += 1
