@@ -28,8 +28,8 @@ class Tree:
 
         # Set up the root
         root = Node(self)
-        self.children[root] = {}
-        self.node_path[root] = tuple()
+        self.children[root]: Dict[Node, Node] = {}
+        self.node_path[root]: Dict[Node, Tuple[str, ...]] = tuple()
         root.set_content(root_content)
 
         # TODO: this can be node, tree, or string in the future
@@ -40,11 +40,11 @@ class Tree:
     ## Node information query
     """
 
-    def get_node_path(self, node: Node):
+    def get_node_path(self, node: Node) -> Tuple[str, ...]:
         try:
             return self.node_path[node]
         except KeyError:
-            return None
+            raise Exception(f"Node {node} not in tree")
 
     def get_children_dict(self, node: Node):
         return self.children[node]

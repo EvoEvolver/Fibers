@@ -3,6 +3,7 @@ import os
 
 from fibers.data_loader.document import Document
 from fibers.data_loader.html_to_tree import html_to_tree
+from fibers.data_loader.latex_to_tree import latex_to_tree
 from fibers.data_loader.markdown_to_tree import markdown_to_tree
 from fibers.tree import Tree
 
@@ -23,6 +24,9 @@ def load_sample_tree(path: str) -> Tree:
         case ".md":
             file_name = os.path.splitext(path)[0]
             tree = markdown_to_tree(src, file_name)
+        case ".tex":
+            file_name = os.path.splitext(path)[0]
+            tree = latex_to_tree(src)
         case ".html":
             tree = html_to_tree(src)
         case _:

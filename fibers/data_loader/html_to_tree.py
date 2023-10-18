@@ -15,7 +15,11 @@ def url_to_tree(url: str) -> Tree:
 
 def html_to_tree(html: str) -> Tree:
     soup = BeautifulSoup(html, "html.parser")
-    title = soup.find("title").text
+    title = soup.find("title")
+    if title:
+        title = title.text
+    else:
+        title = ""
     root = extract_article_root(soup)
     tree = html_to_raw_tree(root, title=title)
     html_to_markdown(tree.root)
@@ -83,7 +87,7 @@ def extract_article_root(soup: BeautifulSoup):
     n_article_elements = []
     elements = []
     for path, element in bfs_on_soup(soup):
-        if element.name in ["div", "article"]:
+        if element.name in ["div", "article", "html", "body", "main"]:
             elements.append(element)
             # count the number of article related elements
             n_article_elements_here = 0

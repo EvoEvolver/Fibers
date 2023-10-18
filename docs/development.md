@@ -4,7 +4,7 @@ IDE recommendation: PyCharm
 
 Docstring style: rst
 
-## DocInPy
+## Documentation format
 
 Please use the [Moduler](https://m.evoevo.org) style for adding sections in the codes. 
 
