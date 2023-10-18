@@ -10,6 +10,7 @@ class VectorStore:
         self.items_to_index = {}
         self._vectors = None
         self.removed_items = set()
+        self.similarity_function = similarity_by_exp
 
     def add_vecs(self, vecs: List, items: List, weights: List = None):
         assert len(vecs) == len(items)
@@ -52,40 +53,46 @@ class VectorStore:
         self.items_to_index = new_items_to_index
         self._vectors = None
 
-    def get_similarities(self, vec, items: List = None) -> [np.ndarray, List]:
+    def get_similarities(self, vec, items_to_search: List = None) -> [np.ndarray, List]:
         if self._vectors is None:
             self._vectors = np.array(self.vectors)
-        if items is None:
-            items = list(self.items_to_index.keys())
-        indices = []
+        if items_to_search is None:
+            items_to_search = list(self.items_to_index.keys())
+        item_indices = []
         remaining_items = []
-        for item in items:
+        for item in items_to_search:
             if item in self.removed_items:
                 continue
             vec_index_tuple = self.items_to_index[item]
-            indices.extend(range(*vec_index_tuple))
+            item_indices.extend(range(*vec_index_tuple))
             remaining_items.append(item)
 
-        items = remaining_items
+        items_to_search = remaining_items
 
         # Decide the order of filtering by the number of items
-        if len(items) > len(self.items_to_index) / 2:
-            flatten_similarities = (self._vectors.dot(vec))[indices]
+        if len(items_to_search) > len(self.items_to_index) / 2:
+            flatten_inner_prod = (self._vectors.dot(vec))[item_indices]
         else:
-            flatten_similarities = self._vectors[indices].dot(vec)
+            flatten_inner_prod = self._vectors[item_indices].dot(vec)
 
-        # Batch normalization & Add bias
-        average_similarity = np.average(flatten_similarities)
-        flatten_similarities = flatten_similarities - average_similarity - 0.05
-        # Add non-linearity
-        flatten_similarities = np.exp(flatten_similarities * 2)
-        # Apply weights
-        flatten_similarities = flatten_similarities * np.array(self.weights)[indices]
-        # Sum by node
-        summed_similarities = np.zeros(len(items))
-        for i in range(len(items)):
-            vec_index_tuple = self.items_to_index[items[i]]
-            summed_similarities[i] = np.sum(
-                flatten_similarities[vec_index_tuple[0]:vec_index_tuple[1]])
+        summed_similarities = self.similarity_function(self, flatten_inner_prod, item_indices, items_to_search)
 
-        return summed_similarities, items
+        return summed_similarities, items_to_search
+
+def similarity_by_exp(vector_store, flatten_inner_prod, item_indices, items_to_search):
+    # Batch normalization & Add bias
+    average_similarity = np.average(flatten_inner_prod)
+    flatten_inner_prod = flatten_inner_prod - average_similarity - 0.05
+    # Add non-linearity
+    flatten_inner_prod = np.exp(flatten_inner_prod * 2)
+    # Apply weights
+    flatten_inner_prod = flatten_inner_prod * np.array(vector_store.weights)[item_indices]
+    # Sum by node
+    summed_similarities = np.zeros(len(items_to_search))
+    for i in range(len(items_to_search)):
+        vec_index_tuple = vector_store.items_to_index[items_to_search[i]]
+        summed_similarities[i] = np.sum(
+            flatten_inner_prod[vec_index_tuple[0]:vec_index_tuple[1]])
+    return summed_similarities
+
+
