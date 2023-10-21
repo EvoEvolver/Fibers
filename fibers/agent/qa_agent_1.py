@@ -1,7 +1,7 @@
 from fibers import debug
 from fibers.agent import Agent
 from fibers.helper.utils import multi_attempts, RobustParse
-from fibers.indexing import Indexing
+from fibers.indexing.indexing import Indexing
 from fibers.indexing.key_phrase import KeyPhraseIndexing
 from fibers.model.chat import Chat
 from fibers.transform.extract.small_tree_select import small_tree_select

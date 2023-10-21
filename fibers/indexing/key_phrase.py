@@ -5,13 +5,13 @@ from typing import List
 import numpy as np
 
 from fibers.helper.cache.cache_service import cache_service, cached_function
-from fibers.indexing import Indexing
+from fibers.indexing.indexing import VectorIndexing
 from fibers.model.chat import Chat
 from fibers.model.embedding import get_embeddings
 from fibers.tree import Node
 
 
-class KeyPhraseIndexing(Indexing):
+class KeyPhraseIndexing(VectorIndexing):
     def get_vectors(self, nodes: List[Node]) -> [List[np.ndarray], List[Node]]:
         src_list, weights, nodes = self.prepare_src_weight_list(nodes)
         for i in range(len(src_list)):

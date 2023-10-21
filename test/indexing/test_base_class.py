@@ -1,6 +1,6 @@
 from fibers.data_loader.document import Document
 from fibers.helper.cache.cache_service import cache_service
-from fibers.indexing import Indexing
+from fibers.indexing.indexing import VectorIndexing
 
 cache_service.set_main_here()
 
@@ -26,7 +26,7 @@ tree_dict = {
 
 def test_similarity():
     tree = Document.from_dict(tree_dict).to_tree()
-    indexing = Indexing(tree.all_nodes())
+    indexing = VectorIndexing(tree.all_nodes())
     top_node = indexing.get_top_k_nodes("pear", 1)[0]
     assert top_node.content == "banana"
     top_node = indexing.get_top_k_nodes("headset", 1)[0]
@@ -39,7 +39,7 @@ def test_similarity():
 
 def test_add():
     tree = Document.from_dict(tree_dict).to_tree()
-    indexing = Indexing(tree.all_nodes())
+    indexing = VectorIndexing(tree.all_nodes())
     new_node = tree.new_node_by_path(["root", "section 4"])
     new_node.content = "China"
     indexing.add_nodes([new_node])
@@ -50,7 +50,7 @@ def test_add():
 
 def test_remove_a_little():
     tree = Document.from_dict(tree_dict).to_tree()
-    indexing = Indexing(tree.all_nodes())
+    indexing = VectorIndexing(tree.all_nodes())
     node = tree.get_node_by_path(["root", "section 1"])
     indexing.remove_nodes([node])
     top_node = indexing.get_top_k_nodes("pear", 1)[0]
@@ -58,7 +58,7 @@ def test_remove_a_little():
 
 def test_remove_a_lot():
     tree = Document.from_dict(tree_dict).to_tree()
-    indexing = Indexing(tree.all_nodes())
+    indexing = VectorIndexing(tree.all_nodes())
     nodes = tree.all_nodes()[2:]
     indexing.remove_nodes(nodes)
     top_node = indexing.get_top_k_nodes("pear", 1)[0]
