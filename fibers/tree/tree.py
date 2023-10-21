@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Dict, List, Type, Callable, Tuple, TYPE_CHECKING
+from typing import Dict, List, Callable, Tuple, TYPE_CHECKING
 
 import dill
 from bidict import bidict
-
+if TYPE_CHECKING:
+    pass
 from fibers.tree.node import Node
 
 
@@ -261,10 +262,10 @@ class Tree:
 """
 
 
-def new_tree_from_node_subset(nodes: List[Node], tree: Tree) -> Tree:
-    new_tree = Tree(root_content=tree.topic)
+def new_tree_from_node_subset(nodes: List[Node]) -> Tree:
+    new_tree = Tree()
     for node in nodes:
-        new_tree.add_node_by_path(tree.get_node_path(node), node)
+        new_tree.add_node_by_path(node.node_path(), node)
     return new_tree
 
 

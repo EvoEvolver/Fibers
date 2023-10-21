@@ -13,7 +13,7 @@ def small_tree_select(tree: Tree, criteria_prompt: str) -> Tree:
     tree_in_yaml = yaml.dump(tree_with_indices)
     useful_indices = filter_tree_indices(tree_in_yaml, criteria_prompt)
     useful_notes = [note_indexed[i] for i in useful_indices]
-    filtered = new_tree_from_node_subset(useful_notes, tree)
+    filtered = new_tree_from_node_subset(useful_notes)
     return filtered
 
 
