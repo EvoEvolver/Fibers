@@ -9,6 +9,14 @@ from fibers.tree import Tree, Node
 
 
 class CodeIndexing(ComplexIndexing):
+    """
+    query scheme:
+    {
+    "name": "...",
+    "docstring": "..."
+    "parameters": {"param_name": "param_description", ...}
+    }
+    """
     def __init__(self, tree: Tree):
         super().__init__(tree.all_nodes())
         self.indexings = [
@@ -20,15 +28,15 @@ class CodeIndexing(ComplexIndexing):
         desc_indexing = self.indexings[0]
         param_indexing = self.indexings[1]
         if len(query) == 1:
-            if query.get("desc") is not None:
-                return desc_indexing.get_similarities(query["desc"], nodes)
-            elif query.get("param") is not None:
-                return param_indexing.get_similarities(query["param"], nodes)
+            if query.get("docstring") is not None:
+                return desc_indexing.get_similarities((query["name"], query["docstring"]), nodes)
+            elif query.get("parameters") is not None:
+                return param_indexing.get_similarities(query["parameters"], nodes)
             else:
                 raise
-        desc_similarities, desc_nodes = desc_indexing.get_similarities(query["desc"],
+        desc_similarities, desc_nodes = desc_indexing.get_similarities((query["name"], query["docstring"]),
                                                                        nodes)
-        param_similarities, param_nodes = param_indexing.get_similarities(query["param"],
+        param_similarities, param_nodes = param_indexing.get_similarities(query["parameters"],
                                                                           nodes)
         desc_similarities = np.array(desc_similarities)
         param_similarities = np.array(param_similarities)
@@ -53,8 +61,18 @@ class EnvironmentIndexing(VectorIndexing):
 
 
 class DescriptionIndexing(VectorIndexing):
+    """
+    query scheme:
+    (name, description)
+    """
     def __init__(self, tree: Tree):
         super().__init__(tree.all_nodes())
+
+    @staticmethod
+    def name_desc_tuple_to_str(name_desc_tuple: (str, str)):
+        name, desc = name_desc_tuple
+        name = name.replace("_", " ")
+        return name + "\n" + desc
 
     def get_vectors(self, nodes: List[Node]) -> [List[np.ndarray], List[Node]]:
         non_empty_nodes = []
@@ -62,12 +80,23 @@ class DescriptionIndexing(VectorIndexing):
         for node in nodes:
             if node.resource.has_type("function") and not node.is_empty:
                 non_empty_nodes.append(node)
-                contents.append(node.path()[-1] + "\n" + node.content)
+                function_name = node.title()
+                contents.append(self.name_desc_tuple_to_str((function_name, node.content)))
         text_embeddings = get_embeddings(contents)
         return text_embeddings, non_empty_nodes
 
+    def get_query_vector(self, query: Dict) -> np.ndarray:
+        text_embedding = get_embeddings([self.name_desc_tuple_to_str(query)])
+        return np.array(text_embedding[0])
+
 
 class ParameterIndexing(VectorIndexing):
+    """
+    query scheme:
+    {
+    "param_name": "param_description", ...
+    }
+    """
     def __init__(self, tree: Tree):
         super().__init__(tree.all_nodes())
 
@@ -103,4 +132,4 @@ if __name__ == "__main__":
     from fibers.testing.testing_modules import v_lab
     tree = get_tree_for_module(v_lab)
     indexing = CodeIndexing(tree)
-    nodes = indexing.get_top_k_nodes({"desc": "get a beaker of water"}, 2)
+    nodes = indexing.get_top_k_nodes({"docstring": "get a beaker of water"}, 2)

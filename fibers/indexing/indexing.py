@@ -51,7 +51,7 @@ class VectorIndexing(Indexing):
         return text_embeddings, non_empty_nodes
 
     def get_similarities(self, query, nodes=None) -> (List[float], List[Node]):
-        query_vector = np.array(get_embeddings([query])[0])
+        query_vector = self.get_query_vector(query)
         similarities, nodes = self.vector_store.get_similarities(query_vector, nodes)
         return similarities, nodes
 
@@ -60,6 +60,10 @@ class VectorIndexing(Indexing):
         similarities, nodes = self.get_similarities(query, items)
         top_k = top_k_node_by_similarity(similarities, nodes, k)
         return top_k
+
+    def get_query_vector(self, query) -> np.ndarray:
+        text_embedding = get_embeddings([query])
+        return np.array(text_embedding[0])
 
 
 class ComplexIndexing(Indexing):
