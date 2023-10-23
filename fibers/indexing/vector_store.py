@@ -63,7 +63,9 @@ class VectorStore:
         for item in items_to_search:
             if item in self.removed_items:
                 continue
-            vec_index_tuple = self.items_to_index[item]
+            vec_index_tuple = self.items_to_index.get(item, None)
+            if vec_index_tuple is None:
+                continue
             item_indices.extend(range(*vec_index_tuple))
             remaining_items.append(item)
 

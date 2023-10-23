@@ -151,6 +151,13 @@ class NodeResource:
     ## Functions for getting resources
     """
 
+    def get_resource_by_key(self, key):
+        """
+        Return the resource with the given key
+        If the key does not exist, return None
+        """
+        return self.resource.get(key, None)
+
     def get_resource_by_type(self, resource_type):
         """
         Return the first resource of the given type
@@ -160,7 +167,7 @@ class NodeResource:
                 return self.resource[key]
         return None
 
-    def get_resource_and_docs_by_type(self, resource_type):
+    def get_resource_by_type(self, resource_type):
         """
         Return the first resource of the given type with its docs
         """
@@ -182,6 +189,9 @@ class NodeResource:
 
     def add_text(self, text, key: str):
         self.add_resource(text, "text", key)
+
+    def add_obj(self, text, key: str):
+        self.add_resource(text, "obj", key)
 
     def add_tree(self, tree, key: str):
         self.add_resource(tree, "tree", key)

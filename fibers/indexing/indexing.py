@@ -51,34 +51,21 @@ class VectorIndexing(Indexing):
         return text_embeddings, non_empty_nodes
 
     def get_similarities(self, query, nodes=None) -> (List[float], List[Node]):
-        query_vector = self.get_query_vector(query)
+        query_vector = np.array(get_embeddings([query])[0])
         similarities, nodes = self.vector_store.get_similarities(query_vector, nodes)
         return similarities, nodes
-
-    def get_query_vector(self, query) -> np.ndarray:
-        text_embedding = get_embeddings([query])
-        return np.array(text_embedding[0])
 
     def get_top_k_nodes(self, query, k: int = 10,
                         items=None) -> List[Node]:
         similarities, nodes = self.get_similarities(query, items)
-        node_rank = np.argsort(similarities)[::-1]
-        node_added = set()
-        top_k_nodes = []
-        for i in range(len(node_rank)):
-            node = nodes[node_rank[i]]
-            if node not in node_added:
-                top_k_nodes.append(node)
-                node_added.add(node)
-            if len(top_k_nodes) == k:
-                break
-        return top_k_nodes
+        top_k = top_k_node_by_similarity(similarities, nodes, k)
+        return top_k
 
 
 class ComplexIndexing(Indexing):
     def __init__(self, nodes):
-        super().__init__(nodes)
         self.indexings = []
+        super().__init__(nodes)
 
     def add_nodes(self, nodes: List[Node]):
         for indexing in self.indexings:
@@ -93,4 +80,20 @@ class ComplexIndexing(Indexing):
 
     def get_top_k_nodes(self, query, k: int = 10,
                         items=None) -> List[Node]:
-        raise NotImplementedError
+        similarities, nodes = self.get_similarities(query, items)
+        top_k = top_k_node_by_similarity(similarities, nodes, k)
+        return top_k
+
+
+def top_k_node_by_similarity(similarities, nodes, k):
+    node_rank = np.argsort(similarities)[::-1]
+    node_added = set()
+    top_k_nodes = []
+    for i in range(len(node_rank)):
+        node = nodes[node_rank[i]]
+        if node not in node_added:
+            top_k_nodes.append(node)
+            node_added.add(node)
+        if len(top_k_nodes) == k:
+            break
+    return top_k_nodes

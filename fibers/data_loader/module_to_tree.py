@@ -42,29 +42,29 @@ def build_tree_for_struct(curr_struct: Struct, root_note: Node,
     :param docs_parser: The parser for the docstring
     """
     curr_key = curr_struct.struct_type + ": " + curr_struct.name
-    curr_note = root_note.new_child(curr_key)
+    curr_node = root_note.new_child(curr_key)
 
-    curr_type = "code:" + curr_struct.struct_type
-    curr_obj = curr_struct.obj
-    docs = inspect.getdoc(curr_struct.obj)
-    curr_note.resource.add_resource(curr_obj, curr_type, docs)
+    #curr_type = "code:" + curr_struct.struct_type
+    #curr_obj = curr_struct.obj
+    #docs = inspect.getdoc(curr_struct.obj)
+    #curr_node.resource.add_resource(curr_obj, curr_type, docs)
 
     for child_struct in curr_struct.children:
         match child_struct.struct_type:
             case "function":
-                process_function_struct(child_struct, curr_note, docs_parser)
+                process_function_struct(child_struct, curr_node, docs_parser)
             case "module":
-                build_tree_for_struct(child_struct, curr_note, docs_parser)
+                build_tree_for_struct(child_struct, curr_node, docs_parser)
             case "class":
-                build_tree_for_struct(child_struct, curr_note, docs_parser)
+                build_tree_for_struct(child_struct, curr_node, docs_parser)
             case "comment":
-                curr_note.be(curr_note.content + "\n" + child_struct.obj)
+                curr_node.be(curr_node.content + "\n" + child_struct.obj)
             case "section":
-                build_tree_for_struct(child_struct, curr_note, docs_parser)
+                build_tree_for_struct(child_struct, curr_node, docs_parser)
             case "todo":
-                build_tree_for_struct(child_struct, curr_note, docs_parser)
+                build_tree_for_struct(child_struct, curr_node, docs_parser)
             case "example":
-                build_tree_for_struct(child_struct, curr_note, docs_parser)
+                build_tree_for_struct(child_struct, curr_node, docs_parser)
 
 
 
@@ -82,21 +82,15 @@ def process_function_struct(function_struct: Struct, parent_node: Node, docs_par
     if "self" in parameters:
         del parameters["self"]
     function_name = function_struct.name
-    if not function_name.startswith("__example"):
-        function_note = parent_node.s("function: " + function_name)
-        function_note.be(general)
-        function_note.resource.add_function(function_struct.obj, "function")
-        if len(parameters) > 0:
-            function_note.s("parameters").be(json.dumps(parameters))
-        if len(return_value) > 0:
-            function_note.s("return value").be(return_value)
-    # this is a function demonstrate the usage the module
-    else:
-        function_note = parent_node.s("example: " + function_name)
-        function_code = inspect.getsource(function_struct.obj)
-        # replace first __example with example
-        function_code = function_code.replace("__example", "example", 1)
-        function_note.be(f"{function_code}")
+    function_note = parent_node.s("function: " + function_name)
+    function_note.be(general)
+
+    function_note.resource.add_function(function_struct.obj, "function")
+    if len(parameters) > 0:
+        function_note.resource.add_obj(parameters, "parameters")
+    if len(return_value) > 0:
+        function_note.resource.add_obj(return_value, "return value")
+
 
 def get_empty_param_dict(func):
     param_dict = {}
