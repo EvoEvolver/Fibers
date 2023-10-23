@@ -265,7 +265,7 @@ class Tree:
 def new_tree_from_node_subset(nodes: List[Node]) -> Tree:
     new_tree = Tree()
     for node in nodes:
-        new_tree.add_node_by_path(node.node_path(), node)
+        new_tree.add_node_by_path(node.path(), node)
     return new_tree
 
 

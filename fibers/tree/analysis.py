@@ -22,7 +22,7 @@ def analyze_tree_sparsity(tree: Tree):
     print("Max children per node:", max_children)
     # print heavy nodes
     for node in heavy_nodes:
-        print("Node:", node.node_path())
+        print("Node:", node.path())
         print("Children:", len(node.children()))
         print("Content:", node.content)
         print("")

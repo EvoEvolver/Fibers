@@ -42,9 +42,9 @@ class KeyPhraseIndexing(VectorIndexing):
                                    executor.map(break_into_key_phrases, nodes_content)):
                 new_src = []
                 new_src.extend(frags)
-                node_path = node.node_path()
+                node_path = node.path()
                 if len(node_path) > 0:
-                    new_src.append(node.node_path()[-1])
+                    new_src.append(node.path()[-1])
                 new_src.append(node.content)
 
                 new_src_list.append(new_src)
@@ -66,7 +66,7 @@ class KeyPhraseIndexing(VectorIndexing):
         new_weights = []
 
         for node in nodes:
-            keywords_on_path = node.node_path()
+            keywords_on_path = node.path()
             # keep last 1/3 of the keywords
             n_keywords = min(max(math.ceil(len(keywords_on_path) / 3), 3),
                              len(keywords_on_path))
@@ -85,7 +85,7 @@ class KeyPhraseIndexing(VectorIndexing):
         nodes_without_content = []
         for node in new_nodes:
             if len(node.content) == 0:
-                keywords_on_path = node.node_path()
+                keywords_on_path = node.path()
                 if len(keywords_on_path) != 0:
                     nodes_without_content.append(node)
                 continue

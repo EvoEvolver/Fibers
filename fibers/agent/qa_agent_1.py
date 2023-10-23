@@ -9,7 +9,7 @@ from fibers.tree import Tree
 from fibers.tree.tree import new_tree_from_node_subset
 
 
-class AgentQA(Agent):
+class QuestionAnswerer(Agent):
     def __init__(self, tree: Tree):
         super().__init__()
         self.tree = tree

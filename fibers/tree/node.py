@@ -38,7 +38,7 @@ class Node:
     ## Functions for getting the relation of nodes
     """
 
-    def node_path(self):
+    def path(self):
         return self.tree.get_node_path(self)
 
     def parent(self):
@@ -48,7 +48,7 @@ class Node:
         return self.tree.get_children_dict(self)
 
     def title(self) -> str:
-        node_path = self.node_path()
+        node_path = self.path()
         if len(node_path) == 0:
             return ""
         return node_path[-1]
@@ -129,11 +129,11 @@ class Node:
 
     def __str__(self):
         if len(self.content) == 0:
-            return "Path" + str(self.node_path())
+            return "Path" + str(self.path())
         return self.content
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}> {str(self.node_path())}"
+        return f"<{self.__class__.__name__}> {str(self.path())}"
 
 
 class NodeResource:

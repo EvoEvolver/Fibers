@@ -62,7 +62,7 @@ class DescriptionIndexing(VectorIndexing):
         for node in nodes:
             if node.resource.has_type("function") and not node.is_empty:
                 non_empty_nodes.append(node)
-                contents.append(node.content)
+                contents.append(node.path()[-1] + "\n" + node.content)
         text_embeddings = get_embeddings(contents)
         return text_embeddings, non_empty_nodes
 
