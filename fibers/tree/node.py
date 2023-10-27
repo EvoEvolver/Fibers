@@ -117,12 +117,17 @@ class Node:
     def remove_self(self):
         self.tree.remove_node(self)
 
-    def reset_title(self, title: str):
+    def reset_title(self, title: str, overlap=False):
         new_path = list(self.path())
         old_title = new_path[-1]
 
         # Update the parent's children
         parent_children = self.parent().children()
+        if title in parent_children:
+            if not overlap:
+                raise ValueError(f"Node with title {title} already exists")
+            else:
+                title = title + " (another)"
         del parent_children[old_title]
         parent_children[title] = self
 

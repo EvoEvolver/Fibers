@@ -1,3 +1,4 @@
+from fibers import debug
 from fibers.helper.cache.cache_service import cache_service
 from fibers.transform.decorate.text_summary import reset_bad_titles, add_children_summary
 from fibers.transform.sparsify.text_sparsify import break_and_merge_siblings, \
@@ -10,8 +11,9 @@ def make_summary_and_title(tree: Tree):
     changed_nodes = add_children_summary(nodes)
     for node in changed_nodes:
         node.be(node.meta["children_summary"])
-    reset_bad_titles(nodes)
-
+    changed_nodes = reset_bad_titles(nodes)
+    for node in changed_nodes:
+        node.reset_title(node.meta["title_from_content"], overlap=True)
 
 def preprocess_text_tree(tree: Tree):
     break_and_merge_siblings(tree, 100)

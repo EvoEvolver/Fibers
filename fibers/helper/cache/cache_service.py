@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import os
 from typing import Callable
+from functools import wraps
 
 from fibers.helper.cache.cache_embedding import CacheTableEmbed
 from fibers.helper.cache.cache_kv import CacheTableKV
@@ -78,6 +79,7 @@ def cached_function(cache_type_or_function: str | Callable):
         cache_type = module.__name__ + "." + func.__name__
 
     def cached_function_wrapper(func):
+        @wraps(func)
         def func_wrapper(*args, **kwargs):
             cache = cache_service.cache_kv.read_cache((args, kwargs), cache_type)
             if cache.is_valid():

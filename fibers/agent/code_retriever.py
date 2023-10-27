@@ -1,8 +1,10 @@
+from typing import List
+
 from fibers.agent import Agent
 from fibers.helper.utils import RobustParse
 from fibers.indexing.code import CodeIndexing
 from fibers.model.chat import Chat
-from fibers.tree import Tree
+from fibers.tree import Tree, Node
 
 
 class CodeRetriever(Agent):
@@ -11,11 +13,10 @@ class CodeRetriever(Agent):
         self.module_tree = module_tree
         self.indexing = CodeIndexing(module_tree)
 
-    def get_function(self, description):
+    def get_function(self, description) -> List[Node]:
         imagined_signature = possible_signature(description)
-        top_k_nodes = self.indexing.get_top_k_nodes(imagined_signature, k=5)
-        print(top_k_nodes)
-
+        top_k_nodes = self.indexing.get_top_k_nodes(imagined_signature, k=3)
+        return top_k_nodes
 
 
 system_message = "You should output everything concisely as if you are a computer program"
@@ -38,9 +39,12 @@ You are asked to imagine the signature of a function based on a description. You
     res = RobustParse.dict(res)
     return res
 
+
 if __name__ == "__main__":
     from fibers.testing.testing_modules import v_lab
     from fibers.data_loader.module_to_tree import get_tree_for_module
+
     agent = CodeRetriever(get_tree_for_module(v_lab))
-    agent.get_function("get a beaker of salt water")
+    nodes = agent.get_function("get a beaker of salt water")
+    Tree.from_nodes(nodes).show_tree_gui()
 

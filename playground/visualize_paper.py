@@ -1,4 +1,4 @@
-from fibers.transform.sparsify.text_sparsify import weight_reduce_brutal
+from fibers.transform.pipeline_text.tree_preprocess import preprocess_text_tree
 
 from fibers.helper.cache.cache_service import cache_service
 
@@ -8,7 +8,7 @@ tree = loader.load_sample_tree("scientific_understanding.tex")
 
 tree.show_tree_gui()
 
-weight_reduce_brutal(tree, 300)
+preprocess_text_tree(tree)
 
 tree.show_tree_gui()
 

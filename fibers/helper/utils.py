@@ -3,8 +3,8 @@ import concurrent.futures
 import os
 import sys
 
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_always, \
-    retry_if_exception
+from tenacity import retry, stop_after_attempt, wait_fixed, \
+    retry_if_exception, stop_after_delay
 from tqdm import tqdm
 
 
@@ -39,13 +39,13 @@ class RobustParse:
         return res
 
 
-def parallel_map(func, args, n_workers=16):
+def parallel_map(func, args, n_workers=8):
     # Use concurrent.futures.ThreadPoolExecutor to parallelize
     # Use tqdm to show progress bar
     from fibers.helper.cache.cache_service import cache_service
     with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
         results = []
-        for result in tqdm(executor.map(func, args), total=len(args)):
+        for result in tqdm(executor.map(func, args), total=len(args), desc=func.__name__):
             results.append(result)
             if len(results) % 5 == 4:
                 cache_service.save_cache()
@@ -63,7 +63,7 @@ def get_main_path():
 
 multi_attempts = retry(
     wait=wait_fixed(0.5),
-    stop=stop_after_attempt(3),
+    stop=(stop_after_attempt(3) | stop_after_delay(30)),
     retry=retry_if_exception(lambda e: True),
     reraise=False,
 )

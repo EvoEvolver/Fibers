@@ -23,6 +23,7 @@ def children_summarize(node_env_prompt):
 def make_title_by_content(content):
     prompt = f"""
 Summarize the following content into a short summary that is no longer than 10 words.
+{content}
 Start you answer with `Summary:`.
 """
     chat = Chat(prompt, "You are an helpful assistant who help organize knowledge.")
@@ -40,7 +41,7 @@ def reset_bad_titles(nodes) -> List[Node]:
             bad_title_nodes.append(node)
     for i, title in parallel_map(make_title_by_content, node_contents):
         node = bad_title_nodes[i]
-        node.reset_title(title)
+        node.meta["title_from_content"] = title
 
     return bad_title_nodes
 
@@ -52,7 +53,7 @@ def add_children_summary(nodes) -> List[Node]:
         if node.content.strip() != "":
             continue
         node_env_prompt = get_node_env_for_prompt(node,
-                                                  "You are trying to summarize the children of a node in a tree knowledge base.")
+                                                  "You are trying to summarize the content of a part of a knowledge base. The summary should be a shortened version of the content of the children and the node itself.")
         node_envs.append(node_env_prompt)
         non_empty_nodes.append(node)
     for i, summary in parallel_map(children_summarize, node_envs):

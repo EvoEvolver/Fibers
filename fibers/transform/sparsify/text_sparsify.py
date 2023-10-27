@@ -1,7 +1,5 @@
 from tqdm import tqdm
 
-from fibers import debug
-
 from fibers.helper.cache.cache_service import cached_function, cache_service
 from fibers.helper.utils import RobustParse, parallel_map, multi_attempts
 from fibers.model.chat import Chat

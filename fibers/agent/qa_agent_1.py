@@ -6,7 +6,6 @@ from fibers.indexing.key_phrase import KeyPhraseIndexing
 from fibers.model.chat import Chat
 from fibers.transform.extract.small_tree_select import small_tree_select
 from fibers.tree import Tree
-from fibers.tree.tree import new_tree_from_node_subset
 
 
 class QuestionAnswerer(Agent):
@@ -145,7 +144,7 @@ def imagine_answer(query: str, n_fragments=3):
 def search(query: str, tree: Tree, indexing: Indexing):
     imagined_answer = imagine_answer(query)["fragments"]
     selected_nodes = indexing.get_top_k_nodes(imagined_answer, k=10)
-    sub_tree = new_tree_from_node_subset(selected_nodes)
+    sub_tree = Tree.from_nodes(selected_nodes)
     sub_tree = small_tree_select(sub_tree,
                                     "The note answers the search query:" + query)
     return sub_tree
