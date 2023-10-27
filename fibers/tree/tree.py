@@ -144,7 +144,7 @@ class Tree:
         :return:
         """
         children_dict = self.get_children_dict(node)
-        for key, child in children_dict.items():
+        for key, child in list(children_dict.items()):
             self.remove_node(child)
 
         parent = self.get_parent(node)
@@ -234,6 +234,34 @@ class Tree:
             new_tree.add_node_by_path(new_path, node_mapping(node, new_tree))
         return new_tree
 
+    def from_nodes(nodes: List[Node]) -> Tree:
+        new_tree = Tree()
+        for node in nodes:
+            new_tree.add_node_by_path(node.path(), node)
+        return new_tree
+
+
+    """
+    ## Iterators
+    """
+
+    def iter_with_bfs(self):
+        """
+        Iterate the tree with depth first search
+        Output the shallowest nodes first
+        :return: the iterator
+        """
+        return self.root.iter_subtree_with_bfs()
+
+    def iter_with_dfs(self):
+        """
+        Iterate the tree with depth first search
+        Output the deepest nodes first
+        :return: the iterator
+        """
+        return self.root.iter_subtree_with_dfs()
+
+
     """
     ## Persistence of the tree
     """
@@ -262,11 +290,7 @@ class Tree:
 """
 
 
-def new_tree_from_node_subset(nodes: List[Node]) -> Tree:
-    new_tree = Tree()
-    for node in nodes:
-        new_tree.add_node_by_path(node.path(), node)
-    return new_tree
+
 
 
 def delete_extra_keys_for_prompt(tree):

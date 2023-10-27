@@ -114,6 +114,9 @@ class Node:
         self.content = content
         return self
 
+    def remove_self(self):
+        self.tree.remove_node(self)
+
     """
     ## Section for extract related nodes
     """
@@ -134,6 +137,35 @@ class Node:
 
     def __repr__(self):
         return f"<{self.__class__.__name__}> {str(self.path())}"
+
+    """
+    Iterators
+    """
+
+    def iter_subtree_with_dfs(self):
+        """
+        Iterate the subtree with depth first search.
+        Output the deepest nodes first.
+        :return:
+        """
+        for child in self.children().values():
+            yield from child.iter_subtree_with_dfs()
+        yield self
+
+    def iter_subtree_with_bfs(self):
+        """
+        Iterate the tree with breath first search.
+        Output the shallowest nodes first.
+        :return: the iterator
+        """
+        stack = []
+        stack.append(self)
+        while len(stack) > 0:
+            curr_node = stack.pop(0)
+            yield curr_node
+            for child in curr_node.children().values():
+                stack.append(child)
+
 
 
 class NodeResource:

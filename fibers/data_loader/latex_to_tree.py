@@ -14,9 +14,10 @@ def latex_to_raw_tree(tex: str):
     title = re.findall(r"\\title{(.+?)}", tex, re.DOTALL)
     if len(title) > 0:
         title = title[0].strip()
+        tex = re.sub(r"\\title{(.+?)}", r"", tex)
     else:
         title = ""
-    tree = Tree(title)
+    tree = Tree()
     node = tree.root.s(title).be(tex)
     node.s("Abstract").be(abstract)
     for i in range(0, 4):
@@ -110,6 +111,7 @@ def divide_into_paragraphs(node: Node):
     for i, paragraph in enumerate(paragraphs):
         node.s(f"Segment {i + 1}").be(paragraph)
         node.meta["overlap_to_sibling"] = True
+    node.content = ""
 
 def to_paragraphs(text):
     # separate by \n\n
@@ -121,7 +123,7 @@ def to_paragraphs(text):
 
 
 if __name__ == "__main__":
-    from fibers.testing.sample_paper import sample_paper
-    tex = sample_paper
+    from fibers.testing.testing_trees import loader
+    tex = loader.load_sample_src("scientific_understanding.tex")
     doc = latex_to_tree(tex)
     doc.show_tree_gui()

@@ -12,5 +12,5 @@ def display_embedding_search():
     # return IndexingSearchLogger()
     raise NotImplementedError()
 
-def refresh_cache():
-    return cache_service.cache_kv.refresh_cache()
+def refresh_cache(cache_type=""):
+    return cache_service.cache_kv.refresh_cache(cache_type)

@@ -5,7 +5,6 @@ import yaml
 from fibers.helper.cache.cache_service import cached_function
 from fibers.model.chat import Chat
 from fibers.tree import Tree
-from fibers.tree.tree import new_tree_from_node_subset
 
 
 def small_tree_select(tree: Tree, criteria_prompt: str) -> Tree:
@@ -13,7 +12,7 @@ def small_tree_select(tree: Tree, criteria_prompt: str) -> Tree:
     tree_in_yaml = yaml.dump(tree_with_indices)
     useful_indices = filter_tree_indices(tree_in_yaml, criteria_prompt)
     useful_notes = [note_indexed[i] for i in useful_indices]
-    filtered = new_tree_from_node_subset(useful_notes)
+    filtered = Tree.from_nodes(useful_notes)
     return filtered
 
 
