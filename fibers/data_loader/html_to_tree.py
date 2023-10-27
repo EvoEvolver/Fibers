@@ -70,6 +70,7 @@ def set_content(node: Node, contents: List):
             continue
         n_segments += 1
         node_added = node.s(f"Segment {n_segments}").be(segment)
+        node_added.meta["bad_title"] = True
         node_added.meta["overlap_to_sibling"] = True
 
 

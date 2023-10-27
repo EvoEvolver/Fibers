@@ -117,6 +117,27 @@ class Node:
     def remove_self(self):
         self.tree.remove_node(self)
 
+    def reset_title(self, title: str):
+        new_path = list(self.path())
+        old_title = new_path[-1]
+
+        # Update the parent's children
+        parent_children = self.parent().children()
+        del parent_children[old_title]
+        parent_children[title] = self
+
+        # Update the node path
+        del self.tree.node_path[self]
+        self.tree.node_path[self] = tuple(new_path)
+        for node in self.iter_subtree_with_bfs():
+            node._reset_path(len(new_path)-1, title)
+
+    def _reset_path(self, index, new_name):
+        new_path = list(self.path())
+        new_path[index] = new_name
+        del self.tree.node_path[self]
+        self.tree.node_path[self] = tuple(new_path)
+
     """
     ## Section for extract related nodes
     """

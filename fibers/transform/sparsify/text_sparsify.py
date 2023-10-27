@@ -1,3 +1,5 @@
+from tqdm import tqdm
+
 from fibers import debug
 
 from fibers.helper.cache.cache_service import cached_function, cache_service
@@ -70,12 +72,11 @@ def weight_reduce_brutal(tree: Tree, fat_limit=50):
                 content = subsection["content"]
                 big_fat_nodes[i].s(title).be(content)
 
+        for node in big_fat_nodes:
+            node.be("")
+
         def summarize_to_limit(content_: str):
             return summary_content(content_, fat_limit)
-
-        for i, summary in parallel_map(summarize_to_limit, big_fat_contents):
-            big_fat_nodes[i].meta["origin_summary"] = summary
-            big_fat_nodes[i].be("")
 
         mid_fat_contents = [node.content for node in mid_fat_nodes]
         for i, summary in parallel_map(summarize_to_limit, mid_fat_contents):
@@ -168,7 +169,8 @@ def merge_children(root: Node):
 
 def merge_overlapping_siblings_once(tree: Tree)->bool:
     nodes_to_remove = []
-    for node in tree.iter_with_dfs():
+    nodes = list(tree.iter_with_dfs())
+    for node in tqdm(nodes):
         nodes_to_remove += merge_children(node)
     for node in nodes_to_remove:
         node.remove_self()
@@ -182,10 +184,14 @@ def break_and_merge_siblings(tree: Tree, fat_limit=100, max_iter=10):
             break
     weight_reduce_brutal(tree, fat_limit)
 
+
+
+
+
 if __name__ == "__main__":
     from fibers.testing.testing_trees.loader import load_sample_tree
     tree = load_sample_tree("Feyerabend.md")
-    with debug.refresh_cache("1__main__.sibling_relation"):
-        break_and_merge_siblings(tree)
+    break_and_merge_siblings(tree)
+    weight_reduce_brutal(tree, 50)
     cache_service.save_cache()
     tree.show_tree_gui()

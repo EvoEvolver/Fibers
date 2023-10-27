@@ -123,7 +123,10 @@ class CacheTableKV:
         if not os.path.exists(self.cache_path):
             return {}
         with open(self.cache_path, "r") as f:
-            cache_list = json.load(f)
+            try:
+                cache_list = json.load(f)
+            except json.decoder.JSONDecodeError:
+                cache_list = []
         cache_table = {}
         for cache_dict in cache_list:
             cache = Cache(cache_dict["value"], cache_dict["hash"], cache_dict["input"],

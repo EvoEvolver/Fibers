@@ -110,6 +110,7 @@ def divide_into_paragraphs(node: Node):
         return
     for i, paragraph in enumerate(paragraphs):
         node.s(f"Segment {i + 1}").be(paragraph)
+        node.meta["bad_title"] = True
         node.meta["overlap_to_sibling"] = True
     node.content = ""
 
