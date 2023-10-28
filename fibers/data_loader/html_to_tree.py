@@ -57,19 +57,34 @@ def html_to_raw_tree(soup: BeautifulSoup, title="") -> Tree:
 
     return tree
 
+segment_length_threshold = 1500
 
 def set_content(node: Node, contents: List):
-    n_segments = 0
+    segment_contents = [""]
     for segment in contents:
         # judge if element is <p>
-        if hasattr(segment, "name") and segment.name == "p":
-            segment = segment.text
+        if hasattr(segment, "name"):
+            if segment.name == "p":
+                segment = segment.text
+            elif segment.name in ["ul", "ol", "blockquote", "pre"]:
+                segment_contents[-1] += str(segment)
+                continue
+            else:
+                segment = str(segment)
         else:
             segment = str(segment)
         if len(segment.strip()) == 0:
             continue
-        n_segments += 1
-        node_added = node.s(f"Segment {n_segments}").be(segment)
+        if len(segment_contents[-1]) + len(segment) < segment_length_threshold:
+            segment_contents[-1] += segment
+        else:
+            segment_contents.append(segment)
+
+    if segment_contents[0] == "":
+        segment_contents.pop(0)
+
+    for i, segment in enumerate(segment_contents):
+        node_added = node.s(f"Segment {i+1}").be(segment)
         node_added.meta["bad_title"] = True
         node_added.meta["overlap_to_sibling"] = True
 

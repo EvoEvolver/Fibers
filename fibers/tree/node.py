@@ -143,6 +143,21 @@ class Node:
         del self.tree.node_path[self]
         self.tree.node_path[self] = tuple(new_path)
 
+    def put_tree(self, tree: Tree):
+        """
+        Put the tree into the node
+        :param tree:
+        :return:
+        """
+        self_path = self.path()
+        self_tree = self.tree
+        for node in tree.iter_with_bfs():
+            node_path = node.path()
+            if len(node_path) == 0:
+                continue
+            new_node = node.copy_to(self_tree)
+            self_tree.add_node_by_path(self_path + node.path(), new_node)
+
     """
     ## Section for extract related nodes
     """

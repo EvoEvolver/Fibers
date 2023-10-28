@@ -9,7 +9,6 @@ def markdown_to_tree(src: str, title="") -> Tree:
     html = markdown.markdown(src)
     soup = BeautifulSoup(html, "html.parser")
     tree = html_to_raw_tree(soup, title=title)
-    html_to_markdown(tree.root)
     return tree
 
 if __name__ == "__main__":

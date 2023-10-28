@@ -5,6 +5,8 @@ import json
 
 from moduler.core import build_module_tree
 from moduler import Struct
+
+from fibers.data_loader.markdown_to_tree import markdown_to_tree
 from fibers.tree import Node, Tree
 from moduler.docs_parser import \
     parse_rst_docstring, \
@@ -65,6 +67,13 @@ def build_tree_for_struct(curr_struct: Struct, root_note: Node,
                 build_tree_for_struct(child_struct, curr_node, docs_parser)
             case "example":
                 build_tree_for_struct(child_struct, curr_node, docs_parser)
+            case "document":
+                markdown_src = child_struct.obj
+                readme_tree = markdown_to_tree(markdown_src, title="README")
+                #readme_tree.show_tree_gui()
+                curr_node.put_tree(readme_tree)
+            case _:
+                raise ValueError("Unknown struct type: " + child_struct.struct_type)
 
 
 

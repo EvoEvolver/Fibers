@@ -22,6 +22,7 @@ dependencies = [
     "bidict~=0.22.1",
     "tenacity~=8.2.2",
     "jsonlines",
+    "rope"
 ]
 
 [project.optional-dependencies]

@@ -18,7 +18,6 @@ class Tree:
     :cvar node_path: The path of each node
     """
 
-
     def __init__(self, root_content="", rule_of_path: str = None):
         """
         :param root_content: The content of the root of the tree
@@ -36,7 +35,6 @@ class Tree:
         # TODO: this can be node, tree, or string in the future
         self.rule_of_path = rule_of_path
 
-
     """
     ## Node information query
     """
@@ -47,10 +45,10 @@ class Tree:
         except KeyError:
             raise Exception(f"Node {node} not in tree")
 
-    def get_children_dict(self, node: Node):
+    def get_children_dict(self, node: Node) -> Dict[str, Node]:
         return self.children[node]
 
-    def get_parent(self, node: Node):
+    def get_parent(self, node: Node) -> Node | None:
         node_path = self.get_node_path(node)
         if len(node_path) == 0:
             return None
@@ -58,19 +56,19 @@ class Tree:
         parent = self.get_node_by_path(parent_path)
         return parent
 
-    def has_child(self, node: Node, key: str):
+    def has_child(self, node: Node, key: str) -> bool:
         return key in self.get_children_dict(node)
 
-    def has_node(self, node: Node):
+    def has_node(self, node: Node) -> bool:
         return node in self.node_path
 
     @property
-    def root(self):
+    def root(self) -> Node:
         root = self.get_node_by_path(tuple())
         return root
 
     @property
-    def topic(self):
+    def topic(self) -> str:
         return self.root.content
 
     """
@@ -157,7 +155,6 @@ class Tree:
         del self.children[node]
         del self.node_path[node]
 
-
     """
     ## Representation of tree in prompt
     """
@@ -240,7 +237,6 @@ class Tree:
             new_tree.add_node_by_path(node.path(), node)
         return new_tree
 
-
     """
     ## Iterators
     """
@@ -260,7 +256,6 @@ class Tree:
         :return: the iterator
         """
         return self.root.iter_subtree_with_dfs()
-
 
     """
     ## Persistence of the tree
@@ -288,9 +283,6 @@ class Tree:
 """
 ## Auxiliary functions
 """
-
-
-
 
 
 def delete_extra_keys_for_prompt(tree):

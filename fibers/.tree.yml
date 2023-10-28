@@ -1,5 +1,8 @@
 sections:
-  Core:
+  Implementation:
+    - transform
+    - agent
+  Infrastructure:
     - tree
     - indexing
   Auxiliary:
@@ -8,3 +11,4 @@ sections:
     - gui
     - testing
     - data_loader
+    - debug
