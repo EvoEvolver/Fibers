@@ -136,8 +136,10 @@ def summarize_containers_on_tree_one_round(tree: Tree) -> bool:
         else:
             continue
 
-    for i, summary in parallel_map(summary_children, node_to_summarize):
-        node_to_summarize[i].meta["code_summary"] = summary
+    if len(node_to_summarize) > 0:
+        for i, summary in parallel_map(summary_children, node_to_summarize):
+            node_to_summarize[i].meta["code_summary"] = summary
+
     return has_node_to_summarize
 
 def summarize_containers_on_tree(tree: Tree):
@@ -149,7 +151,6 @@ if __name__ == "__main__":
 
     tree = get_tree_for_module(data_loader)
     summarize_functions_on_tree(tree)
-    cache_service.save_used_cache()
 
     summarize_containers_on_tree(tree)
 
@@ -161,3 +162,6 @@ if __name__ == "__main__":
             return node.content
 
     tree.show_tree_gui(render_summary)
+
+
+    cache_service.save_used_cache()
