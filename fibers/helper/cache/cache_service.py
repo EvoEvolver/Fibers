@@ -7,7 +7,7 @@ from functools import wraps
 
 from fibers.helper.cache.cache_embedding import CacheTableEmbed
 from fibers.helper.cache.cache_kv import CacheTableKV
-from fibers.helper.utils import get_main_path
+from fibers.helper.utils import get_main_path, standard_multi_attempts
 
 
 def get_cache_path(main_path: str):
@@ -64,10 +64,11 @@ class CacheService:
 cache_service = CacheService()
 
 
-def cached_function(cache_type_or_function: str | Callable):
+def cached_function(cache_type_or_function: str | Callable, multi_attempts=True):
     """
     A decorator with argument cache_type. Usage: `@cached_function` or `@cached_function(cache_type)`.
-    :param cache_type: An identifier of the cache type. It should be distinct from other cache types.
+    :param cache_type_or_function: The cache type or the function to be cached
+    :param multi_attempts: Whether to retry the function if it fails
     """
 
     if isinstance(cache_type_or_function, str):
@@ -87,8 +88,10 @@ def cached_function(cache_type_or_function: str | Callable):
             res = func(*args, **kwargs)
             cache.set_cache(res)
             return res
-
-        return func_wrapper
+        if multi_attempts:
+            return standard_multi_attempts(func_wrapper)
+        else:
+            return func_wrapper
 
     if isinstance(cache_type_or_function, str):
         return cached_function_wrapper

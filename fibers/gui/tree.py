@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Tuple
 
 import plotly.graph_objects as go
 from hyphen import Hyphenator
@@ -9,13 +9,19 @@ from fibers.gui.utlis import hypenate_texts
 
 if TYPE_CHECKING:
     from fibers.tree import Node, Tree
+    content_map_type = Callable[[Node], Tuple[str, str] | str]
 
 h_en = Hyphenator('en_US')
 
 
-def draw_treemap(root: Node):
+def default_content_map(node: Node) -> Tuple[str, str]:
+    return node.title(), node.content
 
-    ids, labels, parents, texts = prepare_tree_parameters(root)
+
+def draw_treemap(root: Node, content_map: content_map_type = None):
+    if content_map is None:
+        content_map = default_content_map
+    ids, labels, parents, texts = prepare_tree_parameters(root, content_map)
 
     fig = go.Figure(go.Treemap(
         labels=labels,
@@ -51,13 +57,13 @@ def get_json_for_treemap(root: Node):
     return node_list
 
 
-def prepare_tree_parameters(root):
+def prepare_tree_parameters(root: Node, content_map: content_map_type):
     tree = root.tree
     labels = []
     parents = []
     texts = []
     ids = []
-    add_node_to_list(labels, parents, texts, ids, root, tree)
+    add_node_to_list(labels, parents, texts, ids, root, tree, content_map)
     line_width = 40
     for i in range(len(texts)):
         if len(texts[i].strip()) == 0:
@@ -67,15 +73,23 @@ def prepare_tree_parameters(root):
     return ids, labels, parents, texts
 
 
-def add_node_to_list(labels, parents, values, ids, node: Node, tree: Tree):
+def add_node_to_list(labels, parents, values, ids, node: Node, tree: Tree, content_map: content_map_type):
     i = 1
     children = tree.get_children_dict(node)
     for key, child in children.items():
         node_path = tree.get_node_path(child)
-        label = str(i) + ". " + key if len(children) > 1 else key
+        mapped_content = content_map(child)
+        if isinstance(mapped_content, str):
+            value = mapped_content
+            label = key
+        elif isinstance(mapped_content, tuple):
+            label, value = mapped_content
+        else:
+            raise Exception("content_map should return a string or a tuple of two strings")
+        label = str(i) + ". " + key if len(children) > 1 else label
         labels.append(label)
+        values.append(value)
         parents.append("/".join(node_path[:-1]))
-        values.append(child.content)
         ids.append("/".join(node_path))
-        add_node_to_list(labels, parents, values, ids, child, tree)
+        add_node_to_list(labels, parents, values, ids, child, tree, content_map)
         i += 1

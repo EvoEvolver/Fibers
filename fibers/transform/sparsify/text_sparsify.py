@@ -1,7 +1,7 @@
 from tqdm import tqdm
 
 from fibers.helper.cache.cache_service import cached_function, cache_service
-from fibers.helper.utils import RobustParse, parallel_map, multi_attempts
+from fibers.helper.utils import RobustParse, parallel_map
 from fibers.model.chat import Chat
 from fibers.tree import Tree, Node
 
@@ -13,7 +13,7 @@ def count_words(content: str):
     return len(split)
 
 system_message = "You are a helpful assistant for arranging knowledge. You should output merely JSON."
-@multi_attempts
+
 @cached_function
 def decompose_content(content: str):
     prompt = f"""
@@ -31,7 +31,7 @@ Article part:
     subsection_list = RobustParse.list(res)
     return subsection_list
 
-@multi_attempts
+
 @cached_function
 def summary_content(content: str, fat_limit):
     prompt = f"""
@@ -80,7 +80,7 @@ def weight_reduce_brutal(tree: Tree, fat_limit=50):
         for i, summary in parallel_map(summarize_to_limit, mid_fat_contents):
             mid_fat_nodes[i].be(summary)
 
-@multi_attempts
+
 @cached_function
 def sibling_relation(content_1, content_2):
     prompt = f"""

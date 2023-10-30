@@ -4,8 +4,10 @@ from typing import Dict, List, Callable, Tuple, TYPE_CHECKING
 
 import dill
 from bidict import bidict
+
 if TYPE_CHECKING:
-    pass
+    from fibers.gui.tree import content_map_type
+
 from fibers.tree.node import Node
 
 
@@ -206,12 +208,12 @@ class Tree:
     ## Visualization of tree
     """
 
-    def show_tree_gui(self):
+    def show_tree_gui(self, content_map: content_map_type = None):
         """
         Show the tree in a webpage
         """
         from fibers.gui.tree import draw_treemap
-        draw_treemap(self.root)
+        draw_treemap(self.root, content_map)
 
     """
     ## Sub-tree extraction

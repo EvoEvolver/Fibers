@@ -240,15 +240,6 @@ class NodeResource:
                 return self.resource[key]
         return None
 
-    def get_resource_by_type(self, resource_type):
-        """
-        Return the first resource of the given type with its docs
-        """
-        for i in range(len(self.resource_type)):
-            if self.resource_type[i] == resource_type:
-                return self.resource[i]
-        return None
-
     def get_resource_types(self):
         return set(self.resource_type.values())
 

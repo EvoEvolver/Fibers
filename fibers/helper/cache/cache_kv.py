@@ -3,11 +3,27 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from typing import Dict, Optional, List, Set
+from json import JSONEncoder
+from typing import Dict, Optional, List, Set, TYPE_CHECKING
+
+from fibers.tree import Node
+
+
+class NodeEncoder(JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Node):
+            return {
+                "path": o.path(),
+                "content": o.content,
+                "meta": o.meta,
+            }
+        else:
+            raise TypeError(f'Object of type {o.__class__.__name__} '
+                        f'is not JSON serializable')
 
 
 def get_hash(input: any, type: str) -> str:
-    return hashlib.sha1(json.dumps([input, type]).encode("utf-8")).hexdigest()
+    return hashlib.sha1(json.dumps([input, type], cls=NodeEncoder).encode("utf-8")).hexdigest()
 
 
 class Cache:
@@ -48,7 +64,7 @@ def serialize_cache_table(cache_table: Dict[str, Cache]):
     res = []
     for key, cache in cache_table.items():
         res.append(cache.get_self_dict())
-    return json.dumps(res, indent=1)
+    return json.dumps(res, indent=1, cls=NodeEncoder)
 
 
 class CacheTableKV:

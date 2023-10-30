@@ -37,28 +37,28 @@ def get_tree_for_module(module, docs_parser_type="rst"):
 
 
 def build_tree_for_struct(curr_struct: Struct, root_note: Node,
-                          docs_parser: Doc_parser):
+                          docs_parser: Doc_parser) -> Node:
     """
     :param curr_struct: The struct to be added to the child of the root_note
     :param root_note: The root note to be filled with children from curr_struct
     :param docs_parser: The parser for the docstring
+    :return: the node constructed from curr_struct
     """
-    curr_key = curr_struct.struct_type + ": " + curr_struct.name
+    curr_key = curr_struct.name
     curr_node = root_note.new_child(curr_key)
-
-    #curr_type = "code:" + curr_struct.struct_type
-    #curr_obj = curr_struct.obj
-    #docs = inspect.getdoc(curr_struct.obj)
-    #curr_node.resource.add_resource(curr_obj, curr_type, docs)
+    curr_node.meta["module_tree_type"] = curr_struct.struct_type
 
     for child_struct in curr_struct.children:
+        new_node = None
         match child_struct.struct_type:
             case "function":
-                process_function_struct(child_struct, curr_node, docs_parser)
+                new_node = process_function_struct(child_struct, curr_node, docs_parser)
             case "module":
-                build_tree_for_struct(child_struct, curr_node, docs_parser)
+                new_node = build_tree_for_struct(child_struct, curr_node, docs_parser)
+                new_node.resource.add_class(child_struct.obj, "module")
             case "class":
-                build_tree_for_struct(child_struct, curr_node, docs_parser)
+                new_node = build_tree_for_struct(child_struct, curr_node, docs_parser)
+                new_node.resource.add_class(child_struct.obj, "class")
             case "comment":
                 curr_node.be(curr_node.content + "\n" + child_struct.obj)
             case "section":
@@ -70,14 +70,16 @@ def build_tree_for_struct(curr_struct: Struct, root_note: Node,
             case "document":
                 markdown_src = child_struct.obj
                 readme_tree = markdown_to_tree(markdown_src, title="README")
-                #readme_tree.show_tree_gui()
                 curr_node.put_tree(readme_tree)
+                new_node = curr_node.s("README")
             case _:
                 raise ValueError("Unknown struct type: " + child_struct.struct_type)
+        if new_node is not None:
+            new_node.meta["module_tree_type"] = child_struct.struct_type
+    return curr_node
 
 
-
-def process_function_struct(function_struct: Struct, parent_node: Node, docs_parser):
+def process_function_struct(function_struct: Struct, parent_node: Node, docs_parser) -> Node:
     doc_raw = inspect.getdoc(function_struct.obj)
     if doc_raw is None:
         general, parameters, return_value = ("", {}, "")
@@ -91,15 +93,16 @@ def process_function_struct(function_struct: Struct, parent_node: Node, docs_par
     if "self" in parameters:
         del parameters["self"]
     function_name = function_struct.name
-    function_note = parent_node.s("function: " + function_name)
-    function_note.be(general)
+    function_node = parent_node.s(function_name)
+    function_node.be(general)
 
-    function_note.resource.add_function(function_struct.obj, "function")
+    function_node.resource.add_function(function_struct.obj, "function")
     if len(parameters) > 0:
-        function_note.resource.add_obj(parameters, "parameters")
+        function_node.resource.add_obj(parameters, "parameters")
     if len(return_value) > 0:
-        function_note.resource.add_obj(return_value, "return value")
+        function_node.resource.add_obj(return_value, "return value")
 
+    return function_node
 
 def get_empty_param_dict(func):
     param_dict = {}

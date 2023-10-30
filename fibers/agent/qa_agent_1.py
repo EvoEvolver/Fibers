@@ -1,6 +1,6 @@
 from fibers import debug
 from fibers.agent import Agent
-from fibers.helper.utils import multi_attempts, RobustParse
+from fibers.helper.utils import standard_multi_attempts, RobustParse
 from fibers.indexing.indexing import Indexing
 from fibers.indexing.key_phrase import KeyPhraseIndexing
 from fibers.model.chat import Chat
@@ -23,7 +23,7 @@ class QuestionAnswerer(Agent):
 """
 
 
-@multi_attempts
+@standard_multi_attempts
 def single_tree_qa(question: str, knowledge_tree: Tree):
     """
     :param question: The question
@@ -98,7 +98,7 @@ Start your analysis with `Analysis:`.
     return analysis
 
 
-@multi_attempts
+@standard_multi_attempts
 def give_steps(question_prompt: str, analysis: str):
     chat = Chat(system_message=system_prompt_json)
 
@@ -150,7 +150,7 @@ def search(query: str, tree: Tree, indexing: Indexing):
     return sub_tree
 
 
-@multi_attempts
+@standard_multi_attempts
 def answer(question: str, tree: Tree, indexing: Indexing):
     sub_tree = search(question, tree, indexing)
     prompt = f"""Here is some items obtained from a knowledge base. The context of the items are implied by their path.

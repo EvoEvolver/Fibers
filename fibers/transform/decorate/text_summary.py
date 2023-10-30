@@ -1,13 +1,12 @@
 from typing import List
 
 from fibers.helper.cache.cache_service import cached_function
-from fibers.helper.utils import RobustParse, multi_attempts, parallel_map
+from fibers.helper.utils import RobustParse, standard_multi_attempts, parallel_map
 from fibers.model.chat import Chat
 from fibers.transform.utils_text.node_env_prompt import get_node_env_for_prompt
 from fibers.tree import Node
 
 
-@multi_attempts
 @cached_function
 def children_summarize(node_env_prompt):
     prompt = node_env_prompt + f"""Based on the information above, output a JSON dict with `summary` for the node."""
@@ -18,7 +17,7 @@ def children_summarize(node_env_prompt):
     return res
 
 
-@multi_attempts
+
 @cached_function
 def make_title_by_content(content):
     prompt = f"""
