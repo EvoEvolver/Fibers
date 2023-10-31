@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import TYPE_CHECKING, Dict, Any, List
+from typing import TYPE_CHECKING, Dict, Any, List, Type, Set
+
+from fibers.tree.node_class import TextNodeClass, NodeClass
 
 if TYPE_CHECKING:
     from fibers.tree import Tree
@@ -27,6 +29,8 @@ class Node:
         self.tree: Tree = tree
         # The resource is the data that is indicated by the node
         self.resource: NodeResource = NodeResource()
+        # The node class is the class that for processing the node
+        self.node_classes: Set[Type[NodeClass]] = {TextNodeClass}
 
     def copy_to(self, tree: Tree):
         new_node = Node(tree)
@@ -65,6 +69,12 @@ class Node:
     @property
     def meta(self):
         return self.resource.meta
+
+    def __getitem__(self, item):
+        return self.resource.meta[item]
+
+    def __setitem__(self, key, value):
+        self.resource.meta[key] = value
 
     """
     ## Functions for adding children of node
@@ -180,7 +190,7 @@ class Node:
         return f"<{self.__class__.__name__}> {str(self.path())}"
 
     """
-    Iterators
+    Node iterators
     """
 
     def iter_subtree_with_dfs(self):
@@ -207,6 +217,16 @@ class Node:
             for child in curr_node.children().values():
                 stack.append(child)
 
+    """
+    # Node class related functions
+    Node class is the class that process the node
+    It represents the type of the node
+    """
+    def isinstance(self, node_class: Type[NodeClass]):
+        return node_class in self.node_classes
+
+    def add_class(self, node_class: Type[NodeClass]):
+        self.node_classes.add(node_class)
 
 
 class NodeResource:

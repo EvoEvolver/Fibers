@@ -1,5 +1,6 @@
 from tqdm import tqdm
 
+from fibers.data_loader.bad_text_node_class import has_bad_reason, remove_bad_reason
 from fibers.helper.cache.cache_service import cached_function, cache_service
 from fibers.helper.utils import RobustParse, parallel_map
 from fibers.model.chat import Chat
@@ -130,9 +131,9 @@ def merge_children(root: Node):
     while i < len(children_list) - 1:
         child = children_list[i]
         next_child = children_list[i + 1]
-        if not child.meta.get("overlap_to_sibling", False) or not next_child.meta.get("overlap_to_sibling", False):
-            if "overlap_to_sibling" in child.meta:
-                del child.meta["overlap_to_sibling"]
+        if not (has_bad_reason(child, "overlap_to_sibling") and
+                has_bad_reason(next_child, "overlap_to_sibling")):
+            remove_bad_reason(child, "overlap_to_sibling")
             i += 1
             continue
 
@@ -145,7 +146,7 @@ def merge_children(root: Node):
         relation = sibling_relation(content_1, content_2)
 
         if relation == "parallel":
-            child.meta["overlap_to_sibling"] = False
+            remove_bad_reason(child, "overlap_to_sibling")
             i += 1
         elif relation == "subsequent":
             node_1.content += "\n" + node_2.content
@@ -157,12 +158,13 @@ def merge_children(root: Node):
         if root.content == "":
             nodes_to_remove.append(root)
         return nodes_to_remove
-    if "overlap_to_sibling" in children_list[-1].meta:
+    if has_bad_reason(children_list[-1], "overlap_to_sibling"):
         if len(children_list) == 1:
-            del children_list[0].meta["overlap_to_sibling"]
+            remove_bad_reason(children_list[0], "overlap_to_sibling")
         elif len(children_list) > 1:
-            if not (children_list[-1].meta["overlap_to_sibling"] and children_list[-2].meta.get("overlap_to_sibling", False)):
-                del children_list[-1].meta["overlap_to_sibling"]
+            if not (has_bad_reason(children_list[-1], "overlap_to_sibling") and
+                    has_bad_reason(children_list[-2], "overlap_to_sibling")):
+                remove_bad_reason(children_list[-1], "overlap_to_sibling")
     return nodes_to_remove
 
 def merge_overlapping_siblings_once(tree: Tree)->bool:

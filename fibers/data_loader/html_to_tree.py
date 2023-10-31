@@ -5,6 +5,7 @@ import html2text
 import requests
 from bs4 import BeautifulSoup
 
+from fibers.data_loader.bad_text_node_class import add_bad_reason
 from fibers.tree import Tree, Node
 
 
@@ -85,8 +86,8 @@ def set_content(node: Node, contents: List):
 
     for i, segment in enumerate(segment_contents):
         node_added = node.s(f"Segment {i+1}").be(segment)
-        node_added.meta["bad_title"] = True
-        node_added.meta["overlap_to_sibling"] = True
+        add_bad_reason(node_added, "overlap_to_sibling")
+        add_bad_reason(node_added, "bad_title")
 
 
 def bfs_on_soup(soup: BeautifulSoup):

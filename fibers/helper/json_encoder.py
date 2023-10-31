@@ -16,10 +16,16 @@ class FibersEncoder(JSONEncoder):
                         f'is not JSON serializable')
 
 def serialize_node(node: Node):
+    node_class_data = {}
+    for node_class in node.node_classes:
+        data = node_class.serialize(node)
+        if data is not None:
+            node_class_data[node_class.__name__] = data
+
     return {
         "path": node.path(),
         "content": node.content,
-        "meta": node.meta,
+        "node_class_data": node_class_data
     }
 
 def serialize_tree(tree: Tree):

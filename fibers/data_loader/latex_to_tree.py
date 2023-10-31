@@ -1,4 +1,6 @@
 import re
+
+from fibers.data_loader.bad_text_node_class import add_bad_reason
 from fibers.tree import Tree, Node
 
 
@@ -110,8 +112,8 @@ def divide_into_paragraphs(node: Node):
         return
     for i, paragraph in enumerate(paragraphs):
         new_node = node.s(f"Segment {i + 1}").be(paragraph)
-        new_node.meta["bad_title"] = True
-        node.meta["overlap_to_sibling"] = True
+        add_bad_reason(node, "overlap_to_sibling")
+        add_bad_reason(new_node, "bad_title")
     node.content = ""
 
 def to_paragraphs(text):

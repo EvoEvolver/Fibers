@@ -39,6 +39,9 @@ def extract_dataset(name, number):
 
 if __name__ == "__main__":
     from fibers.data_loader.html_to_tree import html_to_tree
+    from fibers.transform.pipeline_text.tree_preprocess import preprocess_text_tree
     data = extract_dataset("QuALITY.v1.0.1.dev", 100)
     tree = html_to_tree(data["article"], to_markdown=False)
+    tree.show_tree_gui()
+    preprocess_text_tree(tree)
     tree.show_tree_gui()

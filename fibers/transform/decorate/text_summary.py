@@ -31,7 +31,7 @@ Start you answer with `Summary:`.
     return res
 
 
-def reset_bad_titles(nodes) -> List[Node]:
+def reset_bad_titles(nodes):
     bad_title_nodes = []
     node_contents = []
     for node in nodes:
@@ -40,9 +40,7 @@ def reset_bad_titles(nodes) -> List[Node]:
             bad_title_nodes.append(node)
     for i, title in parallel_map(make_title_by_content, node_contents):
         node = bad_title_nodes[i]
-        node.meta["title_from_content"] = title
-
-    return bad_title_nodes
+        node.reset_title(title, overlap=True)
 
 
 def add_children_summary(nodes) -> List[Node]:
