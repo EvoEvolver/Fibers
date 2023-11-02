@@ -55,9 +55,9 @@ def build_tree_for_struct(curr_struct: Struct, root_note: Node,
             case "function":
                 new_node = process_function_struct(child_struct, curr_node, docs_parser)
             case "module":
-                new_node = build_tree_for_struct(child_struct, curr_node, docs_parser)
+                build_tree_for_struct(child_struct, curr_node, docs_parser)
             case "class":
-                new_node = build_tree_for_struct(child_struct, curr_node, docs_parser)
+                build_tree_for_struct(child_struct, curr_node, docs_parser)
             case "comment":
                 curr_node.be(curr_node.content + "\n" + child_struct.obj)
             case "section":
@@ -94,13 +94,6 @@ def process_function_struct(function_struct: Struct, parent_node: Node, docs_par
     function_name = function_struct.name
     function_node = parent_node.s(function_name)
     function_node.be(general)
-
-    function_node.resource.add_function(function_struct.obj, "function")
-    if len(parameters) > 0:
-        function_node.resource.add_obj(parameters, "parameters")
-    if len(return_value) > 0:
-        function_node.resource.add_obj(return_value, "return value")
-
     return function_node
 
 def get_empty_param_dict(func):

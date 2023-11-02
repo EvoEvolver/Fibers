@@ -5,6 +5,7 @@ from fibers.helper.cache.cache_service import cached_function, cache_service
 from fibers.helper.utils import parallel_map
 from fibers.model.chat import Chat
 from fibers.tree import Tree, Node
+from fibers.tree.node import NodeContentMap
 from fibers.tree.node_class import CodeNodeClass, NodeClass
 
 
@@ -66,8 +67,8 @@ def summarize_functions_on_tree(tree: Tree):
     function_srcs = []
     function_envs = []
     for node in tree.all_nodes():
-        function = node.resource.get_resource_by_type("function")
-        if function:
+        if node.isinstance(CodeNodeClass) and CodeNodeClass.get_type(node) == "function":
+            function = CodeNodeClass.get_obj(node)
             function_nodes.append(node)
             function_srcs.append(inspect.getsource(function))
             function_envs.append(get_function_env(node))
@@ -163,21 +164,27 @@ def summarize_containers_on_tree(tree: Tree):
         pass
 
 if __name__ == "__main__":
-    from fibers import data_loader
+    from fibers import tree as tree_module
 
-    tree = get_tree_for_module(data_loader)
+    tree = get_tree_for_module(tree_module)
     summarize_functions_on_tree(tree)
 
     summarize_containers_on_tree(tree)
 
-
-    def render_summary(node: Node):
+    def get_summary(node: Node):
         if node.isinstance(CodeSummarizedNodeClass):
             return CodeSummarizedNodeClass.get_summary(node)
         else:
             return node.content
 
-    tree.show_tree_gui(render_summary)
+    content_map = NodeContentMap(get_summary)
 
+    tree.show_tree_gui(content_map)
+
+    from fibers.transform.extract.traverser import beam_search
+
+    nodes_related = beam_search(tree.root, "The child that contain the function to add children to node", content_map)
+    nodes_related = [node for node in nodes_related if node.isinstance(CodeSummarizedNodeClass) and CodeNodeClass.get_type(node) == "function"]
+    print(nodes_related)
 
     cache_service.save_used_cache()

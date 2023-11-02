@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import TYPE_CHECKING, Dict, Any, List, Type, Set
+from typing import TYPE_CHECKING, Dict, List, Type, Set, Callable
 
 from fibers.tree.node_class import TextNodeClass, NodeClass
 
@@ -251,43 +251,10 @@ class NodeResource:
         """
         return self.resource.get(key, None)
 
-    def get_resource_by_type(self, resource_type):
-        """
-        Return the first resource of the given type
-        """
-        for key, value in self.resource_type.items():
-            if value == resource_type:
-                return self.resource[key]
-        return None
 
-    def get_resource_types(self):
-        return set(self.resource_type.values())
-
-    """
-    ## Functions for adding resources
-    """
-
-    def add_resource(self, resource, resource_type: str, key: str):
-        self.resource[key] = resource
-        self.resource_type[key] = resource_type
-
-    def add_text(self, text, key: str):
-        self.add_resource(text, "text", key)
-
-    def add_obj(self, text, key: str):
-        self.add_resource(text, "obj", key)
-
-    def add_tree(self, tree, key: str):
-        self.add_resource(tree, "tree", key)
-
-    def add_function(self, function, key: str):
-        self.add_resource(function, "function", key)
-
-    def add_module(self, module, key: str):
-        self.add_resource(module, "module", key)
-
-    def add_class(self, class_, key: str):
-        self.add_resource(class_, "class", key)
-
-    def add_node(self, node, key: str):
-        self.add_resource(node, "node", key)
+class NodeContentMap:
+    def __init__(self, content_map=None, title_map=None):
+        self._content_map: Callable[[Node], str] = content_map if content_map is not None else lambda x: x.content
+        self._title_map: Callable[[Node], str] = title_map if title_map is not None else lambda x: x.title()
+    def get_title_and_content(self, node: Node):
+        return self._title_map(node), self._content_map(node)

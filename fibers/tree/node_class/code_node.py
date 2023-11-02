@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 class CodeNodeClass(NodeClass):
     @staticmethod
     def set_type_obj(node: Node, type_name: str, obj: Any):
-        assert type_name in ["function", "class", "module", "document", "section"]
+        assert type_name in ["function", "class", "module", "document", "section", "todo", "example"]
         node.meta["module_tree_type"] = type_name
         node.meta["module_tree_obj"] = obj
         node.node_classes.add(CodeNodeClass)

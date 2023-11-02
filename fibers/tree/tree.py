@@ -5,10 +5,7 @@ from typing import Dict, List, Callable, Tuple, TYPE_CHECKING
 import dill
 from bidict import bidict
 
-if TYPE_CHECKING:
-    from fibers.gui.tree import content_map_type
-
-from fibers.tree.node import Node
+from fibers.tree.node import Node, NodeContentMap
 
 
 class Tree:
@@ -208,7 +205,7 @@ class Tree:
     ## Visualization of tree
     """
 
-    def show_tree_gui(self, content_map: content_map_type = None):
+    def show_tree_gui(self, content_map: NodeContentMap = None):
         """
         Show the tree in a webpage
         """

@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from hyphen import Hyphenator
 
 from fibers.gui.utlis import hypenate_texts
+from fibers.tree.node import NodeContentMap
 
 if TYPE_CHECKING:
     from fibers.tree import Node, Tree
@@ -14,13 +15,7 @@ if TYPE_CHECKING:
 h_en = Hyphenator('en_US')
 
 
-def default_content_map(node: Node) -> Tuple[str, str]:
-    return node.title(), node.content
-
-
-def draw_treemap(root: Node, content_map: content_map_type = None):
-    if content_map is None:
-        content_map = default_content_map
+def draw_treemap(root: Node, content_map: NodeContentMap = None):
     ids, labels, parents, texts = prepare_tree_parameters(root, content_map)
 
     fig = go.Figure(go.Treemap(
@@ -57,7 +52,7 @@ def get_json_for_treemap(root: Node):
     return node_list
 
 
-def prepare_tree_parameters(root: Node, content_map: content_map_type):
+def prepare_tree_parameters(root: Node, content_map: NodeContentMap):
     tree = root.tree
     labels = []
     parents = []
@@ -73,12 +68,12 @@ def prepare_tree_parameters(root: Node, content_map: content_map_type):
     return ids, labels, parents, texts
 
 
-def add_node_to_list(labels, parents, values, ids, node: Node, tree: Tree, content_map: content_map_type):
+def add_node_to_list(labels, parents, values, ids, node: Node, tree: Tree, content_map: NodeContentMap):
     i = 1
     children = tree.get_children_dict(node)
     for key, child in children.items():
         node_path = tree.get_node_path(child)
-        mapped_content = content_map(child)
+        mapped_content = content_map.get_title_and_content(child)
         if isinstance(mapped_content, str):
             value = mapped_content
             label = key
