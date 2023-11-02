@@ -14,21 +14,30 @@ class BadTextNodeClass(NodeClass):
     def has_bad_reason(node, reason: str) -> bool:
         return has_bad_reason(node, reason)
 
+
 def add_bad_reason(node, reason: str):
     assert reason in ["overlap_to_sibling", "bad_title"]
-    if "bad_reasons" not in node.meta:
-        node.meta["bad_reasons"] = set()
-    node.meta["bad_reasons"].add(reason)
     node.add_class(BadTextNodeClass)
+    data = BadTextNodeClass.get_data(node)
+    if "bad_reasons" not in data:
+        data["bad_reasons"] = set()
+    data["bad_reasons"].add(reason)
+
 
 def remove_bad_reason(node, reason: str):
-    if "bad_reasons" not in node.meta:
+    data = BadTextNodeClass.get_data(node)
+    if "bad_reasons" not in data:
         return
-    node.meta["bad_reasons"].remove(reason)
-    if len(node.meta["bad_reasons"]) == 0:
+    if reason in data["bad_reasons"]:
+        data["bad_reasons"].remove(reason)
+    if len(data["bad_reasons"]) == 0:
         node.remove_class(BadTextNodeClass)
 
-def has_bad_reason(node, reason: str)->bool:
-    if "bad_reasons" not in node.meta:
+
+def has_bad_reason(node, reason: str) -> bool:
+    if not node.isinstance(BadTextNodeClass):
         return False
-    return reason in node.meta["bad_reasons"]
+    data = BadTextNodeClass.get_data(node)
+    if "bad_reasons" not in data:
+        return False
+    return reason in data["bad_reasons"]

@@ -1,5 +1,6 @@
 from typing import List
 
+from fibers.data_loader.bad_text_node_class import BadTextNodeClass
 from fibers.helper.cache.cache_service import cached_function
 from fibers.helper.utils import RobustParse, standard_multi_attempts, parallel_map
 from fibers.model.chat import Chat
@@ -35,7 +36,7 @@ def reset_bad_titles(nodes):
     bad_title_nodes = []
     node_contents = []
     for node in nodes:
-        if node.meta.get("bad_title", False):
+        if BadTextNodeClass.has_bad_reason(node, "bad_title"):
             node_contents.append(node.content)
             bad_title_nodes.append(node)
     for i, title in parallel_map(make_title_by_content, node_contents):
@@ -43,7 +44,7 @@ def reset_bad_titles(nodes):
         node.reset_title(title, overlap=True)
 
 
-def add_children_summary(nodes) -> List[Node]:
+def add_children_summary(nodes: List[Node]) -> (List[Node], List[str]):
     non_empty_nodes = []
     node_envs = []
     for node in nodes:
@@ -53,8 +54,9 @@ def add_children_summary(nodes) -> List[Node]:
                                                   "You are trying to summarize the content of a part of a knowledge base. The summary should be a shortened version of the content of the children and the node itself.")
         node_envs.append(node_env_prompt)
         non_empty_nodes.append(node)
-    for i, summary in parallel_map(children_summarize, node_envs):
-        node = non_empty_nodes[i]
-        node.meta["children_summary"] = summary["summary"]
 
-    return non_empty_nodes
+    summary_list = []
+    for i, summary in parallel_map(children_summarize, node_envs):
+        summary_list.append(summary["summary"])
+
+    return non_empty_nodes, summary_list

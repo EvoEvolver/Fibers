@@ -12,12 +12,12 @@ from fibers.tree.node_class import CodeNodeClass, NodeClass
 class CodeSummarizedNodeClass(NodeClass):
     @staticmethod
     def set_summary(node: Node, summary: str):
-        node.meta["code_summary"] = summary
-        node.node_classes.add(CodeSummarizedNodeClass)
+        node.add_class(CodeSummarizedNodeClass)
+        CodeSummarizedNodeClass.set_attr(node, "summary", summary)
 
     @staticmethod
     def get_summary(node: Node):
-        return node.meta.get("code_summary", None)
+        return CodeSummarizedNodeClass.get_attr(node, "summary")
 
     @staticmethod
     def serialize(node: Node):
@@ -183,7 +183,9 @@ if __name__ == "__main__":
 
     from fibers.transform.extract.traverser import beam_search
 
-    nodes_related = beam_search(tree.root, "The child that contain the function to add children to node", content_map)
+    #nodes_related = beam_search(tree.root, "The function that adds children to a node", content_map)
+    nodes_related = beam_search(tree.root, "The function that visualizes a tree",
+                                content_map)
     nodes_related = [node for node in nodes_related if node.isinstance(CodeSummarizedNodeClass) and CodeNodeClass.get_type(node) == "function"]
     print(nodes_related)
 

@@ -16,6 +16,8 @@ h_en = Hyphenator('en_US')
 
 
 def draw_treemap(root: Node, content_map: NodeContentMap = None):
+    if content_map is None:
+        content_map = NodeContentMap()
     ids, labels, parents, texts = prepare_tree_parameters(root, content_map)
 
     fig = go.Figure(go.Treemap(

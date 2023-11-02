@@ -27,15 +27,15 @@ class Node:
         self.content: str = ""
         # The root node helps merge two tree bases
         self.tree: Tree = tree
-        # The resource is the data that is indicated by the node
-        self.resource: NodeResource = NodeResource()
-        # The node class is the class that for processing the node
-        self.node_classes: Set[Type[NodeClass]] = {TextNodeClass}
+        #
+        self.indexing_data = {}
+        #
+        self.class_data = {}
 
     def copy_to(self, tree: Tree):
         new_node = Node(tree)
         new_node.content = copy(self.content)
-        new_node.resource = copy(self.resource)
+        new_node.class_data = copy(self.class_data)
         return new_node
 
     """
@@ -65,16 +65,6 @@ class Node:
     @property
     def is_empty(self):
         return len(self.content) == 0
-
-    @property
-    def meta(self):
-        return self.resource.meta
-
-    def __getitem__(self, item):
-        return self.resource.meta[item]
-
-    def __setitem__(self, key, value):
-        self.resource.meta[key] = value
 
     """
     ## Functions for adding children of node
@@ -223,34 +213,18 @@ class Node:
     It represents the type of the node
     """
     def isinstance(self, node_class: Type[NodeClass]):
-        return node_class in self.node_classes
+        return node_class in self.class_data.keys()
 
     def add_class(self, node_class: Type[NodeClass]):
-        self.node_classes.add(node_class)
+        self.class_data[node_class] = {}
 
+    def remove_class(self, node_class: Type[NodeClass]):
+        if node_class in self.class_data.keys():
+            del self.class_data[node_class]
 
-class NodeResource:
-    def __init__(self):
-        self.resource = {}
-        # Possible types: Tree, Node, Function, Class, Module
-        self.resource_type = {}
-        # Metadata for storing information used by functions that process the node
-        self.meta = {}
-
-    def has_type(self, resource_type):
-        return resource_type in self.resource_type.values()
-
-    """
-    ## Functions for getting resources
-    """
-
-    def get_resource_by_key(self, key):
-        """
-        Return the resource with the given key
-        If the key does not exist, return None
-        """
-        return self.resource.get(key, None)
-
+    @property
+    def node_classes(self):
+        return list(self.class_data.keys())
 
 class NodeContentMap:
     def __init__(self, content_map=None, title_map=None):

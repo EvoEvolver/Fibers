@@ -1,31 +1,35 @@
 from typing import List
 
-from fibers.helper.utils import RobustParse
+from fibers.helper.utils import RobustParse, parallel_map
 from fibers.model.chat import Chat
 from fibers.tree import Node
 from fibers.tree.node import NodeContentMap
 
 
-def beam_search(root: Node, requirement: str, content_map: NodeContentMap = NodeContentMap()) -> List[Node]:
+def beam_search(root: Node, requirement: str, content_map: NodeContentMap = None) -> List[Node]:
     node_queue = [root]
     visited_nodes = set()
     matched_nodes_set = set()
+    def pick_next_wrapped(node: Node):
+        return pick_next(node, requirement, content_map)
     while len(node_queue) > 0:
-        node = node_queue.pop(0)
-        print(node.path())
-        matched_nodes, possible_ancestors = pick_next(node,
-                                                      requirement,
-                                                      content_map)
-        matched_nodes_set.update(matched_nodes)
-        for node in possible_ancestors + matched_nodes:
+        node_touched = []
+        for i, res in parallel_map(pick_next_wrapped, node_queue):
+            matched_nodes, possible_parents = res
+            matched_nodes_set.update(matched_nodes)
+            node_touched.extend(possible_parents)
+            node_touched.extend(matched_nodes)
+        node_queue = []
+        for node in node_touched:
             if node not in visited_nodes:
                 node_queue.append(node)
                 visited_nodes.add(node)
-
     return list(matched_nodes_set)
 
 
-def pick_next(node: Node, requirement: str, content_map: NodeContentMap = NodeContentMap()) -> (List[Node], List[Node]):
+def pick_next(node: Node, requirement: str, content_map: NodeContentMap = None) -> (List[Node], List[Node]):
+    if content_map is None:
+        content_map = NodeContentMap()
     children_in_prompt = []
     children = node.children()
     children_list = list(children.values())
@@ -52,19 +56,17 @@ Requirement:
 {requirement}
 
 Format:
-Output a JSON dict with key "matched_indices" for a list of indices of the children that satisfies the requirement, and key "ancestor_indices" for a list of indices that might be the ancestor of the required node.
-Your output must contain these two keys.
-You should order the indices by their relevance to the requirement.
+Output a JSON dict with key "matched_indices" for a list of indices of the children that satisfies the requirement, and key "parent_indices" for a list of indices that might be the ancestor of the required node.
 """
     chat = Chat(user_message=prompt,
                 system_message="You are a helpful assistant for arranging knowledge. You should output merely JSON.")
     res = chat.complete_chat_expensive()
     res = RobustParse.dict(res)
-    matched_indices = res["matched_indices"]
-    ancestor_indices = res["ancestor_indices"]
+    matched_indices = res["matched_indices"] if "matched_indices" in res else []
+    parent_indices = res["parent_indices"] if "parent_indices" in res else []
     matched_children = [children_list[i - 1] for i in matched_indices]
-    ancestor_children = [children_list[i - 1] for i in ancestor_indices]
-    return matched_children, ancestor_children
+    parent_indices = [children_list[i - 1] for i in parent_indices]
+    return matched_children, parent_indices
 
 
 if __name__ == "__main__":

@@ -10,17 +10,17 @@ class CodeNodeClass(NodeClass):
     @staticmethod
     def set_type_obj(node: Node, type_name: str, obj: Any):
         assert type_name in ["function", "class", "module", "document", "section", "todo", "example"]
-        node.meta["module_tree_type"] = type_name
-        node.meta["module_tree_obj"] = obj
-        node.node_classes.add(CodeNodeClass)
+        node.add_class(CodeNodeClass)
+        CodeNodeClass.set_attr(node, "module_tree_type", type_name)
+        CodeNodeClass.set_attr(node, "module_tree_obj", obj)
 
     @staticmethod
     def get_type(node: Node):
-        return node.meta["module_tree_type"]
+        return CodeNodeClass.get_attr(node, "module_tree_type")
 
     @staticmethod
     def get_obj(node: Node):
-        return node.meta["module_tree_obj"]
+        return CodeNodeClass.get_attr(node, "module_tree_obj")
 
     @staticmethod
     def serialize(node: Node):
