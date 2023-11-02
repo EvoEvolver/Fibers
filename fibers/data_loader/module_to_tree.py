@@ -69,7 +69,7 @@ def build_tree_for_struct(curr_struct: Struct, root_note: Node,
             case "document":
                 markdown_src = child_struct.obj
                 readme_tree = markdown_to_tree(markdown_src, title="README")
-                curr_node.put_tree(readme_tree)
+                curr_node.attach_tree(readme_tree)
                 new_node = curr_node.s("README")
             case _:
                 raise ValueError("Unknown struct type: " + child_struct.struct_type)

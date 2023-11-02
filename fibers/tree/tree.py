@@ -61,6 +61,9 @@ class Tree:
     def has_node(self, node: Node) -> bool:
         return node in self.node_path
 
+    def all_nodes(self):
+        return list(self.node_path.keys())
+
     @property
     def root(self) -> Node:
         root = self.get_node_by_path(tuple())
@@ -110,9 +113,6 @@ class Tree:
         new_node = Node(self)
         self.add_node_by_path(path, new_node)
         return new_node
-
-    def all_nodes(self):
-        return list(self.node_path.keys())
 
     def add_child(self, key: str, parent: Node, child: Node):
         if child.tree is not self:

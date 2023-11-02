@@ -2,6 +2,7 @@ import ast
 import concurrent.futures
 import os
 import sys
+from typing import List
 
 from tenacity import retry, stop_after_attempt, wait_fixed, \
     retry_if_exception, stop_after_delay
@@ -47,12 +48,64 @@ def parallel_map(func, *args, n_workers=8):
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
         results = []
-        for result in tqdm(executor.map(func, *arg_lists), total=len(arg_lists[0]), desc=func.__name__):
+        for result in tqdm(executor.map(func, *arg_lists), total=len(arg_lists[0]),
+                           desc=func.__name__):
             results.append(result)
             if len(results) % 5 == 4:
                 cache_service.save_cache()
     cache_service.save_cache()
     return enumerate(results)
+
+
+"""
+# Nested map
+"""
+
+
+def nested_map(func, nested_list: List[List | any]):
+    """
+    Apply func to each element in nested_list and return a nested list with the same structure
+    Precondition: list nested can only contain either list or non-list
+    :param func:
+    :param nested_list:
+    :return:
+    """
+    flatten_list = []
+    add_to_flatten_list(flatten_list, nested_list)
+    flattened_res = func(flatten_list)
+    nested_res = make_nested_list(flattened_res, nested_list)
+    return nested_res
+
+
+def add_to_flatten_list(flatten_list, nested_list):
+    if isinstance(nested_list[0], list):
+        for nested_list_ in nested_list:
+            add_to_flatten_list(flatten_list, nested_list_)
+    else:
+        flatten_list.extend(nested_list)
+
+
+def make_nested_list(flattened_res, nested_list):
+    if not isinstance(nested_list[0], list):
+        return flattened_res
+    nested_res = []
+    i = 0
+    for nested_list_ in nested_list:
+        nested_res.append(
+            make_nested_list(flattened_res[i: i + len(nested_list_)], nested_list_))
+        i += len(nested_list_)
+    return nested_res
+
+
+def test_nested_map():
+    before_map = [[[1], [2]], [3, 4, 5]]
+    after_map = nested_map(lambda arr: list(map(lambda x: x + 1, arr)), before_map)
+    assert after_map == [[[2], [3]], [4, 5, 6]]
+
+
+"""
+# Debug and retry decorator
+"""
 
 
 def debugger_is_active() -> bool:
@@ -71,11 +124,11 @@ standard_multi_attempts = retry(
     reraise=False,
 )
 
-if __name__ == "__main__":
+
+def test_standard_multi_attempts():
     @standard_multi_attempts
     def a():
         print("a")
         raise ValueError("a")
-
 
     a()

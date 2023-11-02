@@ -14,8 +14,6 @@ from fibers.tree import Node
 class KeyPhraseIndexing(VectorIndexing):
     def get_vectors(self, nodes: List[Node]) -> [List[np.ndarray], List[Node]]:
         src_list, weights, nodes = self.prepare_src_weight_list(nodes)
-        for i in range(len(src_list)):
-            nodes[i].indexing_data["__indexing_key_phrase"] = src_list[i]
         flattened_src_list = []
         flattened_weights = []
         flattened_nodes = []
@@ -110,7 +108,7 @@ prompt_for_splitting = "Split the following sentence into smaller fragments (no 
 prompt_for_extracting = "Give some phrases that summarize the following sentence. The phrases should be no more than 8 words and represents what the sentence is describing. Put each phrase in a new line."
 
 
-@cached_function("key_phrases")
+@cached_function
 def break_into_key_phrases(sent: str,
                            prompt=prompt_for_extracting):
     system_message = ("You are a helpful processor for NLP problems. Answer anything "

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import TYPE_CHECKING, Dict, List, Type, Set, Callable
+from typing import TYPE_CHECKING, Dict, List, Type, Callable
 
-from fibers.tree.node_class import TextNodeClass, NodeClass
+from fibers.tree.node_class import NodeClass
 
 if TYPE_CHECKING:
     from fibers.tree import Tree
@@ -27,8 +27,6 @@ class Node:
         self.content: str = ""
         # The root node helps merge two tree bases
         self.tree: Tree = tree
-        #
-        self.indexing_data = {}
         #
         self.class_data = {}
 
@@ -79,10 +77,6 @@ class Node:
         self.tree.add_child(key, self, node)
         return node
 
-    """
-    ## Functions for setting content of node
-    """
-
     def s(self, key) -> Node:
         """
         Creating a new child node or addressing an existing child node
@@ -100,6 +94,10 @@ class Node:
         else:
             raise NotImplementedError()
 
+    """
+    ## Functions for setting content of node
+    """
+
     def set_content(self, content: str) -> Node:
         """
         :return: The node itself
@@ -114,8 +112,9 @@ class Node:
         self.content = content
         return self
 
-    def remove_self(self):
-        self.tree.remove_node(self)
+    """
+    ## Function for change node's environment on its tree
+    """
 
     def reset_title(self, title: str, overlap=False):
         new_path = list(self.path())
@@ -135,7 +134,10 @@ class Node:
         del self.tree.node_path[self]
         self.tree.node_path[self] = tuple(new_path)
         for node in self.iter_subtree_with_bfs():
-            node._reset_path(len(new_path)-1, title)
+            node._reset_path(len(new_path) - 1, title)
+
+    def remove_self(self):
+        self.tree.remove_node(self)
 
     def _reset_path(self, index, new_name):
         new_path = list(self.path())
@@ -143,7 +145,7 @@ class Node:
         del self.tree.node_path[self]
         self.tree.node_path[self] = tuple(new_path)
 
-    def put_tree(self, tree: Tree):
+    def attach_tree(self, tree: Tree):
         """
         Put the tree into the node
         :param tree:
@@ -212,6 +214,7 @@ class Node:
     Node class is the class that process the node
     It represents the type of the node
     """
+
     def isinstance(self, node_class: Type[NodeClass]):
         return node_class in self.class_data.keys()
 
@@ -226,9 +229,13 @@ class Node:
     def node_classes(self):
         return list(self.class_data.keys())
 
+
 class NodeContentMap:
     def __init__(self, content_map=None, title_map=None):
-        self._content_map: Callable[[Node], str] = content_map if content_map is not None else lambda x: x.content
-        self._title_map: Callable[[Node], str] = title_map if title_map is not None else lambda x: x.title()
+        self._content_map: Callable[
+            [Node], str] = content_map if content_map is not None else lambda x: x.content
+        self._title_map: Callable[
+            [Node], str] = title_map if title_map is not None else lambda x: x.title()
+
     def get_title_and_content(self, node: Node):
         return self._title_map(node), self._content_map(node)

@@ -14,8 +14,6 @@ model_to_embedding_dim = {
 }
 
 
-embedding_cache = None
-
 def flatten_nested_list(texts: list[list[str]]) -> (List[float], List[int]):
     flattened_texts = []
     index_start = []
