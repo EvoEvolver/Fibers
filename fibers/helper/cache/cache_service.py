@@ -81,7 +81,7 @@ def cached_function(cache_type_or_function: str | Callable, multi_attempts=True)
 
     def cached_function_wrapper(func):
         @wraps(func)
-        def func_wrapper(*args, **kwargs):
+        def cache_wrapper(*args, **kwargs):
             cache = cache_service.cache_kv.read_cache((args, kwargs), cache_type)
             if cache.is_valid():
                 return cache.value
@@ -89,11 +89,33 @@ def cached_function(cache_type_or_function: str | Callable, multi_attempts=True)
             cache.set_cache(res)
             return res
         if multi_attempts:
-            return standard_multi_attempts(func_wrapper)
+            return standard_multi_attempts(cache_wrapper)
         else:
-            return func_wrapper
+            return cache_wrapper
 
     if isinstance(cache_type_or_function, str):
         return cached_function_wrapper
     else:
         return cached_function_wrapper(cache_type_or_function)
+
+
+def auto_cache(func: Callable):
+    @wraps(func)
+    def auto_cache_wrapper(*args, **kwargs):
+        module = inspect.getmodule(func)
+        cache_type = module.__name__ + "." + func.__name__
+        res = func(*args, **kwargs)
+        return res
+
+    return standard_multi_attempts(auto_cache_wrapper)
+
+
+def enable_auto_cache(input, cache_type: str):
+    parent_stack = inspect.stack()[3]
+    cache = None
+    if parent_stack.function == "auto_cache_wrapper":
+        frame = parent_stack.frame.f_locals
+        cache_type = frame["cache_type"] + "." + cache_type
+        cache = cache_service.cache_kv.read_cache(input, cache_type)
+        return cache
+    return cache

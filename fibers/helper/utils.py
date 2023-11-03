@@ -51,8 +51,6 @@ def parallel_map(func, *args, n_workers=8):
         for result in tqdm(executor.map(func, *arg_lists), total=len(arg_lists[0]),
                            desc=func.__name__):
             results.append(result)
-            if len(results) % 5 == 4:
-                cache_service.save_cache()
     cache_service.save_cache()
     return enumerate(results)
 
@@ -70,19 +68,19 @@ def nested_map(func, nested_list: List[List | any]):
     :param nested_list:
     :return:
     """
-    flatten_list = []
-    add_to_flatten_list(flatten_list, nested_list)
-    flattened_res = func(flatten_list)
-    nested_res = make_nested_list(flattened_res, nested_list)
+    flat_list = []
+    add_to_flat_list(flat_list, nested_list)
+    flat_res = func(flat_list)
+    nested_res = make_nested_list(flat_res, nested_list)
     return nested_res
 
 
-def add_to_flatten_list(flatten_list, nested_list):
+def add_to_flat_list(flat_list, nested_list):
     if isinstance(nested_list[0], list):
         for nested_list_ in nested_list:
-            add_to_flatten_list(flatten_list, nested_list_)
+            add_to_flat_list(flat_list, nested_list_)
     else:
-        flatten_list.extend(nested_list)
+        flat_list.extend(nested_list)
 
 
 def make_nested_list(flattened_res, nested_list):

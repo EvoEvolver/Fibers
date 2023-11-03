@@ -23,7 +23,7 @@ def flatten_nested_list(texts: list[list[str]]) -> (List[float], List[int]):
     return flattened_texts, index_start
 
 
-def get_embeddings(texts: list[str], make_cache=True) -> list[list[float]]:
+def get_embeddings(texts: list[str]) -> list[list[float]]:
     embedding_dim_using = model_to_embedding_dim[model_for_embedding]
 
     cache_table = cache_service.cache_embed.load_cache_table(model_for_embedding)

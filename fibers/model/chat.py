@@ -4,6 +4,7 @@ import copy
 
 from fibers.debug.logger import Logger
 from fibers.gui.dictionary_viewer import show_document_with_key_gui
+from fibers.helper.cache.cache_service import enable_auto_cache
 from fibers.model.openai import (_complete_chat as openai_complete_chat,
                                  _complete_chat_expensive as openai_complete_chat_expensive,
                                  model_list as openai_model_list)
@@ -70,6 +71,10 @@ class Chat:
     """
 
     def complete_chat(self, options=None):
+        cache = enable_auto_cache(self.get_log_list(), "chat")
+        if cache.is_valid():
+            return cache.value
+
         options = options or {}
         if use_openai_model(options):
             res = openai_complete_chat(self, options=options)
@@ -79,9 +84,17 @@ class Chat:
         if len(ChatLogger.active_loggers) > 0:
             for chat_logger in ChatLogger.active_loggers:
                 chat_logger.add_log(self)
+
+        if cache is not None:
+            cache.set_cache(res)
+
         return res
 
     def complete_chat_expensive(self, options=None):
+        cache = enable_auto_cache(self.get_log_list(), "chat")
+        if cache.is_valid():
+            return cache.value
+
         options = options or {}
         if use_openai_model(options):
             res = openai_complete_chat_expensive(self, options=options)
@@ -91,6 +104,9 @@ class Chat:
         if len(ChatLogger.active_loggers) > 0:
             for chat_logger in ChatLogger.active_loggers:
                 chat_logger.add_log(self)
+
+        if cache is not None:
+            cache.set_cache(res)
         return res
 
     """

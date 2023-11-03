@@ -1,39 +1,43 @@
 import inspect
 
 from fibers.data_loader.module_to_tree import get_tree_for_module
-from fibers.helper.cache.cache_service import cached_function, cache_service
-from fibers.helper.utils import parallel_map
+from fibers.helper.cache.cache_service import cached_function, auto_cache
 from fibers.model.chat import Chat
-from fibers.tree import Tree, Node
+from fibers.transform.decorate.tree_map import node_map_with_dependency
+from fibers.transform.utils_code.code_env import get_function_module_env
+from fibers.tree import Node
 from fibers.tree.node import NodeContentMap
 from fibers.tree.node_class import CodeNodeClass, NodeClass
+from fibers.tree.prompt_utils import get_node_list_prompt
 
 
 class CodeSummarizedNodeClass(NodeClass):
     @staticmethod
-    def set_summary(node: Node, summary: str):
+    def set_summary(node: Node, summary: str, prefix="main"):
         node.add_class(CodeSummarizedNodeClass)
-        CodeSummarizedNodeClass.set_attr(node, "summary", summary)
+        CodeSummarizedNodeClass.set_attr(node, prefix + "_summary", summary)
 
     @staticmethod
-    def get_summary(node: Node):
-        return CodeSummarizedNodeClass.get_attr(node, "summary")
+    def get_summary(node: Node, prefix="main"):
+        return CodeSummarizedNodeClass.get_attr(node, prefix + "_summary")
 
     @staticmethod
     def serialize(node: Node):
         return CodeSummarizedNodeClass.get_summary(node)
 
 
-@cached_function
-def summarize_function(function_src: str, function_env: str):
+@auto_cache
+def summarize_function(node: Node):
     """
     This function is to summarize code content.
     """
+    function = CodeNodeClass.get_obj(node)
+    function_src = inspect.getsource(function)
+    function_env = get_function_module_env(node)
     prompt = f"""
 You are required to summarize what the following function is doing into 30 words.
 You are provided with the environment of the function for a better understanding, but you should not mention it in your summary. 
-"""
-    prompt += f"""
+
 Function environment:
 {function_env}
 
@@ -48,48 +52,11 @@ Start your answer with "Summary: The function"
     return res
 
 
-def get_function_env(function_node: Node):
-    parent_nodes = [function_node.parent()]
-    while True:
-        last_parent = parent_nodes[-1]
-        parent_nodes.append(last_parent.parent())
-        if CodeNodeClass.get_type(last_parent) == "module":
-            break
-    parent_nodes = parent_nodes[::-1]
-    res = []
-    for i, node in enumerate(parent_nodes):
-        res.append(">" * i + CodeNodeClass.get_type(node) + ":" + node.title())
-    return "\n".join(res)
-
-
-def summarize_functions_on_tree(tree: Tree):
-    function_nodes = []
-    function_srcs = []
-    function_envs = []
-    for node in tree.all_nodes():
-        if node.isinstance(CodeNodeClass) and CodeNodeClass.get_type(node) == "function":
-            function = CodeNodeClass.get_obj(node)
-            function_nodes.append(node)
-            function_srcs.append(inspect.getsource(function))
-            function_envs.append(get_function_env(node))
-
-    for i, summary in parallel_map(summarize_function, function_srcs, function_envs):
-        node = function_nodes[i]
-        CodeSummarizedNodeClass.set_summary(node, summary)
-
-@cached_function
+@auto_cache
 def summary_children(node: Node):
-    children = []
-    children_title = []
+    children = list(node.children().values())
     node_name = node.title()
     node_content = node.content
-    if len(node.children()) == 0:
-        return "This node has no children"
-    else:
-        for key, item in node.children().items():
-            children.append(item)
-            children_title.append(key)
-
 
     node_type = CodeNodeClass.get_type(node)
     prompt = f"""
@@ -109,13 +76,16 @@ A section is a collection of modules, classes and functions with a common theme.
         prompt += f"""
 docstring:
 {node_content}"""
-    if len(children) > 0:
-        prompt += f"""
-children:"""
-        for child, title in zip(children, children_title):
-            prompt += f"""
-{CodeNodeClass.get_type(child)} {title}: {CodeSummarizedNodeClass.get_summary(child)}"""
 
+    if len(children) > 0:
+        children_list = get_node_list_prompt(children, NodeContentMap(
+            title_map=lambda n: CodeNodeClass.get_type(n) + " " + n.title(),
+            content_map=lambda n: CodeSummarizedNodeClass.get_summary(n)
+        )
+                                             )
+        prompt += f"""
+children:
+{children_list}"""
     prompt += f"""
 
 Start you summary with "Summary: The {node_type}" """
@@ -125,51 +95,66 @@ Start you summary with "Summary: The {node_type}" """
     return res
 
 
-def summarize_containers_on_tree_one_round(tree: Tree) -> bool:
-    """
-    Summarize module, class, and section on the tree
-    """
-    node_to_summarize = []
-    has_node_to_summarize = False
-    all_nodes = list(tree.iter_with_dfs())[:-1]
-    for node in all_nodes:
+def summarize_code_tree(node: Node) -> bool:
+    # If the node is already summarized, return True
+    if node.isinstance(CodeSummarizedNodeClass):
+        return True
+    module_tree_type = CodeNodeClass.get_type(node)
+    if module_tree_type in ["module", "class", "section"]:
+        # Check if all children are summarized
+        children_all_summarized = True
+        for key, item in node.children().items():
+            if not item.isinstance(CodeSummarizedNodeClass):
+                children_all_summarized = False
+                break
+        # If not all children are summarized, this round failed, need to return False
+        if not children_all_summarized:
+            return False
+        # If all children are summarized, summarize the node
+        else:
+            summary = summary_children(node)
+            CodeSummarizedNodeClass.set_summary(node, summary)
+    # If the node is a function, ensure it is summarized
+    elif module_tree_type == "function":
         if not node.isinstance(CodeSummarizedNodeClass):
-            has_node_to_summarize = True
-        else:
-            continue
-        module_tree_type = CodeNodeClass.get_type(node)
-        if module_tree_type in ["module", "class", "section"]:
-            children_all_summarized = True
-            for key, item in node.children().items():
-                if not item.isinstance(CodeSummarizedNodeClass):
-                    children_all_summarized = False
-                    break
-            if not children_all_summarized:
-                continue
-            node_to_summarize.append(node)
-        elif module_tree_type == "function":
-            if not node.isinstance(CodeSummarizedNodeClass):
-                raise ValueError(f"Code summary not found for {node.title()}")
-        else:
-            continue
+            summary = summarize_function(node)
+            CodeSummarizedNodeClass.set_summary(node, summary)
+    # If the node is neither a function nor a container, skip it
+    else:
+        return True
 
-    if len(node_to_summarize) > 0:
-        for i, summary in parallel_map(summary_children, node_to_summarize):
-            CodeSummarizedNodeClass.set_summary(node_to_summarize[i], summary)
 
-    return has_node_to_summarize
+@cached_function
+def summary_needing_situation(node: Node):
+    function = CodeNodeClass.get_obj(node)
+    function_src = inspect.getsource(function)
+    function_env = get_function_module_env(node)
+    prompt = f"""
+    You are required to summarize when the following function is needed in 15 words.
+    You are provided with the environment of the function for a better understanding, but you should not mention it in your summary. 
+    """
+    prompt += f"""
+    Function environment:
+    {function_env}
 
-def summarize_containers_on_tree(tree: Tree):
-    while summarize_containers_on_tree_one_round(tree):
-        pass
+    Function:
+    {function_src}
+
+    Start your answer with "Summary: The function"
+    """
+    chat = Chat(prompt, "You are a helpful assistant who help Python programmers")
+    res = chat.complete_chat()
+    res = res.replace("Summary: ", "")
+    return res
+
 
 if __name__ == "__main__":
     from fibers import tree as tree_module
+    from fibers.indexing.parent_mixed import ParentMixedIndexing
 
     tree = get_tree_for_module(tree_module)
-    summarize_functions_on_tree(tree)
+    node_map_with_dependency(list(tree.iter_with_dfs())[:-1], summarize_code_tree)
 
-    summarize_containers_on_tree(tree)
 
     def get_summary(node: Node):
         if node.isinstance(CodeSummarizedNodeClass):
