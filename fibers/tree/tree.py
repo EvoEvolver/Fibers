@@ -12,9 +12,6 @@ class Tree:
     """
     Store the information of nodes contained
     The information is mainly the path of each node
-
-    :cvar children: The children of each node
-    :cvar node_path: The path of each node
     """
 
     def __init__(self, root_content="", rule_of_path: str = None):

@@ -1,4 +1,4 @@
-from fibers.helper.cache.cache_service import cache_service
+from fibers.helper.cache.cache_service import caching
 from fibers.helper.utils import debugger_is_active
 
 is_debug = debugger_is_active()
@@ -13,4 +13,4 @@ def display_embedding_search():
     raise NotImplementedError()
 
 def refresh_cache(cache_type=""):
-    return cache_service.cache_kv.refresh_cache(cache_type)
+    return caching.cache_kv.refresh_cache(cache_type)

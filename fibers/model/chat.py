@@ -72,7 +72,7 @@ class Chat:
 
     def complete_chat(self, options=None):
         cache = enable_auto_cache(self.get_log_list(), "chat")
-        if cache.is_valid():
+        if cache is not None and cache.is_valid():
             return cache.value
 
         options = options or {}
@@ -92,7 +92,7 @@ class Chat:
 
     def complete_chat_expensive(self, options=None):
         cache = enable_auto_cache(self.get_log_list(), "chat")
-        if cache.is_valid():
+        if cache is not None and cache.is_valid():
             return cache.value
 
         options = options or {}

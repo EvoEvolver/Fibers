@@ -42,7 +42,7 @@ class RobustParse:
 def parallel_map(func, *args, n_workers=8):
     # Use concurrent.futures.ThreadPoolExecutor to parallelize
     # Use tqdm to show progress bar
-    from fibers.helper.cache.cache_service import cache_service
+    from fibers.helper.cache.cache_service import caching
 
     arg_lists = [list(arg) for arg in args]
 
@@ -51,7 +51,7 @@ def parallel_map(func, *args, n_workers=8):
         for result in tqdm(executor.map(func, *arg_lists), total=len(arg_lists[0]),
                            desc=func.__name__):
             results.append(result)
-    cache_service.save_cache()
+    caching.save()
     return enumerate(results)
 
 

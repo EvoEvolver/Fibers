@@ -25,11 +25,11 @@ class CacheService:
         self.cache_kv_other = {self.cache_kv.cache_path: self.cache_kv}
         self.cache_embed_other = {self.cache_kv.cache_path: self.cache_embed}
 
-    def save_cache(self):
+    def save(self):
         self.cache_kv.save_all_cache_to_file()
         self.cache_embed.save_cache_table()
 
-    def save_used_cache(self):
+    def save_used(self):
         n_remove = self.cache_kv.filter_unused_cache()
         if n_remove > 0:
             print(f"Removed {n_remove} unused cache")
@@ -61,7 +61,7 @@ class CacheService:
             self.cache_embed_other[cache_dir] = self.cache_embed
 
 
-cache_service = CacheService()
+caching = CacheService()
 
 
 def cached_function(cache_type_or_function: str | Callable, multi_attempts=True):
@@ -82,7 +82,7 @@ def cached_function(cache_type_or_function: str | Callable, multi_attempts=True)
     def cached_function_wrapper(func):
         @wraps(func)
         def cache_wrapper(*args, **kwargs):
-            cache = cache_service.cache_kv.read_cache((args, kwargs), cache_type)
+            cache = caching.cache_kv.read_cache((args, kwargs), cache_type)
             if cache.is_valid():
                 return cache.value
             res = func(*args, **kwargs)
@@ -103,6 +103,7 @@ def auto_cache(func: Callable):
     @wraps(func)
     def auto_cache_wrapper(*args, **kwargs):
         module = inspect.getmodule(func)
+        # cache_type will be accessed by the caller
         cache_type = module.__name__ + "." + func.__name__
         res = func(*args, **kwargs)
         return res
@@ -116,6 +117,6 @@ def enable_auto_cache(input, cache_type: str):
     if parent_stack.function == "auto_cache_wrapper":
         frame = parent_stack.frame.f_locals
         cache_type = frame["cache_type"] + "." + cache_type
-        cache = cache_service.cache_kv.read_cache(input, cache_type)
+        cache = caching.cache_kv.read_cache(input, cache_type)
         return cache
     return cache

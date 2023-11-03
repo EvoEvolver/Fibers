@@ -38,7 +38,7 @@ class ParentMixedIndexing(VectorIndexing):
 
     def get_query_vector(self, query) -> np.ndarray:
         function_name, function_summary = query
-        text_embedding = get_embeddings([function_name+":"+function_summary])
+        text_embedding = get_embeddings([function_name+": "+function_summary])
         return np.array(text_embedding[0])
 
     @staticmethod
@@ -53,7 +53,7 @@ class ParentMixedIndexing(VectorIndexing):
         source_contents = []
         for node in source_nodes:
             title, content = content_map.get_title_and_content(node)
-            source_contents.append(title+":"+content)
+            source_contents.append(title+": "+content)
         source_weight = [1.0, 0.2, 0.1][:len(source_contents)]
         weight_sum = sum(source_weight)
         source_weight = [w / weight_sum for w in source_weight]

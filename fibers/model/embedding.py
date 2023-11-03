@@ -5,7 +5,7 @@ from typing import List
 
 import numpy as np
 
-from fibers.helper.cache.cache_service import cache_service
+from fibers.helper.cache.cache_service import caching
 from fibers.model.openai import _get_embeddings
 
 model_for_embedding = "text-embedding-ada-002"
@@ -26,7 +26,7 @@ def flatten_nested_list(texts: list[list[str]]) -> (List[float], List[int]):
 def get_embeddings(texts: list[str]) -> list[list[float]]:
     embedding_dim_using = model_to_embedding_dim[model_for_embedding]
 
-    cache_table = cache_service.cache_embed.load_cache_table(model_for_embedding)
+    cache_table = caching.cache_embed.load_cache_table(model_for_embedding)
     hash_keys = [hashlib.md5(text.encode()).hexdigest() for text in texts]
 
     embeddings = []

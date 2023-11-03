@@ -4,7 +4,7 @@ from typing import List
 
 import numpy as np
 
-from fibers.helper.cache.cache_service import cache_service, cached_function
+from fibers.helper.cache.cache_service import caching, cached_function
 from fibers.indexing.indexing import VectorIndexing
 from fibers.model.chat import Chat
 from fibers.model.embedding import get_embeddings
@@ -53,9 +53,9 @@ class KeyPhraseIndexing(VectorIndexing):
 
                 n_finished += 1
                 if n_finished % 20 == 19:
-                    cache_service.save_cache()
+                    caching.save()
 
-        cache_service.save_cache()
+        caching.save()
         return new_src_list, new_weights
 
     @staticmethod

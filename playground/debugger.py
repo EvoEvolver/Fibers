@@ -1,5 +1,5 @@
 from fibers import debug
-from fibers.helper.cache.cache_service import cached_function, cache_service
+from fibers.helper.cache.cache_service import cached_function, caching
 from fibers.model.chat import Chat
 
 
@@ -14,7 +14,7 @@ def some_function():
 if __name__ == "__main__":
     with debug.display_chats():
         print(some_function())
-    cache_service.save_cache()
+    caching.save()
     # Because the function is cached, the answer will be the same
     print(some_function())
     print(some_function())

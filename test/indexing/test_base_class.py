@@ -1,8 +1,8 @@
 from fibers.data_loader.document import Document
-from fibers.helper.cache.cache_service import cache_service
+from fibers.helper.cache.cache_service import caching
 from fibers.indexing.indexing import VectorIndexing
 
-cache_service.set_main_here()
+caching.set_main_here()
 
 tree_dict = {
     "title": "root",

@@ -1,11 +1,11 @@
 import inspect
 
 from fibers.data_loader.module_to_tree import get_tree_for_module
-from fibers.helper.cache.cache_service import cached_function, auto_cache
+from fibers.helper.cache.cache_service import cached_function, auto_cache, caching
 from fibers.model.chat import Chat
 from fibers.transform.decorate.tree_map import node_map_with_dependency
 from fibers.transform.utils_code.code_env import get_function_module_env
-from fibers.tree import Node
+from fibers.tree import Node, Tree
 from fibers.tree.node import NodeContentMap
 from fibers.tree.node_class import CodeNodeClass, NodeClass
 from fibers.tree.prompt_utils import get_node_list_prompt
@@ -19,6 +19,8 @@ class CodeSummarizedNodeClass(NodeClass):
 
     @staticmethod
     def get_summary(node: Node, prefix="main"):
+        if not node.isinstance(CodeSummarizedNodeClass):
+            return None
         return CodeSummarizedNodeClass.get_attr(node, prefix + "_summary")
 
     @staticmethod
@@ -44,7 +46,7 @@ Function environment:
 Function:
 {function_src}
 
-Start your answer with "Summary: The function"
+Without mentioning the function name, start your answer with "Summary: The function" 
 """
     chat = Chat(prompt, "You are a helpful assistant who help Python programmers")
     res = chat.complete_chat()
@@ -88,22 +90,28 @@ children:
 {children_list}"""
     prompt += f"""
 
-Start you summary with "Summary: The {node_type}" """
+Without mentioning the {node_type} name, start you summary with "Summary: The {node_type}" """
     chat = Chat(prompt, "You are a helpful assistant who help Python programmers")
     res = chat.complete_chat()
     res = res.replace("Summary: ", "")
     return res
 
 
-def summarize_code_tree(node: Node) -> bool:
+def summarize_code_node(node: Node) -> bool:
     # If the node is already summarized, return True
     if node.isinstance(CodeSummarizedNodeClass):
+        return True
+    if not node.isinstance(CodeNodeClass):
         return True
     module_tree_type = CodeNodeClass.get_type(node)
     if module_tree_type in ["module", "class", "section"]:
         # Check if all children are summarized
         children_all_summarized = True
         for key, item in node.children().items():
+            # ignore the non-code node
+            # TODO: consider the README node too
+            if CodeNodeClass.get_type(item) == "document":
+                continue
             if not item.isinstance(CodeSummarizedNodeClass):
                 children_all_summarized = False
                 break
@@ -114,11 +122,13 @@ def summarize_code_tree(node: Node) -> bool:
         else:
             summary = summary_children(node)
             CodeSummarizedNodeClass.set_summary(node, summary)
+            return True
     # If the node is a function, ensure it is summarized
     elif module_tree_type == "function":
         if not node.isinstance(CodeSummarizedNodeClass):
             summary = summarize_function(node)
             CodeSummarizedNodeClass.set_summary(node, summary)
+            return True
     # If the node is neither a function nor a container, skip it
     else:
         return True
@@ -147,31 +157,16 @@ def summary_needing_situation(node: Node):
     res = res.replace("Summary: ", "")
     return res
 
+def summarize_code_tree(tree: Tree):
+    node_map_with_dependency(list(tree.iter_with_dfs())[:-1], summarize_code_node)
+
 
 if __name__ == "__main__":
     from fibers import tree as tree_module
-    from fibers.indexing.parent_mixed import ParentMixedIndexing
 
     tree = get_tree_for_module(tree_module)
-    node_map_with_dependency(list(tree.iter_with_dfs())[:-1], summarize_code_tree)
-
-
-    def get_summary(node: Node):
-        if node.isinstance(CodeSummarizedNodeClass):
-            return CodeSummarizedNodeClass.get_summary(node)
-        else:
-            return node.content
-
-    content_map = NodeContentMap(get_summary)
-
+    summarize_code_tree(tree)
+    content_map = NodeContentMap(lambda n: CodeSummarizedNodeClass.get_summary(n) or n.content)
     tree.show_tree_gui(content_map)
+    caching.save_used()
 
-    from fibers.transform.extract.traverser import beam_search
-
-    #nodes_related = beam_search(tree.root, "The function that adds children to a node", content_map)
-    nodes_related = beam_search(tree.root, "The function that visualizes a tree",
-                                content_map)
-    nodes_related = [node for node in nodes_related if node.isinstance(CodeSummarizedNodeClass) and CodeNodeClass.get_type(node) == "function"]
-    print(nodes_related)
-
-    cache_service.save_used_cache()

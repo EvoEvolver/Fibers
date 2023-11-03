@@ -1,6 +1,6 @@
 from fibers.transform.pipeline_text.tree_preprocess import preprocess_text_tree
 
-from fibers.helper.cache.cache_service import cache_service
+from fibers.helper.cache.cache_service import caching
 
 from fibers.testing.testing_trees import loader
 
@@ -12,4 +12,4 @@ preprocess_text_tree(tree)
 
 tree.show_tree_gui()
 
-cache_service.save_cache()
+caching.save()

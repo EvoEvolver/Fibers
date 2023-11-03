@@ -2,7 +2,7 @@ from tqdm import tqdm
 
 from fibers.data_loader.bad_text_node_class import has_bad_reason, remove_bad_reason, \
     BadTextNodeClass
-from fibers.helper.cache.cache_service import cached_function, cache_service
+from fibers.helper.cache.cache_service import cached_function, caching
 from fibers.helper.utils import RobustParse, parallel_map
 from fibers.model.chat import Chat
 from fibers.tree import Tree, Node
@@ -195,5 +195,5 @@ if __name__ == "__main__":
     tree = load_sample_tree("Feyerabend.md")
     break_and_merge_siblings(tree)
     weight_reduce_brutal(tree, 50)
-    cache_service.save_cache()
+    caching.save()
     tree.show_tree_gui()
