@@ -11,13 +11,8 @@ if TYPE_CHECKING:
 
 class Node:
     """
-    A tree-like data structure that stores tree
-    usually for the direct summary of paragraphs
-
-    The relation of the items are mainly represented by the tree structure
-    It is like a book that AI can read
-
-    Notice that Node object can be indexed by embedding vectors because its
+    The class for node on the Tree class. It only stores the content of the node.
+    The relation between nodes are stored in the Tree class instance (self.tree).
     """
 
     def __init__(self, tree: Tree):
@@ -27,7 +22,7 @@ class Node:
         self.content: str = ""
         # The root node helps merge two tree bases
         self.tree: Tree = tree
-        #
+        # The class data is used to store the data of the node class
         self.class_data = {}
 
     def copy_to(self, tree: Tree):
@@ -211,6 +206,7 @@ class Node:
 
     """
     # Node class related functions
+    
     Node class is the class that process the node
     It represents the type of the node
     """
@@ -230,7 +226,7 @@ class Node:
         return list(self.class_data.keys())
 
 
-class NodeContentMap:
+class ContentMap:
     def __init__(self, content_map=None, title_map=None):
         self._content_map: Callable[
             [Node], str] = content_map if content_map is not None else lambda x: x.content
@@ -239,3 +235,6 @@ class NodeContentMap:
 
     def get_title_and_content(self, node: Node):
         return self._title_map(node), self._content_map(node)
+
+
+default_map = ContentMap()

@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from hyphen import Hyphenator
 
 from fibers.gui.utlis import hypenate_texts
-from fibers.tree.node import NodeContentMap
+from fibers.tree.node import ContentMap
 
 if TYPE_CHECKING:
     from fibers.tree import Node, Tree
@@ -15,9 +15,9 @@ if TYPE_CHECKING:
 h_en = Hyphenator('en_US')
 
 
-def draw_treemap(root: Node, content_map: NodeContentMap = None):
+def draw_treemap(root: Node, content_map: ContentMap = None):
     if content_map is None:
-        content_map = NodeContentMap()
+        content_map = ContentMap()
     ids, labels, parents, texts = prepare_tree_parameters(root, content_map)
 
     fig = go.Figure(go.Treemap(
@@ -54,7 +54,7 @@ def get_json_for_treemap(root: Node):
     return node_list
 
 
-def prepare_tree_parameters(root: Node, content_map: NodeContentMap):
+def prepare_tree_parameters(root: Node, content_map: ContentMap):
     tree = root.tree
     labels = []
     parents = []
@@ -70,7 +70,7 @@ def prepare_tree_parameters(root: Node, content_map: NodeContentMap):
     return ids, labels, parents, texts
 
 
-def add_node_to_list(labels, parents, values, ids, node: Node, tree: Tree, content_map: NodeContentMap):
+def add_node_to_list(labels, parents, values, ids, node: Node, tree: Tree, content_map: ContentMap):
     i = 1
     children = tree.get_children_dict(node)
     for key, child in children.items():

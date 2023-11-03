@@ -5,7 +5,7 @@ from typing import Dict, List, Callable, Tuple, TYPE_CHECKING
 import dill
 from bidict import bidict
 
-from fibers.tree.node import Node, NodeContentMap
+from fibers.tree.node import Node, ContentMap
 
 
 class Tree:
@@ -152,57 +152,10 @@ class Tree:
         del self.node_path[node]
 
     """
-    ## Representation of tree in prompt
-    """
-
-    def get_tree_dict(self, add_index=True):
-        tree = {
-            "subtopics": {},
-        }
-        nodes = self.all_nodes()
-        node_indexed = []
-        i_node = 0
-        for i, node in enumerate(nodes):
-            node_path = self.get_node_path(node)
-            leaf = tree
-            for key in node_path:
-                if key not in leaf["subtopics"]:
-                    leaf["subtopics"][key] = {"subtopics": {}}
-                leaf = leaf["subtopics"][key]
-            if len(node.content) > 0:
-                leaf["content"] = node.content
-                if add_index:
-                    leaf["index"] = i_node
-                node_indexed.append(node)
-                i_node += 1
-        return tree, node_indexed
-
-    def get_dict_for_prompt(self):
-        dict_without_indices, node_indexed = self.get_tree_dict(add_index=False)
-        delete_extra_keys_for_prompt(dict_without_indices)
-        return dict_without_indices
-
-    def get_path_content_str_for_prompt(self):
-        res = []
-        for node, path in self.node_path.items():
-            if len(node.content) == 0:
-                continue
-            path_str = "/".join(path)
-            if len(path) == 0:
-                path_str = "root"
-            res.append(f"{path_str}: {node.content}")
-        return "\n".join(res)
-
-    def get_dict_with_indices_for_prompt(self):
-        dict_with_indices, node_indexed = self.get_tree_dict()
-        delete_extra_keys_for_prompt(dict_with_indices)
-        return dict_with_indices, node_indexed
-
-    """
     ## Visualization of tree
     """
 
-    def show_tree_gui(self, content_map: NodeContentMap = None):
+    def show_tree_gui(self, content_map: ContentMap = None):
         """
         Show the tree in a webpage
         """
@@ -227,6 +180,7 @@ class Tree:
             new_tree.add_node_by_path(new_path, node_mapping(node, new_tree))
         return new_tree
 
+    @staticmethod
     def from_nodes(nodes: List[Node]) -> Tree:
         new_tree = Tree()
         for node in nodes:
@@ -274,22 +228,3 @@ class Tree:
 
     def __repr__(self):
         return f"<{self.__class__.__name__}> {self.root.content!r}"
-
-
-"""
-## Auxiliary functions
-"""
-
-
-def delete_extra_keys_for_prompt(tree):
-    for key, leaf in tree["subtopics"].items():
-        delete_extra_keys_for_prompt(leaf)
-    if "content" not in tree:
-        for key, leaf in tree["subtopics"].items():
-            tree[key] = leaf
-        del tree["subtopics"]
-    else:
-        if len(tree["subtopics"]) == 0:
-            del tree["subtopics"]
-        if len(tree["content"]) == 0:
-            del tree["content"]

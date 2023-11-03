@@ -6,7 +6,7 @@ from fibers.model.chat import Chat
 from fibers.transform.decorate.tree_map import node_map_with_dependency
 from fibers.transform.utils_code.code_env import get_function_module_env
 from fibers.tree import Node, Tree
-from fibers.tree.node import NodeContentMap
+from fibers.tree.node import ContentMap
 from fibers.tree.node_class import CodeNodeClass, NodeClass
 from fibers.tree.prompt_utils import get_node_list_prompt
 
@@ -80,7 +80,7 @@ docstring:
 {node_content}"""
 
     if len(children) > 0:
-        children_list = get_node_list_prompt(children, NodeContentMap(
+        children_list = get_node_list_prompt(children, ContentMap(
             title_map=lambda n: CodeNodeClass.get_type(n) + " " + n.title(),
             content_map=lambda n: CodeSummarizedNodeClass.get_summary(n)
         )
@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
     tree = get_tree_for_module(tree_module)
     summarize_code_tree(tree)
-    content_map = NodeContentMap(lambda n: CodeSummarizedNodeClass.get_summary(n) or n.content)
+    content_map = ContentMap(lambda n: CodeSummarizedNodeClass.get_summary(n) or n.content)
     tree.show_tree_gui(content_map)
     caching.save_used()
 

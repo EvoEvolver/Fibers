@@ -3,15 +3,19 @@ from typing import List
 from fibers.helper.utils import RobustParse, parallel_map
 from fibers.model.chat import Chat
 from fibers.tree import Node
-from fibers.tree.node import NodeContentMap
+from fibers.tree.node import ContentMap
+from fibers.tree.prompt_utils import get_node_list_prompt
 
 
-def beam_search(root: Node, requirement: str, content_map: NodeContentMap = None) -> List[Node]:
+def beam_search(root: Node, requirement: str, content_map: ContentMap = None) -> List[
+    Node]:
     node_queue = [root]
     visited_nodes = set()
     matched_nodes_set = set()
+
     def pick_next_wrapped(node: Node):
         return pick_next(node, requirement, content_map)
+
     while len(node_queue) > 0:
         node_touched = []
         for i, res in parallel_map(pick_next_wrapped, node_queue):
@@ -27,24 +31,16 @@ def beam_search(root: Node, requirement: str, content_map: NodeContentMap = None
     return list(matched_nodes_set)
 
 
-def pick_next(node: Node, requirement: str, content_map: NodeContentMap = None) -> (List[Node], List[Node]):
+def pick_next(node: Node, requirement: str, content_map: ContentMap = None) -> (
+List[Node], List[Node]):
     if content_map is None:
-        content_map = NodeContentMap()
-    children_in_prompt = []
+        content_map = ContentMap()
     children = node.children()
     children_list = list(children.values())
     if len(children_list) == 0:
         return [], []
-    children_i = 1
-    for key, child in children.items():
-        title, content = content_map.get_title_and_content(child)
-        child_in_prompt = str(children_i) + ". " + title
-        if len(content)>0:
-            child_in_prompt += " : " + content
-        children_in_prompt.append(child_in_prompt)
-        children_i += 1
 
-    children_in_prompt = "\n".join(children_in_prompt)
+    children_in_prompt = get_node_list_prompt(children_list, content_map)
 
     prompt = f"""
 You are traveling on a tree of knowledge. From the following list, you should pick the children that satisfies the requirement, and the children might be the ancestor of the required node.
@@ -74,6 +70,6 @@ if __name__ == "__main__":
 
     tree = load_sample_tree("dingzhen_world.json")
     matched_children, ancestor_children = pick_next(tree.root,
-                              "The children that include the answer to the question: What is the main industrial of Ganzi? You must pick at least one child.")
+                                                    "The children that include the answer to the question: What is the main industrial of Ganzi? You must pick at least one child.")
     print(matched_children)
     print(ancestor_children)

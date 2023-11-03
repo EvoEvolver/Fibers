@@ -5,10 +5,11 @@ import yaml
 from fibers.helper.cache.cache_service import cached_function
 from fibers.model.chat import Chat
 from fibers.tree import Tree
+from fibers.tree.prompt_utils import get_dict_with_indices_for_prompt
 
 
 def small_tree_select(tree: Tree, criteria_prompt: str) -> Tree:
-    tree_with_indices, note_indexed = tree.get_dict_with_indices_for_prompt()
+    tree_with_indices, note_indexed = get_dict_with_indices_for_prompt(tree)
     tree_in_yaml = yaml.dump(tree_with_indices)
     useful_indices = filter_tree_indices(tree_in_yaml, criteria_prompt)
     useful_notes = [note_indexed[i] for i in useful_indices]

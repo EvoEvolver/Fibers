@@ -3,6 +3,7 @@ import json
 from fibers.helper.cache.cache_service import cached_function
 from fibers.model.chat import Chat
 from fibers.tree import Tree
+from fibers.tree.prompt_utils import get_dict_for_prompt
 
 
 @cached_function
@@ -21,7 +22,7 @@ Start your answer with `Paragraph:`
     return res
 
 def small_tree_to_paragraph(tree: Tree, writing_instruction: str):
-    dict_for_prompt = tree.get_dict_for_prompt()
+    dict_for_prompt = get_dict_for_prompt(tree)
     dict_for_prompt = json.dumps(dict_for_prompt, indent=1)
     res = _small_tree_to_paragraph_impl(dict_for_prompt, writing_instruction)
     return res

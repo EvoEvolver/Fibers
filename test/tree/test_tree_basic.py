@@ -1,5 +1,6 @@
 from fibers.tree import Tree
 from fibers.testing.testing_trees.loader import load_sample_tree
+from fibers.tree.prompt_utils import get_dict_for_prompt
 
 
 def test_adding_and_parent():
@@ -20,4 +21,4 @@ def test_adding_twice():
 def test_tree_copy():
     tree = load_sample_tree("dingzhen_world.json")
     tree2 = tree.duplicate_tree_by_node_mapping(lambda node, new_tree: node)
-    assert tree2.get_dict_for_prompt() == tree.get_dict_for_prompt()
+    assert get_dict_for_prompt(tree2) == get_dict_for_prompt(tree)

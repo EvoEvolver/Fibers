@@ -6,6 +6,7 @@ from fibers.indexing.key_phrase import KeyPhraseIndexing
 from fibers.model.chat import Chat
 from fibers.transform.extract.small_tree_select import small_tree_select
 from fibers.tree import Tree
+from fibers.tree.prompt_utils import get_path_content_str_for_prompt
 
 
 class QuestionAnswerer(Agent):
@@ -42,7 +43,7 @@ def single_tree_qa(question: str, knowledge_tree: Tree):
         question_context = ""
         if len(working_memory.children) > 1:
             question_context += "Memory of answer of related question:\n"
-            question_context += working_memory.get_path_content_str_for_prompt()
+            question_context += get_path_content_str_for_prompt(working_memory)
             question_context += "\n"
         else:
             question_context += "Memory: empty.\n"
@@ -154,7 +155,7 @@ def search(query: str, tree: Tree, indexing: Indexing):
 def answer(question: str, tree: Tree, indexing: Indexing):
     sub_tree = search(question, tree, indexing)
     prompt = f"""Here is some items obtained from a knowledge base. The context of the items are implied by their path.
-{sub_tree.get_path_content_str_for_prompt()}"""
+{get_path_content_str_for_prompt(sub_tree)}"""
     chat = Chat(user_message=prompt)
     chat.add_user_message(f"""Please analyze and give an answer to the question: 
 {question}

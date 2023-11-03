@@ -7,12 +7,12 @@ from fibers.model.embedding import get_embeddings
 
 from fibers.indexing.indexing import VectorIndexing
 from fibers.tree import Node
-from fibers.tree.node import NodeContentMap
+from fibers.tree.node import ContentMap
 
 
 class ParentMixedIndexing(VectorIndexing):
 
-    def __init__(self, nodes, content_map: NodeContentMap):
+    def __init__(self, nodes, content_map: ContentMap):
         self.content_map = content_map
         super().__init__(nodes)
 
@@ -42,7 +42,7 @@ class ParentMixedIndexing(VectorIndexing):
         return np.array(text_embedding[0])
 
     @staticmethod
-    def get_source_content(content_map: NodeContentMap, node: Node) -> (List[str], List[float]):
+    def get_source_content(content_map: ContentMap, node: Node) -> (List[str], List[float]):
         source_nodes = [node]
         parent = node.parent()
         if parent is not None:
