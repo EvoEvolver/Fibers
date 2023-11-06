@@ -11,13 +11,12 @@ from fibers.tree.node import Node, ContentMap
 class Tree:
     """
     Store the information of nodes contained
-    The information is mainly the path of each node
+    The information is mainly the path and children of each node
     """
 
-    def __init__(self, root_content="", rule_of_path: str = None):
+    def __init__(self, root_content=""):
         """
         :param root_content: The content of the root of the tree
-        :param rule_of_path: The rule for creating paths.
         """
         self.children: Dict[Node, Dict[str, Node]] = {}
         self.node_path: bidict[Node, Tuple[str, ...]] = bidict()
@@ -27,9 +26,6 @@ class Tree:
         self.children[root]: Dict[Node, Node] = {}
         self.node_path[root]: Dict[Node, Tuple[str, ...]] = tuple()
         root.set_content(root_content)
-
-        # TODO: this can be node, tree, or string in the future
-        self.rule_of_path = rule_of_path
 
     """
     ## Node information query
@@ -174,7 +170,7 @@ class Tree:
         :param node_mapping: The mapping function for each node
         :return: A new tree
         """
-        new_tree = Tree(self.topic, rule_of_path=self.rule_of_path)
+        new_tree = Tree(self.topic)
         for node in self.all_nodes():
             new_path = self.get_node_path(node)
             new_tree.add_node_by_path(new_path, node_mapping(node, new_tree))

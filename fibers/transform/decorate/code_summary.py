@@ -162,9 +162,8 @@ def summarize_code_tree(tree: Tree):
 
 
 if __name__ == "__main__":
-    from fibers import tree as tree_module
-
-    tree = get_tree_for_module(tree_module)
+    from moduler import core
+    tree = get_tree_for_module(core)
     summarize_code_tree(tree)
     content_map = ContentMap(lambda n: CodeSummarizedNodeClass.get_summary(n) or n.content)
     tree.show_tree_gui(content_map)

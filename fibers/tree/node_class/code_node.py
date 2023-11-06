@@ -25,3 +25,11 @@ class CodeNodeClass(NodeClass):
     @staticmethod
     def serialize(node: Node):
         return CodeNodeClass.get_type(node)
+
+    @staticmethod
+    def set_docs(node: Node, docs: str):
+        CodeNodeClass.set_attr(node, "docs", docs)
+
+    @staticmethod
+    def get_docs(node: Node):
+        return CodeNodeClass.get_attr(node, "docs") or ""

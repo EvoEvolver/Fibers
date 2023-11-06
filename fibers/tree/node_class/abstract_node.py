@@ -16,7 +16,7 @@ class NodeClass:
 
     @classmethod
     def get_attr(cls, node: Node, attr_name: str):
-        return node.class_data[cls][attr_name]
+        return node.class_data[cls].get(attr_name, None)
 
     @classmethod
     def get_data(cls, node: Node) -> Dict:

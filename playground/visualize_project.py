@@ -10,9 +10,12 @@ def ncol_map(n: Node):
         obj = CodeNodeClass.get_obj(n)
         src = inspect.getsource(obj)
         length = len(src.split("\n"))
-        return f"(ncol: {length})" + n.content
+        return f"(ncol: {length})" + (CodeNodeClass.get_docs(n) or n.content)
     except:
-        return n.content
+        try:
+            return CodeNodeClass.get_docs(n) or ""
+        except:
+            return n.content
 
 
 content_map = ContentMap(

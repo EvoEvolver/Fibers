@@ -76,7 +76,7 @@ class Node:
         """
         Creating a new child node or addressing an existing child node
         :param key: the key of the child node
-        :return:
+        :return: the child node
         """
         tree = self.tree
         if isinstance(key, int) or isinstance(key, str):
@@ -143,8 +143,7 @@ class Node:
     def attach_tree(self, tree: Tree):
         """
         Put the tree into the node
-        :param tree:
-        :return:
+        :param tree: The tree to be attached as the descendant of the node
         """
         self_path = self.path()
         self_tree = self.tree
@@ -177,14 +176,14 @@ class Node:
         return f"<{self.__class__.__name__}> {str(self.path())}"
 
     """
-    Node iterators
+    ## Node iterators
     """
 
     def iter_subtree_with_dfs(self):
         """
         Iterate the subtree with depth first search.
         Output the deepest nodes first.
-        :return:
+        :return: An iterator of nodes
         """
         for child in self.children().values():
             yield from child.iter_subtree_with_dfs()
@@ -194,7 +193,7 @@ class Node:
         """
         Iterate the tree with breath first search.
         Output the shallowest nodes first.
-        :return: the iterator
+        :return: An iterator of nodes
         """
         stack = []
         stack.append(self)
@@ -205,7 +204,7 @@ class Node:
                 stack.append(child)
 
     """
-    # Node class related functions
+    ## Node class related functions
     
     Node class is the class that process the node
     It represents the type of the node
