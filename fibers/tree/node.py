@@ -55,9 +55,27 @@ class Node:
             return len(self.children()) > 0
         return self.tree.has_child(self, key)
 
-    @property
     def is_empty(self):
         return len(self.content) == 0
+
+    def sibling(self) -> Dict[str, Node] | None:
+        """
+        :return: the children dict of the parent node (i.e. the sibling dict of the node)
+        """
+        if self.parent() is None:
+            return None
+        return self.parent().children()
+
+    def sibling_list(self) -> (List[Node], int):
+        """
+        :return: a tuple of (sibling_list, index of self in sibling_list)
+        """
+        self_sibling = self.sibling()
+        if self_sibling is None:
+            return [self], 0
+        self_title = self.title()
+        self_index = list(self_sibling.keys()).index(self_title)
+        return list(self_sibling.values()), self_index
 
     """
     ## Functions for adding children of node
@@ -166,6 +184,10 @@ class Node:
         for child in self.children().values():
             nodes += child.get_nodes_in_subtree()
         return nodes
+
+    """
+    ## Magic functions
+    """
 
     def __str__(self):
         if len(self.content) == 0:

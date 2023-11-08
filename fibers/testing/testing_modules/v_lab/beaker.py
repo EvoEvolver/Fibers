@@ -56,11 +56,9 @@ class Desk:
         self.beakers = []
 
 @example
-def put_beaker_on_desk():
+def put_beaker_on_desk(desk: Desk, beaker: Beaker):
     """
     Here is an example of putting a beaker on a desk.
     """
-    desk = Desk()
-    beaker = Beaker(100)
     desk.beakers.append(beaker)
     return desk

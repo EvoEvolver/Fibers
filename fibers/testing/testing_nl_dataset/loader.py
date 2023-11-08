@@ -1,6 +1,7 @@
 import os
 
 import jsonlines
+from moduler.decorator import example
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -37,13 +38,19 @@ def extract_dataset(name, number):
         i += 1
 
 
-if __name__ == "__main__":
+@example
+def example_usage():
     from fibers.data_loader.html_to_tree import html_to_tree
     from fibers.transform.pipeline_text.tree_preprocess import preprocess_text_tree
     from fibers.helper.cache.cache_service import caching
-    data = extract_dataset("QuALITY.v1.0.1.dev", 100)
+    # 100
+    data = extract_dataset("QuALITY.v1.0.1.dev", 1)
     tree = html_to_tree(data["article"], to_markdown=False)
     tree.show_tree_gui()
-    preprocess_text_tree(tree)
+    preprocess_text_tree(tree, fat_limit=150)
     tree.show_tree_gui()
     caching.save_used()
+
+
+if __name__ == '__main__':
+    example_usage()

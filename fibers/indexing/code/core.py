@@ -78,7 +78,7 @@ class DescriptionIndexing(VectorIndexing):
         non_empty_nodes = []
         contents = []
         for node in nodes:
-            if node.resource.has_type("function") and not node.is_empty:
+            if node.resource.has_type("function") and not node.is_empty():
                 non_empty_nodes.append(node)
                 function_name = node.title()
                 contents.append(self.name_desc_tuple_to_str((function_name, node.content)))

@@ -74,7 +74,7 @@ A section is a collection of modules, classes and functions with a common theme.
     prompt += f"""
 {node_type} name: {node_name}
 """
-    if not node.is_empty:
+    if not node.is_empty():
         prompt += f"""
 docstring:
 {node_content}"""
@@ -134,7 +134,7 @@ def summarize_code_node(node: Node) -> bool:
         return True
 
 
-@cached_function
+@auto_cache
 def summary_needing_situation(node: Node):
     function = CodeNodeClass.get_obj(node)
     function_src = inspect.getsource(function)

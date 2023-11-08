@@ -8,7 +8,7 @@ from fibers.tree.prompt_utils import get_node_list_prompt
 
 def set_children_summary(root: Node):
     node_map_with_dependency(list(root.iter_subtree_with_dfs()),
-                             lambda node: set_children_summary_for_node(node))
+                             set_children_summary_for_node)
 
 
 @auto_cache
@@ -16,7 +16,7 @@ def set_children_summary_for_node(node: Node) -> bool:
     if node.content.strip() != "" or len(node.children()) == 0:
         return True
     for child in node.children().values():
-        if child.is_empty:
+        if child.is_empty():
             return False
     children_prompt = get_node_list_prompt(list(node.children().values()))
     prompt = f"""
@@ -37,7 +37,7 @@ Based on the information above, output your summary. Start your answer with `Sum
 
 def reset_bad_titles(root: Node):
     node_map_with_dependency(list(root.iter_subtree_with_dfs()),
-                             lambda node: make_title_by_content(node))
+                             make_title_by_content)
 
 
 @auto_cache

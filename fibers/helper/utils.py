@@ -48,7 +48,7 @@ def parallel_map(func, *args, n_workers=8):
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
         results = []
-        for result in tqdm(executor.map(func, *arg_lists), total=len(arg_lists[0]),
+        for result in tqdm(executor.map(func, *arg_lists, timeout=20), total=len(arg_lists[0]),
                            desc=func.__name__):
             results.append(result)
     caching.save()
@@ -117,7 +117,7 @@ def get_main_path():
 
 standard_multi_attempts = retry(
     wait=wait_fixed(0.5),
-    stop=(stop_after_attempt(3) | stop_after_delay(30)),
+    stop=(stop_after_attempt(3) | stop_after_delay(10)),
     retry=retry_if_exception(lambda e: True),
     reraise=False,
 )

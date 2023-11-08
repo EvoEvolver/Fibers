@@ -2,7 +2,7 @@ from tqdm import tqdm
 
 from fibers.data_loader.bad_text_node_class import has_bad_reason, remove_bad_reason, \
     BadTextNodeClass
-from fibers.helper.cache.cache_service import cached_function, caching
+from fibers.helper.cache.cache_service import cached_function, caching, auto_cache
 from fibers.helper.utils import RobustParse, parallel_map
 from fibers.model.chat import Chat
 from fibers.tree import Tree, Node
@@ -16,7 +16,7 @@ def count_words(content: str):
 
 system_message = "You are a helpful assistant for arranging knowledge. You should output merely JSON."
 
-@cached_function
+@auto_cache
 def decompose_content(content: str):
     prompt = f"""
 Decompose the following part of an article into a list of segments, each of which labelled by a title that summaries its content.

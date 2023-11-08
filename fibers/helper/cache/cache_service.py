@@ -111,6 +111,18 @@ def auto_cache(func: Callable):
     return standard_multi_attempts(auto_cache_wrapper)
 
 
+def auto_cache_no_multi_attempts(func: Callable):
+    @wraps(func)
+    def auto_cache_wrapper(*args, **kwargs):
+        module = inspect.getmodule(func)
+        # cache_type will be accessed by the caller
+        cache_type = module.__name__ + "." + func.__name__
+        res = func(*args, **kwargs)
+        return res
+
+    return auto_cache_wrapper
+
+
 def enable_auto_cache(input, cache_type: str):
     parent_stack = inspect.stack()[3]
     cache = None

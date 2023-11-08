@@ -41,13 +41,13 @@ def html_to_raw_tree(soup: BeautifulSoup, title="") -> Tree:
             set_content(curr_node, curr_content)
             this_level = int(child.name[1])
             if this_level > curr_level:
-                new_node = curr_node.s(child.text)
+                new_node = curr_node.s(child.text.strip())
                 node_stack.append((curr_node, this_level))
             else:
                 while len(node_stack) > 0 and node_stack[-1][1] > this_level:
                     node_stack.pop()
                 parent_node = node_stack[-1][0]
-                new_node = parent_node.s(child.text)
+                new_node = parent_node.s(child.text.strip())
 
             curr_content = []
             curr_level = this_level

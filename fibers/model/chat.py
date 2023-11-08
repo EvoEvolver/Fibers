@@ -73,6 +73,7 @@ class Chat:
     def complete_chat(self, options=None):
         cache = enable_auto_cache(self.get_log_list(), "chat")
         if cache is not None and cache.is_valid():
+            self.add_assistant_message(cache.value)
             return cache.value
 
         options = options or {}
@@ -84,6 +85,7 @@ class Chat:
         if len(ChatLogger.active_loggers) > 0:
             for chat_logger in ChatLogger.active_loggers:
                 chat_logger.add_log(self)
+        self.add_assistant_message(res)
 
         if cache is not None:
             cache.set_cache(res)
@@ -93,6 +95,7 @@ class Chat:
     def complete_chat_expensive(self, options=None):
         cache = enable_auto_cache(self.get_log_list(), "chat")
         if cache is not None and cache.is_valid():
+            self.add_assistant_message(cache.value)
             return cache.value
 
         options = options or {}
@@ -104,6 +107,7 @@ class Chat:
         if len(ChatLogger.active_loggers) > 0:
             for chat_logger in ChatLogger.active_loggers:
                 chat_logger.add_log(self)
+        self.add_assistant_message(res)
 
         if cache is not None:
             cache.set_cache(res)
