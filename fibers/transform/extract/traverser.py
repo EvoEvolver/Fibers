@@ -60,8 +60,8 @@ Output a JSON dict with key "matched_indices" for a list of indices of the child
     res = RobustParse.dict(res)
     matched_indices = res["matched_indices"] if "matched_indices" in res else []
     parent_indices = res["parent_indices"] if "parent_indices" in res else []
-    matched_children = [children_list[i - 1] for i in matched_indices]
-    parent_indices = [children_list[i - 1] for i in parent_indices]
+    matched_children = [children_list[i] for i in matched_indices]
+    parent_indices = [children_list[i] for i in parent_indices]
     return matched_children, parent_indices
 
 
