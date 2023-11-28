@@ -40,13 +40,14 @@ def summary_content(content: str, fat_limit):
 Summarize the following part of an article into a paragraph not longer than {fat_limit - 10} words.
 You should not add any new information to the content.
 You can discard some information to meet the word limit.
-You should output in the format of JSON, with a single field `summary`.
 Article part:
 {content}
+
+You should start your summary with `Summary:`
 """
     chat = Chat(prompt, system_message)
     res = chat.complete_chat()
-    summary = RobustParse.dict(res)["summary"]
+    summary = res[res.find(":") + 1:].strip()
     if count_words(summary) > fat_limit:
         raise ValueError(f"Summary too long ({count_words(summary)} words): {summary}")
     return summary

@@ -19,7 +19,7 @@ model_list = [normal_model, expensive_model]
 
 default_options = {
     "temperature": 0.7,
-    "timeout": 10,
+    "timeout": 15,
 }
 
 

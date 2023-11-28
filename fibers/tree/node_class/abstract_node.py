@@ -12,6 +12,7 @@ class NodeClass:
 
     @classmethod
     def set_attr(cls, node: Node, attr_name: str, attr_value):
+        node.add_class(cls)
         node.class_data[cls][attr_name] = attr_value
 
     @classmethod

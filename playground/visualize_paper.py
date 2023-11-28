@@ -1,4 +1,4 @@
-from fibers.transform.pipeline_text.tree_preprocess import preprocess_text_tree
+from fibers.transform.pipeline_text.tree_preprocess import preprocess_text_tree_0
 
 from fibers.helper.cache.cache_service import caching
 
@@ -8,7 +8,7 @@ tree = loader.load_sample_tree("scientific_understanding.tex")
 
 tree.show_tree_gui()
 
-preprocess_text_tree(tree)
+preprocess_text_tree_0(tree)
 
 tree.show_tree_gui()
 

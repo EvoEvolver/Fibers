@@ -236,6 +236,8 @@ class Node:
         return node_class in self.class_data.keys()
 
     def add_class(self, node_class: Type[NodeClass]):
+        if self.isinstance(node_class):
+            return
         self.class_data[node_class] = {}
 
     def remove_class(self, node_class: Type[NodeClass]):

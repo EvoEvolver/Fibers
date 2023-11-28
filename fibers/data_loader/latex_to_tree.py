@@ -110,10 +110,15 @@ def divide_into_paragraphs(node: Node):
     paragraphs = to_paragraphs(node.content)
     if len(paragraphs) == 0:
         return
+    last_sibling = None
     for i, paragraph in enumerate(paragraphs):
-        new_node = node.s(f"Segment {i + 1}").be(paragraph)
+        if last_sibling is None or len(last_sibling.content) + len(paragraph) > 1000:
+            new_node = node.s(f"Segment {i + 1}").be(paragraph)
+        else:
+            new_node = last_sibling.be(last_sibling.content + " " + paragraph)
         add_bad_reason(node, "overlap_to_sibling")
         add_bad_reason(new_node, "bad_title")
+        last_sibling = new_node
     node.content = ""
 
 def to_paragraphs(text):

@@ -81,7 +81,7 @@ class Chat:
             res = openai_complete_chat(self, options=options)
         else:
             res = openllm_complete_chat(self, options=options)
-        self.add_assistant_message(res)
+
         if len(ChatLogger.active_loggers) > 0:
             for chat_logger in ChatLogger.active_loggers:
                 chat_logger.add_log(self)
@@ -103,7 +103,7 @@ class Chat:
             res = openai_complete_chat_expensive(self, options=options)
         else:
             res = openllm_complete_chat_expensive(self, options=options)
-        self.add_assistant_message(res)
+
         if len(ChatLogger.active_loggers) > 0:
             for chat_logger in ChatLogger.active_loggers:
                 chat_logger.add_log(self)

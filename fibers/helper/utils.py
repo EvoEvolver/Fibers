@@ -1,5 +1,6 @@
 import ast
 import concurrent.futures
+import json
 import os
 import sys
 from typing import List
@@ -19,7 +20,8 @@ class RobustParse:
         if start == -1 or end == -1:
             raise ValueError(f"Invalid json: {src}")
         try:
-            res = ast.literal_eval(src[start:end + 1])
+            #res = ast.literal_eval(src[start:end + 1])
+            res = json.loads(src[start:end + 1])
         except:
             raise ValueError(f"Invalid json: {src}")
         return res
@@ -117,7 +119,7 @@ def get_main_path():
 
 standard_multi_attempts = retry(
     wait=wait_fixed(0.5),
-    stop=(stop_after_attempt(3) | stop_after_delay(10)),
+    stop=(stop_after_attempt(3)),
     retry=retry_if_exception(lambda e: True),
     reraise=False,
 )
