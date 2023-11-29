@@ -1,5 +1,7 @@
 from typing import Callable
 
+from moduler.decorator import example
+
 from fibers.data_loader.module_to_tree import get_tree_for_module
 from fibers.model.chat import Chat
 
@@ -37,7 +39,7 @@ class VariableTable:
             interpreter.symtable[name] = obj
         return interpreter
 
-def call_function_node(node: Node, vars_table: VariableTable, requirement: str):
+def call_function_node(node: Node, var_table: VariableTable, requirement: str):
     func = CodeNodeClass.get_obj(node)
     func_header = get_function_header(func)
 
@@ -60,33 +62,44 @@ Requirement:
 You are required to output a Python dict of the following format:"""
     prompt += """
 {
-    "variable_name": <name of the variable for storing the result>,
-    "variable_docs": <documentation of the variable for better understanding of others>,
+    "variable_names": <list of names of the variable for storing the result. it contains one element when the return value is single>,
+    "variable_docs": <list of documentation of the variable for better understanding of others. should match with variable_names>,
     "args": <a list of arguments>,
     "kwargs": <a dict of keyword arguments>
 }"""
     prompt += """
 Please refer to the function header for a correct format of the arguments.
 """
-    if not vars_table.is_empty():
+    if not var_table.is_empty():
         prompt += f"""
 You can use the following variables for the arguments:
-{vars_table.get_prompt()}
+{var_table.get_prompt()}
 """
     chat = Chat(prompt, "You are a helpful assistant who call Python functions")
     res = chat.complete_chat()
-    exec_function(func, res, vars_table)
+    exec_function(func, res, var_table)
     print(prompt)
-    return vars_table
+    return var_table
 
-def exec_function(func: Callable, caller_dict_str: str, vars_table: VariableTable):
-    interpreter = vars_table.get_interpreter()
+def exec_function(func: Callable, caller_dict_str: str, var_table: VariableTable):
+    interpreter = var_table.get_interpreter()
     caller_dict = interpreter(caller_dict_str)
     args = caller_dict["args"]
     kwargs = caller_dict["kwargs"]
     return_value = func(*args, **kwargs)
-    vars_table.add_variable(caller_dict["variable_name"], return_value, caller_dict["variable_docs"])
+    variable_names = caller_dict["variable_names"]
+    variable_docs = caller_dict["variable_docs"]
+    if len(variable_names) == 1:
+        return_value = (return_value,)
+    if len(variable_names) != 1:
+        if not isinstance(return_value, tuple):
+            raise ValueError("The return value is not a tuple, but the variable_names has more than one element.")
+        if len(variable_names) != len(return_value):
+            raise ValueError("The length of variable_names is not equal to the length of the return value.")
+    for name, value, docs in zip(variable_names, return_value, variable_docs):
+        var_table.add_variable(name, value, docs)
 
+@example
 def example():
     from fibers.testing.testing_modules.v_lab import operation
     tree = get_tree_for_module(operation)

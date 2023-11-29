@@ -1,8 +1,13 @@
+from typing import List
+
+from fibers.helper.utils import RobustParse
+from fibers.model.chat import Chat
 from fibers.transform.decorate.code_summary import CodeSummarizedNodeClass
 from fibers.transform.extract.traverser import beam_search
 from fibers.tree import Node
 from fibers.tree.node import ContentMap
 from fibers.tree.node_class import CodeNodeClass
+from fibers.tree.prompt_utils import get_node_list_prompt
 
 
 def code_beam_searcher(root: Node, requirement: str, code_type: str, content_map: ContentMap = None):
@@ -14,5 +19,29 @@ def code_beam_searcher(root: Node, requirement: str, code_type: str, content_map
     nodes_related = [node for node in nodes_related if
                      node.isinstance(CodeSummarizedNodeClass) and CodeNodeClass.get_type(
                          node) == code_type]
-
+    nodes_related = filter_code_nodes(nodes_related, requirement, content_map)
     return nodes_related
+
+def filter_code_nodes(nodes: List[Node], requirement: str, content_map):
+    prompt = f"""
+Here are a few Python objects:
+{get_node_list_prompt(nodes, content_map)}
+
+You are trying to find Python objects that satisfy the following requirement:
+{requirement}
+
+Output a JSON dict with key "matched_indices" for a list of indices of the children that satisfies the requirement. You must output a non-empty list.
+"""
+    chat = Chat(user_message=prompt,
+                system_message="You are a helpful assistant who only output JSON.")
+    res = chat.complete_chat_expensive()
+    res = RobustParse.dict(res)
+    matched_indices = res["matched_indices"]
+    matched_node = [nodes[i] for i in matched_indices]
+    return matched_node
+
+
+def make_code_searcher(code_type: str, content_map: ContentMap = None):
+    def code_searcher(root: Node, requirement):
+        return code_beam_searcher(root, requirement, code_type, content_map)
+    return code_searcher
