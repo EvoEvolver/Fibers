@@ -11,6 +11,15 @@ from tqdm import tqdm
 
 
 class RobustParse:
+
+    @staticmethod
+    def obj(src: str):
+        try:
+            res = ast.literal_eval(src)
+        except:
+            raise ValueError(f"Invalid Python code: {src}")
+        return res
+
     @staticmethod
     def dict(src: str):
         # find first {
