@@ -20,9 +20,15 @@ git clone https://github.com/EvoEvolver/Fibers.git
 git clone https://github.com/EvoEvolver/Moduler.git
 ```
 
+If you want to see the visualization in React. Please clone the following repo:
+```shell
+git clone https://github.com/EvoEvolver/Forest.git
+```
+
 If you are using PyCharm, do the following steps:
 - Go to settings -> Project structure
 - Add `Moduler` and `Fibers` to the content roots
+- Add `Forest` to the content roots if you want to see visualization in React.
 - Install the dependencies by `pip`
 
 If you are using VSCode, you can make install the packages by

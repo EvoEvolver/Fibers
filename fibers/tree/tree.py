@@ -1,12 +1,9 @@
 from __future__ import annotations
-
 from typing import Dict, List, Callable, Tuple, TYPE_CHECKING
-
 import dill
 from bidict import bidict
-
 from fibers.tree.node import Node, ContentMap
-
+from fibers.forest_connector.forest_connector import ForestConnector
 
 class Tree:
     """
@@ -26,6 +23,9 @@ class Tree:
         self.children[root]: Dict[Node, Node] = {}
         self.node_path[root]: Dict[Node, Tuple[str, ...]] = tuple()
         root.set_content(root_content)
+
+        # forest connector as None at beginning.
+        self.forest_connector = None
 
     """
     ## Node information query
@@ -224,3 +224,19 @@ class Tree:
 
     def __repr__(self):
         return f"<{self.__class__.__name__}> {self.root.content!r}"
+
+
+    """
+    ## Visualization of tree in React by Socket.
+    """
+
+    def show_tree_gui_react(self):
+        """
+        Show the tree in a webpage
+        """
+        from fibers.gui.tree import get_nested_tree_json
+        tree = get_nested_tree_json(self.root)
+        if self.forest_connector is None:
+            self.forest_connector = ForestConnector(tree)
+            self.forest_connector.run()
+        self.forest_connector.update_tree(tree)

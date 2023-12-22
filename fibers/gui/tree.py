@@ -42,7 +42,7 @@ def draw_treemap(root: Node, content_map: ContentMap = None):
 
 
 def get_json_for_treemap(root: Node):
-    ids, labels, parents, texts = prepare_tree_parameters(root)
+    ids, labels, parents, texts = prepare_tree_parameters(root, ContentMap())
     node_list = []
     for i in range(len(ids)):
         node_list.append({
@@ -90,3 +90,22 @@ def add_node_to_list(labels, parents, values, ids, node: Node, tree: Tree, conte
         ids.append("/".join(node_path))
         add_node_to_list(labels, parents, values, ids, child, tree, content_map)
         i += 1
+
+
+# TODO: make the following more efficient - or change the react code to accept the format.
+def get_nested_tree_json_helper(node, node_list):
+    n = {}
+    n["title"] = node['label']
+    n["sections"] = []
+    children = [nn for nn in node_list if nn['parent'] == node['id']]
+    for child in children:
+        n["sections"].append(get_nested_tree_json_helper(child, node_list))
+    return n
+def get_nested_tree_json(root: Node):
+    node_list = get_json_for_treemap(root)
+    nodes = {}
+    for n in node_list:
+        if n['parent'] == '':
+            # this is the root.
+            nodes = get_nested_tree_json_helper(n, node_list)
+    return nodes

@@ -24,3 +24,4 @@ content_map = ContentMap(
 
 tree = get_tree_for_module(fibers)
 tree.show_tree_gui(content_map)
+tree.show_tree_gui_react()
