@@ -12,6 +12,8 @@ def get_function_header(function):
     res.append(":\n")
     # Get the function docstring
     docstring = function.__doc__
+    if docstring is None:
+        docstring = ""
     docstring = dedent(docstring)
     docstring = indent(docstring, "    ")
     if docstring is not None:
