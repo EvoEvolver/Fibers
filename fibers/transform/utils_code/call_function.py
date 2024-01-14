@@ -1,5 +1,8 @@
 from typing import Callable
 
+import numpy
+
+from fibers.helper.utils import standard_multi_attempts
 from moduler.decorator import example
 
 from fibers.data_loader.module_to_tree import get_tree_for_module
@@ -27,7 +30,8 @@ class VariableTable:
     def get_prompt(self):
         prompt_list = []
         for name, docs in self.variable_docs.items():
-            prompt_list.append(f"{name}: {docs}")
+            value = self.variable_objs[name]
+            prompt_list.append(f"{name}: {docs}. Value: {get_value_in_prompt(value)}")
         return "\n".join(prompt_list)
 
     def is_empty(self):
@@ -39,9 +43,56 @@ class VariableTable:
             interpreter.symtable[name] = obj
         return interpreter
 
+
+def get_value_in_prompt(value):
+    long_limit = 3
+    if isinstance(value, int) or isinstance(value, float):
+        return str(value)
+    elif isinstance(value, str):
+        return f"'{value}'"
+    elif isinstance(value, tuple) or isinstance(value, list):
+        res = "[" if isinstance(value, list) else "("
+        if len(value) > long_limit:
+            res += get_value_in_prompt(value[0]) + ", " + get_value_in_prompt(value[1]) + ", ..."
+            res += ", " + get_value_in_prompt(value[-1])
+        else:
+            res += ", ".join([get_value_in_prompt(v) for v in value])
+        res += "]" if isinstance(value, list) else ")"
+        return res
+    elif isinstance(value, dict):
+        res = "{"
+        dict_kv_list = [f"{k}: {get_value_in_prompt(v)}" for k, v in value.items()]
+        if len(dict_kv_list) > long_limit:
+            res += ", ".join(dict_kv_list[:long_limit])
+            res += ", ..."
+            res += ", ".join(dict_kv_list[-1])
+        else:
+            res += ", ".join(dict_kv_list)
+        res += "}"
+        return res
+    elif isinstance(value, numpy.ndarray):
+        repr_str, classname = get_truncated_repr(value)
+        shape = value.shape
+        return f"{repr_str} Type: numpy array, Shape: {shape}"
+    else:
+        repr_str, classname = get_truncated_repr(value)
+        return f"{repr_str} Type: {classname}"
+
+def get_truncated_repr(obj, limit=30):
+    classname = obj.__class__.__name__
+    repr_str = repr(obj)
+    if len(repr_str) > limit:
+        repr_str = repr_str[:limit] + "..." + repr_str[-1:]
+    return repr_str, classname
+
+@standard_multi_attempts
 def call_function_node(node: Node, var_table: VariableTable, requirement: str):
     func = CodeNodeClass.get_obj(node)
-    func_header = get_function_header(func)
+    func_header = None
+    try:
+        func_header = get_function_header(func)
+    except:
+        print(func)
 
     prompt = f"""
 You are required to call the following function to meet the requirement:
@@ -64,21 +115,24 @@ You are required to output a Python dict of the following format:"""
 {
     "variable_names": <list of names of the variable for storing the result. it contains one element when the return value is single>,
     "variable_docs": <list of documentation of the variable for better understanding of others. should match with variable_names>,
-    "args": <a list of arguments>,
-    "kwargs": <a dict of keyword arguments>
+    "args": [arg1, arg2, ...] (without quotes if you refer to variables),
+    "kwargs": {"kwarg1": kwarg1, ...}
 }"""
     prompt += """
 Please refer to the function header for a correct format of the arguments.
 """
     if not var_table.is_empty():
         prompt += f"""
-You can use the following variables for the arguments:
+You can use the following variables for the arguments. 
+Variables:
 {var_table.get_prompt()}
+
+Important: When you use them in args or kwargs, you should use the variable name directly, without quotes!
 """
-    chat = Chat(prompt, "You are a helpful assistant who call Python functions")
-    res = chat.complete_chat()
+    chat = Chat(prompt, "You are a helpful assistant who call Python functions. You should only output Python objects.")
+    res = chat.complete_chat_expensive()
+    print(chat)
     exec_function(func, res, var_table)
-    print(prompt)
     return var_table
 
 def exec_function(func: Callable, caller_dict_str: str, var_table: VariableTable):
@@ -91,7 +145,7 @@ def exec_function(func: Callable, caller_dict_str: str, var_table: VariableTable
     variable_docs = caller_dict["variable_docs"]
     if len(variable_names) == 1:
         return_value = (return_value,)
-    if len(variable_names) != 1:
+    if len(variable_names) > 1:
         if not isinstance(return_value, tuple):
             raise ValueError("The return value is not a tuple, but the variable_names has more than one element.")
         if len(variable_names) != len(return_value):

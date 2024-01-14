@@ -27,17 +27,16 @@ def filter_code_nodes(nodes: List[Node], requirement: str, content_map):
 Here are a few Python objects:
 {get_node_list_prompt(nodes, content_map)}
 
-You are trying to find Python objects that satisfy the following requirement:
+You are trying to find Python objects that most satisfy the following requirement:
 {requirement}
 
-Output a JSON dict with key "matched_indices" for a list of indices of the children that satisfies the requirement. You must output a non-empty list.
+Output the index that matches the requirement the most. Start your answer with "Index:".
 """
     chat = Chat(user_message=prompt,
-                system_message="You are a helpful assistant who only output JSON.")
+                system_message="You are a helpful assistant.")
     res = chat.complete_chat_expensive()
-    res = RobustParse.dict(res)
-    matched_indices = res["matched_indices"]
-    matched_node = [nodes[i] for i in matched_indices]
+    res = res.split("Index:")[1].strip()
+    matched_node = nodes[int(res)]
     return matched_node
 
 
