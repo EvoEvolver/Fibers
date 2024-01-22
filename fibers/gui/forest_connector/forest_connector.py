@@ -12,6 +12,7 @@ import os
 
 from fibers.tree.node_class import NodeClass
 
+
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
 project_root = current_file_directory
 while not os.path.isfile(os.path.join(project_root, 'pyproject.toml')):
@@ -72,5 +73,5 @@ class ForestConnector:
         webbrowser.open(url)
 
 
-class ForestConnected(NodeClass):
+class ForestConnected:
     pass
