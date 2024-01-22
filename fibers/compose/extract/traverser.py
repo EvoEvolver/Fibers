@@ -40,6 +40,9 @@ List[Node], List[Node]):
     if len(children_list) == 0:
         return [], []
 
+    if len(children_list) == 1:
+        return [children_list[0]], []
+
     children_in_prompt = get_node_list_prompt(children_list, content_map)
 
     prompt = f"""
