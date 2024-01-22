@@ -41,7 +41,7 @@ def extract_dataset(name, number):
 @example
 def example_usage():
     from fibers.data_loader.html_to_tree import html_to_tree
-    from fibers.transform.pipeline_text.tree_preprocess import preprocess_text_tree_1
+    from fibers.compose.pipeline_text.tree_preprocess import preprocess_text_tree_1
     from fibers.helper.cache.cache_service import caching
     # 100
     data = extract_dataset("QuALITY.v1.0.1.dev", 7)

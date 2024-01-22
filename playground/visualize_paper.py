@@ -1,4 +1,4 @@
-from fibers.transform.pipeline_text.tree_preprocess import preprocess_text_tree_0
+from fibers.compose.pipeline_text.tree_preprocess import preprocess_text_tree_0
 
 from fibers.helper.cache.cache_service import caching
 

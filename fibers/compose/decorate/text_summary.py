@@ -1,7 +1,7 @@
 from fibers.data_loader.bad_text_node_class import BadTextNodeClass
 from fibers.helper.cache.cache_service import auto_cache
 from fibers.model.chat import Chat
-from fibers.transform.decorate.tree_map import node_map_with_dependency
+from fibers.compose.decorate.tree_map import node_map_with_dependency
 from fibers.tree import Node
 from fibers.tree.prompt_utils import get_node_list_prompt
 

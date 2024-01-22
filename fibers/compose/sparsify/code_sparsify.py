@@ -1,6 +1,6 @@
 import inspect
 
-from fibers.transform.sparsify.text_sparsify import count_words
+from fibers.compose.sparsify.text_sparsify import count_words
 from fibers.tree import Node
 from fibers.tree.node_class.code_node import get_type, get_docs, get_obj, CodeNodeClass
 

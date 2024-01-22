@@ -1,6 +1,6 @@
 from fibers.helper.utils import RobustParse
 from fibers.model.chat import Chat
-from fibers.transform.decorate.tree_map import node_map_with_dependency
+from fibers.compose.decorate.tree_map import node_map_with_dependency
 from fibers.tree import Node
 
 

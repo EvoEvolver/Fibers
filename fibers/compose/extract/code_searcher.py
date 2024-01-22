@@ -1,8 +1,8 @@
 from typing import List
 
 from fibers.model.chat import Chat
-from fibers.transform.decorate.code_summary import CodeSummarizedNodeClass
-from fibers.transform.extract.traverser import beam_search
+from fibers.compose.decorate.code_summary import CodeSummarizedNodeClass
+from fibers.compose.extract.traverser import beam_search
 from fibers.tree import Node
 from fibers.tree.node import ContentMap
 from fibers.tree.node_class.code_node import get_type

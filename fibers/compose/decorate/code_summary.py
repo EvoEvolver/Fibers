@@ -3,8 +3,8 @@ import inspect
 from fibers.data_loader.module_to_tree import get_tree_for_module
 from fibers.helper.cache.cache_service import cached_function, auto_cache, caching
 from fibers.model.chat import Chat
-from fibers.transform.decorate.tree_map import node_map_with_dependency
-from fibers.transform.utils_code.code_env import get_function_module_env
+from fibers.compose.decorate.tree_map import node_map_with_dependency
+from fibers.compose.utils_code.code_env import get_function_module_env
 from fibers.tree import Node, Tree
 from fibers.tree.node import ContentMap
 from fibers.tree.node_class import CodeNodeClass, NodeClass

@@ -9,9 +9,9 @@ from moduler.decorator import example
 from fibers.data_loader.module_to_tree import get_tree_for_module
 from fibers.model.chat import Chat
 
-from fibers.transform.decorate.code_summary import CodeSummarizedNodeClass, \
+from fibers.compose.decorate.code_summary import CodeSummarizedNodeClass, \
     summarize_code_tree
-from fibers.transform.utils_code.header import get_function_header
+from fibers.compose.utils_code.header import get_function_header
 from fibers.tree import Node
 from asteval import Interpreter
 

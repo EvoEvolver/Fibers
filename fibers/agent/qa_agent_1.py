@@ -4,7 +4,7 @@ from fibers.helper.utils import standard_multi_attempts, RobustParse
 from fibers.indexing.indexing import Indexing
 from fibers.indexing.key_phrase import KeyPhraseIndexing
 from fibers.model.chat import Chat
-from fibers.transform.extract.small_tree_select import small_tree_select
+from fibers.compose.extract.small_tree_select import small_tree_select
 from fibers.tree import Tree
 from fibers.tree.prompt_utils import get_path_content_str_for_prompt
 

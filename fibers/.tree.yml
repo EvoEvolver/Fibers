@@ -1,6 +1,6 @@
 sections:
   Implementation:
-    - transform
+    - compose
     - agent
   Infrastructure:
     - tree

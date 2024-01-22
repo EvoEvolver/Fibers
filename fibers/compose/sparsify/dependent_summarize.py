@@ -11,7 +11,7 @@ from fibers.helper.utils import parallel_map, RobustParse
 from fibers.model.chat import Chat
 from fibers.testing.testing_nl_dataset.loader import extract_dataset
 from fibers.testing.testing_trees.loader import load_sample_tree
-from fibers.transform.sparsify.text_sparsify import count_words
+from fibers.compose.sparsify.text_sparsify import count_words
 from fibers.tree import Tree, Node
 from fibers.tree.node_class import NodeClass
 from fibers.tree.prompt_utils import get_node_list_prompt

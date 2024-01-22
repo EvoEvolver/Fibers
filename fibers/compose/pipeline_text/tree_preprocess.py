@@ -1,12 +1,12 @@
 from moduler.decorator import example
 
 from fibers.helper.cache.cache_service import caching
-from fibers.transform.decorate.text_summary import reset_bad_titles, \
+from fibers.compose.decorate.text_summary import reset_bad_titles, \
     set_children_summary
-from fibers.transform.decorate.tree_map import node_map_with_dependency
-from fibers.transform.densify.merge_small_nodes import deal_single_child_for_node, \
+from fibers.compose.decorate.tree_map import node_map_with_dependency
+from fibers.compose.densify.merge_small_nodes import deal_single_child_for_node, \
     deal_single_child
-from fibers.transform.sparsify.text_sparsify import break_and_merge_siblings, \
+from fibers.compose.sparsify.text_sparsify import break_and_merge_siblings, \
     weight_reduce_brutal
 from fibers.tree import Tree
 
