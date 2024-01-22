@@ -8,6 +8,7 @@ from fibers.transform.utils_code.code_env import get_function_module_env
 from fibers.tree import Node, Tree
 from fibers.tree.node import ContentMap
 from fibers.tree.node_class import CodeNodeClass, NodeClass
+from fibers.tree.node_class.code_node import get_obj, get_type
 from fibers.tree.prompt_utils import get_node_list_prompt
 
 
@@ -33,7 +34,7 @@ def summarize_function(node: Node):
     """
     This function is to summarize code content.
     """
-    function = CodeNodeClass.get_obj(node)
+    function = get_obj(node)
     function_src = inspect.getsource(function)
     function_env = get_function_module_env(node)
     prompt = f"""
@@ -60,7 +61,7 @@ def summary_children(node: Node):
     node_name = node.title()
     node_content = node.content
 
-    node_type = CodeNodeClass.get_type(node)
+    node_type = get_type(node)
     prompt = f"""
 You are summarizing the content of the following {node_type} in Python for documentation.
 You should consider the name, type and content of the {node_type} when summarizing.
@@ -81,7 +82,7 @@ docstring:
 
     if len(children) > 0:
         children_list = get_node_list_prompt(children, ContentMap(
-            title_map=lambda n: CodeNodeClass.get_type(n) + " " + n.title(),
+            title_map=lambda n: get_type(n) + " " + n.title(),
             content_map=lambda n: CodeSummarizedNodeClass.get_summary(n)
         )
                                              )
@@ -103,14 +104,14 @@ def summarize_code_node(node: Node) -> bool:
         return True
     if not node.isinstance(CodeNodeClass):
         return True
-    module_tree_type = CodeNodeClass.get_type(node)
+    module_tree_type = get_type(node)
     if module_tree_type in ["module", "class", "section"]:
         # Check if all children are summarized
         children_all_summarized = True
         for key, item in node.children().items():
             # ignore the non-code node
             # TODO: consider the README node too
-            if CodeNodeClass.get_type(item) == "document":
+            if get_type(item) == "document":
                 continue
             if not item.isinstance(CodeSummarizedNodeClass):
                 children_all_summarized = False
@@ -136,7 +137,7 @@ def summarize_code_node(node: Node) -> bool:
 
 @auto_cache
 def summary_needing_situation(node: Node):
-    function = CodeNodeClass.get_obj(node)
+    function = get_obj(node)
     function_src = inspect.getsource(function)
     function_env = get_function_module_env(node)
     prompt = f"""

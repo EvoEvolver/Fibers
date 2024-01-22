@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 from textwrap import dedent
 
+from fibers.tree.node_class.code_node import set_code_obj
 from moduler.core import build_module_tree
 from moduler import Struct
 
@@ -37,22 +38,16 @@ def build_tree_for_struct(curr_struct: Struct, root_note: Node) -> Node:
     """
     curr_key = curr_struct.name
     curr_node = root_note.new_child(curr_key)
-    CodeNodeClass.set_type_obj(curr_node, curr_struct.struct_type, curr_struct.obj)
+    set_code_obj(curr_node, curr_struct.struct_type, curr_struct.obj)
 
     for child_struct in curr_struct.children:
         match child_struct.struct_type:
             case "function":
-                new_node = build_tree_for_struct(child_struct, curr_node)
-                doc_raw = child_struct.obj.__doc__
-                if doc_raw is not None:
-                    CodeNodeClass.set_docs(new_node, dedent(doc_raw))
+                build_tree_for_struct(child_struct, curr_node)
             case "module":
                 build_tree_for_struct(child_struct, curr_node)
             case "class":
-                new_node = build_tree_for_struct(child_struct, curr_node)
-                doc_raw = inspect.getdoc(child_struct.obj)
-                if doc_raw is not None:
-                    CodeNodeClass.set_docs(new_node, dedent(doc_raw))
+                build_tree_for_struct(child_struct, curr_node)
             case "comment":
                 # Add the comment to the content of the current node
                 curr_node.be(curr_node.content + "\n" + child_struct.obj)
@@ -67,7 +62,7 @@ def build_tree_for_struct(curr_struct: Struct, root_note: Node) -> Node:
                 readme_tree = markdown_to_tree(markdown_src, title="README")
                 curr_node.attach_tree(readme_tree)
                 new_node = curr_node.s("README")
-                CodeNodeClass.set_type_obj(new_node, "document",
+                set_code_obj(new_node, "document",
                                            child_struct.obj)
             case _:
                 raise ValueError("Unknown struct type: " + child_struct.struct_type)

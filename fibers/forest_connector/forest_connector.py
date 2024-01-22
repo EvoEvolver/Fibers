@@ -9,6 +9,9 @@ from flask_socketio import SocketIO, emit
 import threading
 
 import os
+
+from fibers.tree.node_class import NodeClass
+
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
 project_root = current_file_directory
 while not os.path.isfile(os.path.join(project_root, 'pyproject.toml')):
@@ -67,3 +70,7 @@ class ForestConnector:
 
         # Open the URL in the default web browser
         webbrowser.open(url)
+
+
+class ForestConnected(NodeClass):
+    pass

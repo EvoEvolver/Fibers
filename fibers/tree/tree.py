@@ -236,6 +236,7 @@ class Tree:
         """
         from fibers.gui.tree import get_nested_tree_json
         tree = get_nested_tree_json(self.root)
+
         if self.forest_connector is None:
             self.forest_connector = ForestConnector(tree)
             self.forest_connector.run()

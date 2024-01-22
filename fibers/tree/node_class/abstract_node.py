@@ -6,9 +6,6 @@ if TYPE_CHECKING:
 
 
 class NodeClass:
-    @staticmethod
-    def serialize(node: Node):
-        pass
 
     @classmethod
     def set_attr(cls, node: Node, attr_name: str, attr_value):

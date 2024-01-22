@@ -3,6 +3,7 @@ from typing import Callable
 import numpy
 
 from fibers.helper.utils import standard_multi_attempts
+from fibers.tree.node_class.code_node import get_obj
 from moduler.decorator import example
 
 from fibers.data_loader.module_to_tree import get_tree_for_module
@@ -12,7 +13,6 @@ from fibers.transform.decorate.code_summary import CodeSummarizedNodeClass, \
     summarize_code_tree
 from fibers.transform.utils_code.header import get_function_header
 from fibers.tree import Node
-from fibers.tree.node_class import CodeNodeClass
 from asteval import Interpreter
 
 class VariableTable:
@@ -87,7 +87,7 @@ def get_truncated_repr(obj, limit=30):
 
 @standard_multi_attempts
 def call_function_node(node: Node, var_table: VariableTable, requirement: str):
-    func = CodeNodeClass.get_obj(node)
+    func = get_obj(node)
     func_header = None
     try:
         func_header = get_function_header(func)
@@ -143,6 +143,8 @@ def exec_function(func: Callable, caller_dict_str: str, var_table: VariableTable
     return_value = func(*args, **kwargs)
     variable_names = caller_dict["variable_names"]
     variable_docs = caller_dict["variable_docs"]
+    if len(variable_names) == 0:
+        return
     if len(variable_names) == 1:
         return_value = (return_value,)
     if len(variable_names) > 1:

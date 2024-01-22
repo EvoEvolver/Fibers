@@ -2,7 +2,7 @@ import inspect
 
 from fibers.transform.sparsify.text_sparsify import count_words
 from fibers.tree import Node
-from fibers.tree.node_class import CodeNodeClass
+from fibers.tree.node_class.code_node import get_type, get_docs, get_obj, CodeNodeClass
 
 
 def count_lines(string):
@@ -10,10 +10,10 @@ def count_lines(string):
 
 
 def count_function_class_lines(node: Node):
-    if CodeNodeClass.get_type(node) == "section":
+    if get_type(node) == "section":
         return count_lines(node.content), 0
-    docs = CodeNodeClass.get_docs(node)
-    obj = CodeNodeClass.get_obj(node)
+    docs = get_docs(node)
+    obj = get_obj(node)
     n_docs_lines = count_lines(docs)
     try:
         obj_src = inspect.getsource(obj)
@@ -37,7 +37,7 @@ def get_fat_nodes(root: Node, doc_word_limit=50, code_col_limit=100):
             if n_docs_words > doc_word_limit:
                 yield node
                 continue
-            if CodeNodeClass.get_type(
+            if get_type(
                     node) == "function" and n_body_line > code_col_limit:
                 yield node
 

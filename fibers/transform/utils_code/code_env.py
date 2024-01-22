@@ -1,5 +1,5 @@
 from fibers.tree import Node
-from fibers.tree.node_class import CodeNodeClass
+from fibers.tree.node_class.code_node import get_type
 
 
 def get_function_module_env(function_node: Node):
@@ -17,7 +17,7 @@ def get_function_module_env(function_node: Node):
         if last_parent_parent is root:
             break
         parent_nodes.append(last_parent_parent)
-        if CodeNodeClass.get_type(last_parent) == "module":
+        if get_type(last_parent) == "module":
             break
 
     parent_nodes = parent_nodes[::-1]
@@ -26,5 +26,5 @@ def get_function_module_env(function_node: Node):
         return "The node is root"
 
     for i, node in enumerate(parent_nodes):
-        res.append(">" * i + CodeNodeClass.get_type(node) + ":" + node.title())
+        res.append(">" * i + get_type(node) + ":" + node.title())
     return "\n".join(res)
