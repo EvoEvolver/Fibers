@@ -15,10 +15,9 @@ if TYPE_CHECKING:
 h_en = Hyphenator('en_US')
 
 
-def draw_treemap(root: Node, content_map: ContentMap = None):
-    if content_map is None:
-        content_map = ContentMap()
-    ids, labels, parents, texts = prepare_tree_parameters(root, content_map)
+def draw_treemap(root: Node):
+
+    ids, labels, parents, texts = prepare_tree_parameters(root)
 
     fig = go.Figure(go.Treemap(
         labels=labels,
@@ -42,7 +41,7 @@ def draw_treemap(root: Node, content_map: ContentMap = None):
 
 
 def get_json_for_treemap(root: Node):
-    ids, labels, parents, texts = prepare_tree_parameters(root, ContentMap())
+    ids, labels, parents, texts = prepare_tree_parameters(root)
     node_list = []
     for i in range(len(ids)):
         node_list.append({
@@ -54,13 +53,13 @@ def get_json_for_treemap(root: Node):
     return node_list
 
 
-def prepare_tree_parameters(root: Node, content_map: ContentMap):
+def prepare_tree_parameters(root: Node):
     tree = root.tree
     labels = []
     parents = []
     texts = []
     ids = []
-    add_node_to_list(labels, parents, texts, ids, root, tree, content_map)
+    add_node_to_list(labels, parents, texts, ids, root, tree)
     line_width = 40
     for i in range(len(texts)):
         if len(texts[i].strip()) == 0:
@@ -70,44 +69,44 @@ def prepare_tree_parameters(root: Node, content_map: ContentMap):
     return ids, labels, parents, texts
 
 
-def add_node_to_list(labels, parents, values, ids, node: Node, tree: Tree, content_map: ContentMap):
+def add_node_to_list(labels, parents, values, ids, node: Node, tree: Tree):
     i = 1
     children = tree.get_children_dict(node)
     for key, child in children.items():
         node_path = tree.get_node_path(child)
-        mapped_content = content_map.get_title_and_content(child)
-        if isinstance(mapped_content, str):
-            value = mapped_content
-            label = key
-        elif isinstance(mapped_content, tuple):
-            label, value = mapped_content
-        else:
-            raise Exception("content_map should return a string or a tuple of two strings")
+        value = child.content
+        label = child.title()
         label = str(i) + ". " + key if len(children) > 1 else label
         labels.append(label)
         values.append(value)
         parents.append("/".join(node_path[:-1]))
         ids.append("/".join(node_path))
-        add_node_to_list(labels, parents, values, ids, child, tree, content_map)
+        add_node_to_list(labels, parents, values, ids, child, tree)
         i += 1
 
 
-# TODO: make the following more efficient - or change the react code to accept the format.
-def get_nested_tree_json_helper(node, node_list, path = ""):
-    n = {}
-    n["title"] = node['label']
-    n["sections"] = []
-    n["content"] = node['text']
-    n["id"] = f'{path}/{node["label"]}'
-    children = [nn for nn in node_list if nn['parent'] == node['id']]
-    for child in children:
-        n["sections"].append(get_nested_tree_json_helper(child, node_list, f'{path}/{node["label"]}'))
-    return n
-def get_nested_tree_json(root: Node):
-    node_list = get_json_for_treemap(root)
-    nodes = {}
-    for n in node_list:
-        if n['parent'] == '':
-            # this is the root.
-            nodes = get_nested_tree_json_helper(n, node_list)
-    return nodes
+# Produce dict of tree for forest to use
+
+def node_to_dict(node: Node, data_classes):
+    children_list = []
+    add_children_to_list(node, children_list, data_classes)
+    content = node.content
+    filtered_class_data = {}
+    if data_classes is not None:
+        for cls in data_classes:
+            if cls is None:
+                filtered_class_data["content"] = content
+            if cls in node.class_data:
+                filtered_class_data[str(cls)] = str(node.class_data[cls])
+
+    return {
+        "title": node.title(),
+        "sections": children_list,
+        "content": str(filtered_class_data),
+        "id": node.title()
+    }
+
+def add_children_to_list(node, children_list, data_classes):
+    children = node.children()
+    for child in children.values():
+        children_list.append(node_to_dict(child, data_classes))
