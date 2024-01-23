@@ -93,13 +93,15 @@ def add_node_to_list(labels, parents, values, ids, node: Node, tree: Tree, conte
 
 
 # TODO: make the following more efficient - or change the react code to accept the format.
-def get_nested_tree_json_helper(node, node_list):
+def get_nested_tree_json_helper(node, node_list, path = ""):
     n = {}
     n["title"] = node['label']
     n["sections"] = []
+    n["content"] = node['text']
+    n["id"] = f'{path}/{node["label"]}'
     children = [nn for nn in node_list if nn['parent'] == node['id']]
     for child in children:
-        n["sections"].append(get_nested_tree_json_helper(child, node_list))
+        n["sections"].append(get_nested_tree_json_helper(child, node_list, f'{path}/{node["label"]}'))
     return n
 def get_nested_tree_json(root: Node):
     node_list = get_json_for_treemap(root)
