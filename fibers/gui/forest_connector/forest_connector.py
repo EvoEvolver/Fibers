@@ -47,7 +47,9 @@ class ForestConnector:
         def visualization():
             return render_template('index.html')
 
-        port = 30000 + os.getpid() % 10000
+        # check if mode exists in environment variable, and check if it is dev if present.
+        dev_mode = (os.getenv("mode") is not None and os.getenv("mode") == "dev")
+        port = 30000 + os.getpid() % 10000 if not dev_mode else 29999
 
         def run_socketio():
             self.socketio.run(self.app, allow_unsafe_werkzeug=True, port=port)
@@ -59,7 +61,7 @@ class ForestConnector:
         url = f"http://127.0.0.1:{port}/visualization"
 
         # Open the URL in the default web browser
-        webbrowser.open(url)
+        if not dev_mode: webbrowser.open(url)
         print("Running on", url)
 
 
