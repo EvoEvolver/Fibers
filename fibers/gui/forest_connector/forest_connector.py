@@ -10,19 +10,7 @@ import threading
 
 import os
 
-from fibers.tree.node_class import NodeClass
-
-
-current_file_directory = os.path.dirname(os.path.abspath(__file__))
-project_root = current_file_directory
-while not os.path.isfile(os.path.join(project_root, 'pyproject.toml')):
-    project_root = os.path.dirname(project_root)
-
-parent_directory = os.path.dirname(project_root)
-template_dir = os.path.join(parent_directory, 'Forest/dist')
-static_dir = os.path.join(template_dir, 'assets')  # Path to the assets directory
-
-
+from forest import build_dir, asset_dir, lazy_build, build
 
 
 class ForestConnector:
@@ -32,7 +20,8 @@ class ForestConnector:
     """
 
     def __init__(self, tree = None):
-        self.app = Flask(__name__, template_folder=template_dir, static_folder=static_dir, static_url_path='/assets')
+        lazy_build()
+        self.app = Flask(__name__, template_folder=build_dir, static_folder=asset_dir, static_url_path='/assets')
         self.app.config['SECRET_KEY'] = 'secret!'
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
         self.tree = tree
@@ -42,35 +31,36 @@ class ForestConnector:
 
     def update_tree(self, tree):
         self.tree = tree
-        self.socketio.emit('tree', self.tree)
+        self.socketio.emit('setTree', self.tree)
 
     def run(self):
+        socketio_thread = None
         @self.socketio.on('connect')
         def handle_connect():
-
             emit('Connected!')
 
         @self.socketio.on('requestTree')
         def requestTree():
-            print("Frontend is requesting a tree")
-            emit('tree', self.tree)
-
+            emit('setTree', self.tree)
 
         @self.app.route('/visualization')
         def visualization():
             return render_template('index.html')
 
+        port = 30000 + os.getpid() % 10000
+
         def run_socketio():
-            self.socketio.run(self.app, allow_unsafe_werkzeug=True)
+            self.socketio.run(self.app, allow_unsafe_werkzeug=True, port=port)
 
         socketio_thread = threading.Thread(target=run_socketio)
         socketio_thread.start()
 
 
-        url = "http://127.0.0.1:5000/visualization"
+        url = f"http://127.0.0.1:{port}/visualization"
 
         # Open the URL in the default web browser
         webbrowser.open(url)
+        print("Running on", url)
 
 
 class ForestConnected:
