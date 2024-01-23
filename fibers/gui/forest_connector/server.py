@@ -6,12 +6,9 @@ import webbrowser
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
-import threading
-
+import multiprocessing
 import os
-
 from forest import build_dir, asset_dir, lazy_build, build
-import sys
 
 class ForestConnector:
     """
@@ -25,12 +22,7 @@ class ForestConnector:
         self.app.config['SECRET_KEY'] = 'secret!'
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
         self.tree = tree
-        # to hide warnings from flask.
-        import logging
-        log = logging.getLogger('werkzeug')
-        log.disabled = True
-        cli = sys.modules['flask.cli']
-        cli.show_server_banner = lambda *x: None
+        self.exiting = False
         if tree is not None:
             # An initial tree is given.
             self.update_tree(tree)
@@ -40,7 +32,6 @@ class ForestConnector:
         self.socketio.emit('setTree', self.tree)
 
     def run(self):
-        socketio_thread = None
         @self.socketio.on('connect')
         def handle_connect():
             emit('Connected!')
@@ -49,27 +40,22 @@ class ForestConnector:
         def requestTree():
             emit('setTree', self.tree)
 
+        @self.app.route('/stop')
+        def stop():
+            self.socketio.stop()
+
         @self.app.route('/visualization')
         def visualization():
             return render_template('index.html')
-
 
         # check if mode exists in environment variable, and check if it is dev if present.
         dev_mode = (os.getenv("mode") is not None and os.getenv("mode") == "dev")
         port = 30000 + os.getpid() % 10000 if not dev_mode else 29999
 
-        def run_socketio():
-            self.socketio.run(self.app, allow_unsafe_werkzeug=True, port=port)
-
-        socketio_thread = threading.Thread(target=run_socketio)
-        socketio_thread.start()
-
+        self.socketio.run(self.app, allow_unsafe_werkzeug=True, port=port)
 
         url = f"http://127.0.0.1:{port}/visualization"
 
         # Open the URL in the default web browser
         if not dev_mode: webbrowser.open(url)
-
-
-class ForestConnected:
-    pass
+        print("Running on", url)
