@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import inspect
 from typing import TYPE_CHECKING, Any
 
 from fibers.tree.node_class.abstract_node import NodeClass
@@ -23,3 +25,8 @@ def get_obj(node: Node) -> object:
 def get_docs(node: Node):
     assert False
     return CodeNodeClass.get_attr(node, "docs") or ""
+
+def get_source(node: Node):
+    obj = get_obj(node)
+    # get source by inspect
+    return inspect.getsource(obj)

@@ -3,10 +3,9 @@ from typing import Dict, List, Callable, Tuple
 import dill
 from bidict import bidict
 
-from fibers.gui.tree import node_to_dict
 from fibers.tree.node import Node, ContentMap
 from fibers.gui.forest_connector.forest_connector import ForestConnector, ForestConnected
-
+from fibers.gui.renderer import Renderer
 
 class Tree:
     """
@@ -232,17 +231,20 @@ class Tree:
     ## Visualization of tree in React by Socket.
     """
 
-    def show_tree_gui_react(self, data_classes=None):
+    def show_tree_gui_react(self, renderer=None):
         """
         Show the tree in a webpage
         """
-        tree = node_to_dict(self.root, data_classes)
+        if renderer is None:
+            renderer = Renderer
+
+        tree_json = renderer.render_to_json_old(self.root)
 
         if ForestConnected not in self.class_data:
-            forest_connector = ForestConnector(tree)
+            forest_connector = ForestConnector(tree_json)
             self.class_data[ForestConnected] = forest_connector
             forest_connector.run()
         else:
             forest_connector = self.class_data[ForestConnected]
-            forest_connector.update_tree(tree)
+            forest_connector.update_tree(tree_json)
 
