@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import copy
 
 from fibers.debug.logger import Logger
@@ -9,7 +10,12 @@ from fibers.model.openai import (_complete_chat as openai_complete_chat,
                                  _complete_chat_expensive as openai_complete_chat_expensive,
                                  model_list as openai_model_list)
 from fibers.model.openllm import (complete_chat as openllm_complete_chat,
-                                   complete_chat_expensive as openllm_complete_chat_expensive)
+                                  complete_chat_expensive as openllm_complete_chat_expensive)
+
+
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
 
 
 class ChatLogger(Logger):
@@ -42,12 +48,35 @@ class Chat:
             "role": role
         })
 
+    def _add_image_message(self, image_path: str, from_internet, detail: str):
+        if not from_internet:
+            base64_image = encode_image(image_path)
+            url = f"data:image/jpeg;base64,{base64_image}"
+        else:
+            url = image_path
+        self.history.append({
+            "role": "user",
+            "content": [{
+                "type": "image_url",
+                "image_url": {
+                    "url": url,
+                    "detail": detail}
+                }]
+        })
+
     def add_user_message(self, content: any):
         self._add_message(content, "user")
 
+    def add_image_message(self, image_path: str, from_internet=False, detail="auto"):
+        """
+        :param from_internet: Whether the path is a url
+        :param image_path: The path of the image
+        :param detail: Low or high fidelity image understanding ("auto", "low", "high")
+        """
+        self._add_image_message(image_path, from_internet, detail)
+
     def add_assistant_message(self, content: any):
         self._add_message(content, "assistant")
-
 
     def get_log_list(self):
         """
@@ -60,10 +89,7 @@ class Chat:
                 "role": "system"
             })
         for message in self.history:
-            res.append({
-                "content": str(message["content"]),
-                "role": message["role"]
-            })
+            res.append(message)
         return res
 
     """
