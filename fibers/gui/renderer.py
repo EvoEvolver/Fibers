@@ -20,7 +20,8 @@ class Rendered:
             "title": self.title,
             "tabs": self.tabs,
             "tools": self.tools,
-            "children": children
+            "children": children,
+            "data": {}
         }
 
 

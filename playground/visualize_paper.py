@@ -6,10 +6,10 @@ from fibers.testing.testing_trees import loader
 
 tree = loader.load_sample_tree("scientific_understanding.tex")
 
-tree.show_tree_gui()
+tree.show_tree_gui_react()
 
 preprocess_text_tree_0(tree)
 
-tree.show_tree_gui()
+tree.show_tree_gui_react()
 
 caching.save()

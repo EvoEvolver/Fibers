@@ -124,7 +124,10 @@ def auto_cache_no_multi_attempts(func: Callable):
 
 
 def enable_auto_cache(input, cache_type: str):
-    parent_stack = inspect.stack()[3]
+    stack = inspect.stack()
+    if len(stack) <= 3:
+        return None
+    parent_stack = stack[3]
     cache = None
     if parent_stack.function == "auto_cache_wrapper":
         frame = parent_stack.frame.f_locals
