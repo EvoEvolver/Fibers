@@ -13,6 +13,7 @@ import os
 from forest import build_dir, asset_dir, lazy_build, build
 import sys
 
+DEFAULT_PORT = 29999
 class ForestConnector:
     """
     The connector to connect to the Forest visualization.
@@ -25,6 +26,7 @@ class ForestConnector:
         self.app.config['SECRET_KEY'] = 'secret!'
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
         self.tree = tree
+        self.port = DEFAULT_PORT
         # to hide warnings from flask.
         import logging
         log = logging.getLogger('werkzeug')
@@ -33,7 +35,7 @@ class ForestConnector:
         cli.show_server_banner = lambda *x: None
         if tree is not None:
             # An initial tree is given.
-            self.update_tree(tree)
+            self.tree = tree
 
     def update_tree(self, tree):
         self.tree = tree
@@ -56,16 +58,16 @@ class ForestConnector:
 
         # check if mode exists in environment variable, and check if it is dev if present.
         dev_mode = (os.getenv("mode") is not None and os.getenv("mode") == "dev")
-        port = 30000 + os.getpid() % 10000 if not dev_mode else 29999
+        self.port = 30000 + os.getpid() % 10000 if not dev_mode else 29999
 
         def run_socketio():
-            self.socketio.run(self.app, allow_unsafe_werkzeug=True, port=port)
+            self.socketio.run(self.app, allow_unsafe_werkzeug=True, port=self.port)
 
         socketio_thread = threading.Thread(target=run_socketio)
         socketio_thread.start()
 
 
-        url = f"http://127.0.0.1:{port}/visualization"
+        url = f"http://127.0.0.1:{self.port}/visualization"
 
         # Open the URL in the default web browser
         if not dev_mode: webbrowser.open(url)
