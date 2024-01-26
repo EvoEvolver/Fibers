@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import time
 from typing import Dict, List, Callable, Tuple
 import dill
 from bidict import bidict
@@ -231,7 +233,7 @@ class Tree:
     ## Visualization of tree in React by Socket.
     """
 
-    def show_tree_gui_react(self, renderer=None):
+    def show_tree_gui_react(self, renderer=None, stay_connected=False):
         """
         Show the tree in a webpage
         """
@@ -241,9 +243,13 @@ class Tree:
         tree_json = renderer.render_to_json_old(self.root)
 
         if ForestConnected not in self.class_data:
-            forest_connector = ForestConnector(tree_json)
+            forest_connector = ForestConnector()
             self.class_data[ForestConnected] = forest_connector
             forest_connector.run()
+            forest_connector.update_tree(tree_json)
+            if not stay_connected:
+                time.sleep(0.1)
+                forest_connector.stop()
         else:
             forest_connector = self.class_data[ForestConnected]
             forest_connector.update_tree(tree_json)
