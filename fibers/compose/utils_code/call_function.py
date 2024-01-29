@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import  List
 
 import numpy
 
@@ -85,75 +85,105 @@ def get_truncated_repr(obj, limit=30):
         repr_str = repr_str[:limit] + "..." + repr_str[-1:]
     return repr_str, classname
 
-@standard_multi_attempts
-def call_function_node(node: Node, var_table: VariableTable, requirement: str):
-    func = get_obj(node)
-    func_header = None
-    try:
+
+def get_functions_in_prompt(nodes: List[Node]):
+    prompt = ""
+    for node in nodes:
+        func = get_obj(node)
         func_header = get_function_header(func)
-    except:
-        print(func)
-
-    prompt = f"""
-You are required to call the following function to meet the requirement:
-
-Function header:
-{func_header}
-"""
-    if node.isinstance(CodeSummarizedNodeClass):
-        summary = CodeSummarizedNodeClass.get_summary(node)
         prompt += f"""
-Function summary:
-{summary}
+Function header and content summary:
+{func_header}"""
+        if node.isinstance(CodeSummarizedNodeClass):
+            summary = CodeSummarizedNodeClass.get_summary(node)
+            prompt += f"""    # {summary}
 """
-    prompt += f"""
-Requirement:
+    return prompt
+
+@standard_multi_attempts
+def call_function_node(func_nodes: List[Node], var_table: VariableTable, requirement: str):
+    prompt = f"""You are required to directly output Python codes to meet the following requirement:
 {requirement}
-    
-You are required to output a Python dict of the following format:"""
-    prompt += """
-{
-    "variable_names": <list of names of the variable for storing the result. it contains one element when the return value is single>,
-    "variable_docs": <list of documentation of the variable for better understanding of others. should match with variable_names>,
-    "args": [arg1, arg2, ...] (without quotes if you refer to variables),
-    "kwargs": {"kwarg1": kwarg1, ...}
-}"""
-    prompt += """
-Please refer to the function header for a correct format of the arguments.
 """
+    if len(func_nodes) != 0:
+        prompt += f"""
+Here are the functions in the scope that you can call to meet the requirement:
+"""
+        prompt += get_functions_in_prompt(func_nodes)
+
+    prompt += f"""
+You are required to output Python code in the following format. You have to write the documentation of the return values. Your code must be executable.
+def answer():
+    ... (Your code here)
+    return return_value_1, return_value_2, ...
+    # return_value_1: documentation of the return value
+    # return_value_2: documentation of the return value
+    # ...
+    
+"""
+
     if not var_table.is_empty():
         prompt += f"""
-You can use the following variables for the arguments. 
+You can use the following variables that is available in the current scope.
 Variables:
 {var_table.get_prompt()}
-
-Important: When you use them in args or kwargs, you should use the variable name directly, without quotes!
 """
-    chat = Chat(prompt, "You are a helpful assistant who call Python functions. You should only output Python objects.")
-    res = chat.complete_chat_expensive()
+    prompt += f"""Requirement of output: 
+You are not allowed to modify the variables expect in the line of function call.
+You should not use any variable that is not in the current scope.
+You should not use import statement.
+Start your answer with "def answer()"
+"""
+    chat = Chat(prompt,
+                "You are a code generator who only outputs Python code. You should only output Python code.")
+    code_raw = chat.complete_chat_expensive()
     print(chat)
-    exec_function(func, res, var_table)
-    return var_table
 
-def exec_function(func: Callable, caller_dict_str: str, var_table: VariableTable):
+    code_exec = process_and_run_code(code_raw, func_nodes, var_table)
+
+    return code_exec
+
+
+def process_and_run_code(code_raw, func_nodes, var_table):
+    if "```python" in code_raw:
+        code_raw = code_raw.split("```python")[1]
+        code_raw = code_raw.split("```")[0]
+    new_vars = {}
+    code_lines = code_raw.split("\n")
+    for i, line in enumerate(code_lines):
+        if line.strip().startswith("return"):
+            for j in range(i + 1, len(code_lines)):
+                line = code_lines[j].strip()
+                if line.startswith("#"):
+                    line = line[1:].strip()
+                    if ":" not in line:
+                        continue
+                    first = line.index(":")
+                    name = line[:first]
+                    docs = line[first + 1:]
+                    name = name.strip()
+                    docs = docs.strip()
+                    if name != "None":
+                        new_vars[name] = docs
+                else:
+                    break
+            break
     interpreter = var_table.get_interpreter()
-    caller_dict = interpreter(caller_dict_str)
-    args = caller_dict["args"]
-    kwargs = caller_dict["kwargs"]
-    return_value = func(*args, **kwargs)
-    variable_names = caller_dict["variable_names"]
-    variable_docs = caller_dict["variable_docs"]
-    if len(variable_names) == 0:
-        return
-    if len(variable_names) == 1:
-        return_value = (return_value,)
-    if len(variable_names) > 1:
-        if not isinstance(return_value, tuple):
-            raise ValueError("The return value is not a tuple, but the variable_names has more than one element.")
-        if len(variable_names) != len(return_value):
-            raise ValueError("The length of variable_names is not equal to the length of the return value.")
-    for name, value, docs in zip(variable_names, return_value, variable_docs):
-        var_table.add_variable(name, value, docs)
+    for func_node in func_nodes:
+        func = get_obj(func_node)
+        interpreter.symtable[func.__name__] = func
+    code_exec = code_raw
+    if len(new_vars) == 0:
+        code_exec += "\nanswer()"
+    else:
+        return_value = ", ".join(new_vars.keys())
+        code_exec += f"""
+{return_value} = answer()"""
+    interpreter(code_exec)
+    for name, docs in new_vars.items():
+        var_table.add_variable(name, interpreter.symtable[name], docs)
+    return code_exec
+
 
 @example
 def example():
@@ -166,7 +196,7 @@ def example():
                                   'get_a_beaker_of_salt_water'))
     variables = VariableTable()
     variables.add_variable("water_volume", 1000, "The volume of water in the beaker.")
-    available_vars = call_function_node(node, variables,
+    available_vars = call_function_node([node], variables,
                                         "the water volume should be water_volume, salt volume is 10. name the returned beaker as zijian_water")
     print(available_vars.get_prompt())
 

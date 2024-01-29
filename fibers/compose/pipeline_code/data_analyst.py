@@ -5,9 +5,11 @@ from matplotlib import pyplot as plt
 # Data generation
 """
 
-def get_data(noise_scale=0.1):
+def get_experiment_data(noise_scale=0.1):
     """
     Generate data for the experiment.
+    Example: x, y = get_experiment_data()
+    Return: x of the data, y of the data
     """
     # Generate x in 0 to 10 with 0.01 interval
     x = np.arange(0, 10, 0.01)

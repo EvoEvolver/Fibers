@@ -19,9 +19,9 @@ def code_beam_searcher(root: Node, requirement: str, code_type: str, content_map
                      node.isinstance(CodeSummarizedNodeClass) and get_type(
                          node) == code_type]
     if len(nodes_related) == 0:
-        return None
-    nodes_related = filter_code_nodes(nodes_related, requirement+"\nYou must select exactly one index", content_map)
-    return nodes_related
+        return []
+    nodes_related = filter_code_nodes(nodes_related, requirement+"\nYou must select one index unless it is totally not related.", content_map)
+    return [nodes_related]
 
 def filter_code_nodes(nodes: List[Node], requirement: str, content_map):
     prompt = f"""
