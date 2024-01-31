@@ -26,53 +26,36 @@ class Rendered:
             "children": children,
             "data": {}
         }
-"""
- {
-                                props.node.data.tabs[selectedTab['value']] && selectedTab['value'] === "code" && 
-                                
-                                <CopyBlock
-                                text={props.node.data.tabs[selectedTab['value']].replace(/<br>/g, '\n')}
-                                showLineNumbers={10}
-                                language='python'
-                                wrapLines
-                                
-                              />
-                            }
 
-"""
 
 class Renderer:
     def __init__(self):
         pass
 
     @classmethod
+    def node_handler(cls, node, rendered: Rendered):
+        if node.isinstance(CodeNodeClass):
+            if get_type(node) == "function":
+                rendered.tabs["code"] = f"""
+        <Code
+        code="{html.escape(get_source(node))}"
+        """ + """
+        language="python"
+        />
+        """
+            del rendered.tabs["content"]
+        else:
+            for title, content in list(rendered.tabs.items()):
+                rendered.tabs[title] = "<span>" + content.strip().replace("\n\n",
+                                                                          "<br/>") + "</span>"
+
+    @classmethod
     def render(cls, node: Node) -> Rendered:
         rendered = Rendered()
         rendered.title = node.title()
         rendered.tabs["content"] = node.content
-        if node.isinstance(CodeNodeClass):
-            if get_type(node) == "function":
-                rendered.tabs["code"] = f"""
-<CopyBlock
-text="{html.escape(get_source(node))}"
-"""+"""
-showLineNumbers={false}
-language='python'
-theme={dracula}
-wrapLines
-codeBlock
-/>
-"""
 
-
-
-                del rendered.tabs["content"]
-
-        for title, content in list(rendered.tabs.items()):
-            if len(content.strip()) == 0:
-                del rendered.tabs[title]
-            #else:
-            #    rendered.tabs[title] = content.strip().replace("\n", "<br>")
+        cls.node_handler(node, rendered)
 
         for title, child in node.children().items():
             rendered.children.append(cls.render(child))
