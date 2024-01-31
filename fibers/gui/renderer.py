@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import html
+
 from fibers.tree.node_class import CodeNodeClass
 from fibers.tree.node_class.code_node import get_type, get_source
 from typing import TYPE_CHECKING
@@ -23,7 +26,20 @@ class Rendered:
             "children": children,
             "data": {}
         }
+"""
+ {
+                                props.node.data.tabs[selectedTab['value']] && selectedTab['value'] === "code" && 
+                                
+                                <CopyBlock
+                                text={props.node.data.tabs[selectedTab['value']].replace(/<br>/g, '\n')}
+                                showLineNumbers={10}
+                                language='python'
+                                wrapLines
+                                
+                              />
+                            }
 
+"""
 
 class Renderer:
     def __init__(self):
@@ -36,14 +52,27 @@ class Renderer:
         rendered.tabs["content"] = node.content
         if node.isinstance(CodeNodeClass):
             if get_type(node) == "function":
-                rendered.tabs["code"] = get_source(node)
+                rendered.tabs["code"] = f"""
+<CopyBlock
+text="{html.escape(get_source(node))}"
+"""+"""
+showLineNumbers={false}
+language='python'
+theme={dracula}
+wrapLines
+codeBlock
+/>
+"""
+
+
+
                 del rendered.tabs["content"]
 
         for title, content in list(rendered.tabs.items()):
             if len(content.strip()) == 0:
                 del rendered.tabs[title]
-            else:
-                rendered.tabs[title] = content.strip().replace("\n", "<br>")
+            #else:
+            #    rendered.tabs[title] = content.strip().replace("\n", "<br>")
 
         for title, child in node.children().items():
             rendered.children.append(cls.render(child))

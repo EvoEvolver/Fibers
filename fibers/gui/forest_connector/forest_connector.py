@@ -23,7 +23,7 @@ class ForestServer:
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
 
         # check if mode exists in environment variable, and check if it is dev if present.
-        self.in_dev_mode = (os.getenv("mode") is not None and os.getenv("mode") == "dev")
+        self.in_dev_mode = (os.getenv("forest_dev_mode") is not None and os.getenv("forest_dev_mode") == "True")
         self.port = 30000 + os.getpid() % 10000 if not self.in_dev_mode else 29999
 
         self.connected = False
@@ -99,9 +99,10 @@ class ForestConnector:
     Flask and socket will be running to exchange information between.
     """
 
-    def __init__(self):
+    def __init__(self, dev_mode=False):
         self.forest_conn: Connection = None
         self.forest_server_process: Process = None
+        os.putenv("forest_dev_mode", "True" if dev_mode else "False")
 
     def run(self):
         fibers_end, forest_end = Pipe()
