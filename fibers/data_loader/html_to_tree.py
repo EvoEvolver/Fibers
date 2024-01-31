@@ -1,3 +1,4 @@
+import base64
 import re
 from typing import List
 
@@ -14,8 +15,9 @@ def url_to_tree(url: str) -> Tree:
     return html_to_tree(html)
 
 
-def html_to_tree(html: str, to_markdown=True) -> Tree:
+def html_to_tree(html: str, to_markdown=False) -> Tree:
     soup = BeautifulSoup(html, "html.parser")
+    pre_process_html_tree(soup)
     title = soup.find("title")
     if title:
         title = title.text
@@ -25,7 +27,37 @@ def html_to_tree(html: str, to_markdown=True) -> Tree:
     tree = html_to_raw_tree(root, title=title)
     if to_markdown:
         html_to_markdown(tree.root)
+    post_process_html_tree(tree)
     return tree
+
+
+def pre_process_html_tree(soup: BeautifulSoup):
+    for script in soup(["script", "style"]):
+        # remove all javascript and stylesheet code
+        script.decompose()
+
+def image_to_base64_on_tree(tree: Tree):
+    for node in tree.all_nodes():
+        soup = BeautifulSoup(node.content, "html.parser")
+        image_to_base64(soup)
+        node.content = str(soup)
+
+def image_to_base64(soup: BeautifulSoup):
+    img_elements = soup.find_all("img")
+    for img_element in img_elements:
+        # get src of img element
+        src = img_element.get("src")
+        # open image file
+        with open(src, "rb") as f:
+            # convert image to base64
+            base64_img = base64.b64encode(f.read()).decode("utf-8")
+            # replace src with base64
+            img_element["src"] = f"data:image/png;base64,{base64_img}"
+
+def post_process_html_tree(tree):
+    for node in tree.all_nodes():
+        node.content = "<span>" + node.content + "</span>"
+
 
 
 def html_to_raw_tree(soup: BeautifulSoup, title="") -> Tree:
@@ -96,7 +128,7 @@ def bfs_on_soup(soup: BeautifulSoup):
         path, element = queue.pop(0)
         if hasattr(element, 'children'):  # check for leaf elements
             for child in element.children:
-                if child.name in ["html", "body", "div", "article", "main"]:
+                if child.name in ["html", "body", "div", "article", "main", "span"]:
                     queue.append(
                         (path + [child.name if child.name is not None else type(child)],
                          child))
@@ -118,6 +150,7 @@ def extract_article_root(soup: BeautifulSoup):
                 if child.name in ["p", "h1", "h2", "h3", "h4", "h5", "h6"]:
                     n_article_elements_here += 1
             n_article_elements.append(n_article_elements_here)
+            #print(n_article_elements_here, element.name, element.get("class"), element.get("id"))
     # find the div with the most article related elements
     max_n_article_elements = max(n_article_elements)
     max_n_article_elements_index = n_article_elements.index(max_n_article_elements)
