@@ -1,15 +1,17 @@
-from fibers.compose.pipeline_text.tree_preprocess import preprocess_text_tree_0
+from fibers.compose.pipeline_text.tree_preprocess import preprocess_text_tree
 
 from fibers.helper.cache.cache_service import caching
 
 from fibers.testing.testing_trees import loader
 
-tree = loader.load_sample_tree("scientific_understanding.tex")
+if __name__ == '__main__':
 
-tree.show_tree_gui_react()
+    tree = loader.load_sample_tree("scientific_understanding.tex")
 
-preprocess_text_tree_0(tree)
+    tree.show_tree_gui_react()
 
-tree.show_tree_gui_react()
+    preprocess_text_tree(tree)
 
-caching.save()
+    tree.show_tree_gui_react()
+
+    caching.save()

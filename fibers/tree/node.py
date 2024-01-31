@@ -44,6 +44,10 @@ class Node:
     def children(self) -> Dict[str, Node]:
         return self.tree.get_children_dict(self)
 
+    def first_child(self) -> Node:
+        for child in self.children().values():
+            return child
+
     def title(self) -> str:
         node_path = self.path()
         if len(node_path) == 0:

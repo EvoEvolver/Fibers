@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import inspect
 from typing import TYPE_CHECKING, Any
 
@@ -9,7 +10,17 @@ if TYPE_CHECKING:
     from fibers.tree import Node
 
 class CodeNodeClass(NodeClass):
-    pass
+    @classmethod
+    def render(cls, node: Node, rendered):
+            if get_type(node) == "function":
+                rendered.tabs["code"] = f"""
+        <Code
+        code="{html.escape(get_source(node))}"
+        """ + """
+        language="python"
+        />
+        """
+            del rendered.tabs["content"]
 
 
 def set_code_obj(node: Node, type_name: str, obj: Any):

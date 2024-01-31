@@ -1,8 +1,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Dict
 
+
+
 if TYPE_CHECKING:
     from fibers.tree import Node
+    from fibers.gui.renderer import Rendered
 
 
 class NodeClass:
@@ -19,3 +22,7 @@ class NodeClass:
     @classmethod
     def get_data(cls, node: Node) -> Dict:
         return node.class_data[cls]
+
+    @classmethod
+    def render(cls, node: Node, rendered: Rendered):
+        pass

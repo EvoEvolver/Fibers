@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import html
 
-from fibers.tree.node_class import CodeNodeClass
+from fibers.tree.node_class import CodeNodeClass, NodeClass
 from fibers.tree.node_class.code_node import get_type, get_source
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type, Callable, Dict
+
 if TYPE_CHECKING:
     from fibers.tree import Node
 
@@ -26,65 +27,41 @@ class Rendered:
             "children": children,
             "data": {}
         }
-"""
- {
-                                props.node.data.tabs[selectedTab['value']] && selectedTab['value'] === "code" && 
-                                
-                                <CopyBlock
-                                text={props.node.data.tabs[selectedTab['value']].replace(/<br>/g, '\n')}
-                                showLineNumbers={10}
-                                language='python'
-                                wrapLines
-                                
-                              />
-                            }
 
-"""
 
 class Renderer:
     def __init__(self):
-        pass
+        self.node_class_renderers: Dict[Type[NodeClass], Callable] = {
+            CodeNodeClass: CodeNodeClass.render
+        }
 
-    @classmethod
-    def render(cls, node: Node) -> Rendered:
+    """
+    def add_default_class_render(self, node_class: Type[NodeClass]):
+        self.node_class_renderers[node_class] = node_class.render
+
+    def add_class_render(self, node_class: Type[NodeClass], render: Callable):
+        self.node_class_renderers[node_class] = render
+
+    """
+
+    def node_handler(self, node, rendered: Rendered):
+        for node_class in node.class_data:
+            node_class.render(node, rendered)
+
+
+    def render(self, node: Node) -> Rendered:
         rendered = Rendered()
         rendered.title = node.title()
         rendered.tabs["content"] = node.content
-        if node.isinstance(CodeNodeClass):
-            if get_type(node) == "function":
-                rendered.tabs["code"] = f"""
-<CopyBlock
-text="{html.escape(get_source(node))}"
-"""+"""
-showLineNumbers={false}
-language='python'
-theme={dracula}
-wrapLines
-codeBlock
-/>
-"""
-
-
-
-                del rendered.tabs["content"]
-
-        for title, content in list(rendered.tabs.items()):
-            if len(content.strip()) == 0:
-                del rendered.tabs[title]
-            #else:
-            #    rendered.tabs[title] = content.strip().replace("\n", "<br>")
-
+        self.node_handler(node, rendered)
         for title, child in node.children().items():
-            rendered.children.append(cls.render(child))
-
+            rendered.children.append(self.render(child))
         return rendered
 
-    @classmethod
-    def render_to_json(cls, node: Node) -> dict:
-        return cls.render(node).to_json()
+    def render_to_json(self, node: Node) -> dict:
+        return self.render(node).to_json()
 
-    @classmethod
-    def render_to_json_old(cls, node: Node) -> dict:
+    def render_to_json_old(self, node: Node) -> dict:
         def new_to_old(new):
             new["id"] = new["title"]
             del new["tools"]
@@ -100,4 +77,4 @@ codeBlock
                 new_to_old(child)
             return new
 
-        return new_to_old(cls.render(node).to_json())
+        return new_to_old(self.render(node).to_json())
