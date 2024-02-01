@@ -44,4 +44,4 @@ class Document:
             section._to_tree(root)
 
     def show_tree_gui(self):
-        self.to_tree().show_tree_gui()
+        self.to_tree().show_tree_gui_old()

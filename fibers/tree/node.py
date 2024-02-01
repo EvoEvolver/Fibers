@@ -15,6 +15,8 @@ class Node:
     The relation between nodes are stored in the Tree class instance (self.tree).
     """
 
+    node_id = 0
+
     def __init__(self, tree: Tree):
         super().__init__()
 
@@ -24,6 +26,9 @@ class Node:
         self.tree: Tree = tree
         # The class data is used to store the data of the node class
         self.class_data = {}
+        # The node id is used to identify the node
+        self.node_id = Node.node_id
+        Node.node_id += 1
 
     def copy_to(self, tree: Tree):
         new_node = Node(tree)
@@ -94,6 +99,25 @@ class Node:
         self.tree.add_child(key, self, node)
         return node
 
+    def new_sibling_after(self, key: str) -> Node:
+        self_path = list(self.path())
+        new_path = self_path[:-1] + [key]
+        try:
+            existing_node = self.tree.get_node_by_path(new_path)
+            new_path[-1] = new_path[-1] + " *"
+        except:
+            existing_node = None
+        assert existing_node is None
+        new_node = self.tree.new_node_by_path(self_path[:-1] + [key])
+        parent_children = self.parent().children()
+        new_children_dict = {}
+        for title, node in list(parent_children.items())[:-1]:
+            new_children_dict[title] = node
+            if node is self:
+                new_children_dict[key] = new_node
+        self.tree.children[self.parent()] = new_children_dict
+        return new_node
+
     def s(self, key) -> Node:
         """
         Creating a new child node or addressing an existing child node
@@ -133,19 +157,47 @@ class Node:
     ## Function for change node's environment on its tree
     """
 
+    def reset_path(self, new_path: List[str]):
+        new_parent_path = tuple(new_path[:-1])
+        if new_parent_path not in self.tree.node_path.inverse:
+            parent = self.tree.new_node_by_path(new_parent_path)
+        else:
+            parent = self.tree.get_node_by_path(new_parent_path)
+        old_parent = self.parent()
+        if old_parent is not parent:
+            old_parent_children = old_parent.children()
+            del old_parent_children[self.title()]
+        old_path = list(self.path())
+        old_path_len = len(old_path)
+        for child in self.iter_subtree_with_dfs():
+            child_path = list(child.path())
+            new_child_path = new_path + child_path[old_path_len:]
+            del self.tree.node_path[child]
+            self.tree.node_path[child] = tuple(new_child_path)
+        self.tree.children[parent][new_path[-1]] = self
+        self.tree.node_path[self] = tuple(new_path)
+
+
     def reset_title(self, title: str, overlap=False):
         new_path = list(self.path())
         old_title = new_path[-1]
+        self_parent = self.parent()
 
         # Update the parent's children
-        parent_children = self.parent().children()
+        parent_children = self_parent.children()
         if title in parent_children:
             if not overlap:
                 raise ValueError(f"Node with title {title} already exists")
             else:
                 title = title + " (another)"
-        del parent_children[old_title]
-        parent_children[title] = self
+
+        new_parent_children = {}
+        for key, node in parent_children.items():
+            if node is self:
+                new_parent_children[title] = self
+            else:
+                new_parent_children[key] = node
+        self.tree.children[self_parent] = new_parent_children
 
         # Update the node path
         del self.tree.node_path[self]
@@ -200,6 +252,12 @@ class Node:
 
     def __repr__(self):
         return f"<{self.__class__.__name__}> {str(self.path())}"
+
+    def __hash__(self):
+        return self.node_id
+
+    def __eq__(self, other):
+        return self.node_id == other.node_id
 
     """
     ## Node iterators

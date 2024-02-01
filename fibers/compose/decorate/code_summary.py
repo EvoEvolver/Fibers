@@ -167,6 +167,6 @@ if __name__ == "__main__":
     tree = get_tree_for_module(core)
     summarize_code_tree(tree)
     content_map = ContentMap(lambda n: CodeSummarizedNodeClass.get_summary(n) or n.content)
-    tree.show_tree_gui(content_map)
+    tree.show_tree_gui_old(content_map)
     caching.save_used()
 

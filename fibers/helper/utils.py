@@ -51,6 +51,13 @@ class RobustParse:
 
 
 def parallel_map(func, *args, n_workers=8):
+    """
+    Example usage: `for i, res in parallel_map(lambda x: x + 1, [1, 2, 3, 4, 5], n_workers=4): do_something`
+    :param func: The function to apply on each element of args
+    :param args: The arguments to apply func
+    :param n_workers: Number of workers
+    :return:
+    """
     # Use concurrent.futures.ThreadPoolExecutor to parallelize
     # Use tqdm to show progress bar
     from fibers.helper.cache.cache_service import caching

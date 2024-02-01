@@ -37,4 +37,4 @@ def load_sample_tree(path: str) -> Tree:
 if __name__ == "__main__":
     #tree0 = load_sample_tree("dingzhen_world.json")
     tree1 = load_sample_tree("Feyerabend.md")
-    tree1.show_tree_gui()
+    tree1.show_tree_gui_old()

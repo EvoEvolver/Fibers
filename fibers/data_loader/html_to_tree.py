@@ -97,21 +97,15 @@ def set_content(node: Node, contents: List):
     for segment in contents:
         # judge if element is <p>
         if hasattr(segment, "name"):
-            if segment.name == "p":
-                segment = segment.text
-            elif segment.name in ["ul", "ol", "blockquote", "pre"]:
-                segment_contents[-1] += str(segment)
-                continue
+            if segment.name in ["p", "ul", "ol", "blockquote", "pre"]:
+                segment = str(segment)
             else:
                 segment = str(segment)
         else:
             segment = str(segment)
         if len(segment.strip()) == 0:
             continue
-        if len(segment_contents[-1]) + len(segment) < segment_length_threshold:
-            segment_contents[-1] += segment
-        else:
-            segment_contents.append(segment)
+        segment_contents.append(segment)
 
     if segment_contents[0] == "":
         segment_contents.pop(0)
@@ -147,7 +141,7 @@ def extract_article_root(soup: BeautifulSoup):
             # count the number of article related elements
             n_article_elements_here = 0
             for child in element.children:
-                if child.name in ["p", "h1", "h2", "h3", "h4", "h5", "h6"]:
+                if child.name in ["p", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote"]:
                     n_article_elements_here += 1
             n_article_elements.append(n_article_elements_here)
             #print(n_article_elements_here, element.name, element.get("class"), element.get("id"))
@@ -171,4 +165,4 @@ def html_to_markdown(root: Node):
 
 if __name__ == "__main__":
     doc = url_to_tree("https://plato.stanford.edu/entries/feyerabend/")
-    doc.show_tree_gui()
+    doc.show_tree_gui_old()

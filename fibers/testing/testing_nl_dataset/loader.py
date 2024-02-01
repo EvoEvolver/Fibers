@@ -41,15 +41,13 @@ def extract_dataset(name, number):
 @example
 def example_usage():
     from fibers.data_loader.html_to_tree import html_to_tree
-    from fibers.compose.pipeline_text.tree_preprocess import preprocess_text_tree_1
+    from fibers.compose.pipeline_text.tree_preprocess import preprocess_text_tree
     from fibers.helper.cache.cache_service import caching
     # 100
     data = extract_dataset("QuALITY.v1.0.1.dev", 7)
     tree = html_to_tree(data["article"], to_markdown=False)
-
-    #tree.show_tree_gui()
-    preprocess_text_tree_1(tree, fat_limit=150)
-    tree.show_tree_gui()
+    preprocess_text_tree(tree, fat_limit=150)
+    tree.show_tree_gui_react()
     caching.save_used()
 
 

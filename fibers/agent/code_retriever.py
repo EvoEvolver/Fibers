@@ -46,5 +46,5 @@ if __name__ == "__main__":
 
     agent = CodeRetriever(get_tree_for_module(v_lab))
     nodes = agent.get_function("get a beaker of salt water")
-    Tree.from_nodes(nodes).show_tree_gui()
+    Tree.from_nodes(nodes).show_tree_gui_old()
 

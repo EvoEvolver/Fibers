@@ -15,4 +15,4 @@ if __name__ == "__main__":
     from fibers.testing.testing_trees.loader import load_sample_src
     src = load_sample_src("Feyerabend.md")
     tree = markdown_to_tree(src)
-    tree.show_tree_gui()
+    tree.show_tree_gui_old()

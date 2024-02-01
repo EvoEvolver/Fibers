@@ -134,4 +134,4 @@ if __name__ == "__main__":
     from fibers.testing.testing_trees import loader
     tex = loader.load_sample_src("scientific_understanding.tex")
     doc = latex_to_tree(tex)
-    doc.show_tree_gui()
+    doc.show_tree_gui_old()

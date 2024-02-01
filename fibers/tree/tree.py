@@ -14,7 +14,7 @@ class Tree:
     Store the information of nodes contained
     The information is mainly the path and children of each node
     """
-
+    tree_id = 0
     def __init__(self, root_content=""):
         """
         :param root_content: The content of the root of the tree
@@ -29,6 +29,8 @@ class Tree:
         root.set_content(root_content)
 
         self.class_data = {}
+        self.tree_id = Tree.tree_id
+        Tree.tree_id += 1
 
     """
     ## Node information query
@@ -38,7 +40,7 @@ class Tree:
         try:
             return self.node_path[node]
         except KeyError:
-            raise Exception(f"Node {node} not in tree")
+            raise Exception(f"Node {node.node_id} not in tree")
 
     def get_children_dict(self, node: Node) -> Dict[str, Node]:
         return self.children[node]
@@ -58,7 +60,7 @@ class Tree:
         return node in self.node_path
 
     def all_nodes(self):
-        return list(self.node_path.keys())
+        return list(self.children.keys())
 
     @property
     def root(self) -> Node:
@@ -85,7 +87,10 @@ class Tree:
 
     def get_node_by_path(self, path: Tuple | List) -> Node | None:
         path = tuple(path)
-        return self.node_path.inverse[path]
+        try:
+            return self.node_path.inverse[path]
+        except KeyError:
+            return None
 
     def add_node_by_path(self, path: Tuple[str] | List[str], node: Node | str) -> Node:
         if isinstance(node, str):
@@ -136,9 +141,10 @@ class Tree:
         :param node:
         :return:
         """
-        children_dict = self.get_children_dict(node)
-        for key, child in list(children_dict.items()):
-            self.remove_node(child)
+        descendants = list(node.iter_subtree_with_dfs())[:-1]
+        for descendant in descendants:
+            del self.node_path[descendant]
+            del self.children[descendant]
 
         parent = self.get_parent(node)
         children_dict = self.get_children_dict(parent)
@@ -149,17 +155,6 @@ class Tree:
 
         del self.children[node]
         del self.node_path[node]
-
-    """
-    ## Visualization of tree
-    """
-
-    def show_tree_gui(self, content_map: ContentMap = None):
-        """
-        Show the tree in a webpage
-        """
-        from fibers.gui.tree import draw_treemap
-        draw_treemap(self.root, content_map)
 
     """
     ## Sub-tree extraction
@@ -228,29 +223,33 @@ class Tree:
     def __repr__(self):
         return f"<{self.__class__.__name__}> {self.root.content!r}"
 
-
     """
-    ## Visualization of tree in React by Socket.
-    """
+       ## Visualization of tree
+       """
 
-    def show_tree_gui_react(self, renderer=None, stay_connected=False, dev_mode=False):
+    def show_tree_gui_old(self, content_map: ContentMap = None):
+        """
+        Show the tree in a webpage
+        """
+        from fibers.gui.tree import draw_treemap
+        draw_treemap(self.root, content_map)
+
+
+    def show_tree_gui_react(self, renderer=None, dev_mode=False):
         """
         Show the tree in a webpage
         """
         if renderer is None:
             renderer = Renderer
 
-        tree_json = renderer.render_to_json(self.root)
+        tree_json = renderer().render_to_json(self.root)
 
-        if ForestConnected not in self.class_data:
-            forest_connector = ForestConnector(dev_mode=dev_mode)
-            self.class_data[ForestConnected] = forest_connector
-            forest_connector.run()
-            forest_connector.update_tree(tree_json)
-            if not stay_connected:
-                time.sleep(0.1)
-                forest_connector.stop()
-        else:
-            forest_connector = self.class_data[ForestConnected]
-            forest_connector.update_tree(tree_json)
+        forest_connector = ForestConnector(dev_mode=dev_mode)
+        forest_connector.run()
+        forest_connector.update_tree(tree_json)
 
+        time.sleep(0.1)
+        forest_connector.stop()
+
+    def show_interactive_gui(self, renderer):
+        pass

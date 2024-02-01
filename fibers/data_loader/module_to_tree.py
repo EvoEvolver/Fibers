@@ -92,4 +92,4 @@ if __name__ == "__main__":
     from fibers.testing.testing_modules import v_lab
 
     tree = get_tree_for_module(v_lab)
-    tree.show_tree_gui()
+    tree.show_tree_gui_old()
