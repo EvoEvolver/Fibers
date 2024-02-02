@@ -24,10 +24,14 @@ This modules is for extract the information from python modules and build a tree
 def get_tree_for_module(module):
     module_name = module.__name__
     tree = Tree(
-        "Tree of module: " + module_name)
-    module_struct = build_module_tree(module)
-    build_tree_for_struct(module_struct, tree.root)
+        "Module: " + module_name)
+    add_module_tree_to_node(module, tree.root)
     return tree
+
+
+def add_module_tree_to_node(module, node: Node):
+    module_struct = build_module_tree(module)
+    build_tree_for_struct(module_struct, node)
 
 
 def build_tree_for_struct(curr_struct: Struct, root_note: Node) -> Node:

@@ -110,7 +110,7 @@ class ForestConnector:
         self.forest_server_process = p
         p.start()
         self.forest_conn = fibers_end
-        if self.forest_conn.poll(1):
+        if self.forest_conn.poll(2):
             msg, data = self.forest_conn.recv()
             assert msg == "connected"
         else:

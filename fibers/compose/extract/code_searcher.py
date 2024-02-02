@@ -20,8 +20,8 @@ def code_beam_searcher(root: Node, requirement: str, code_type: str, content_map
                          node) == code_type]
     if len(nodes_related) == 0:
         return []
-    nodes_related = filter_code_nodes(nodes_related, requirement+"\nYou must select one index unless it is totally not related.", content_map)
-    return [nodes_related]
+    nodes_related = filter_code_nodes(nodes_related, requirement+"\nYou must select at least one index unless it is totally not related.", content_map)
+    return nodes_related
 
 def filter_code_nodes(nodes: List[Node], requirement: str, content_map):
     prompt = f"""
@@ -31,13 +31,15 @@ Here are a few Python objects:
 You are trying to find Python objects that most satisfy the following requirement:
 {requirement}
 
-Output the index that matches the requirement the most. Start your answer with "Index:".
+Output the indices that matches the requirement the most. Give your answer like "Index: 1, 2".
 """
     chat = Chat(user_message=prompt,
                 system_message="You are a helpful assistant.")
     res = chat.complete_chat_expensive()
     res = res.split("Index:")[1].strip()
-    matched_node = nodes[int(res)]
+    res = res.split(",")
+    res = [int(i.strip()) for i in res]
+    matched_node = [nodes[i] for i in res]
     return matched_node
 
 

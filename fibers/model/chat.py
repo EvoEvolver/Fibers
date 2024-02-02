@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import base64
 import copy
+from io import BytesIO
+
+from PIL.Image import Image
 
 from fibers.debug.logger import Logger
 from fibers.gui.dictionary_viewer import show_document_with_key_gui
@@ -13,9 +16,8 @@ from fibers.model.openllm import (complete_chat as openllm_complete_chat,
                                   complete_chat_expensive as openllm_complete_chat_expensive)
 
 
-def encode_image(image_path):
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
+def encode_image(image_file: BytesIO):
+    return base64.b64encode(image_file.read()).decode('utf-8')
 
 
 class ChatLogger(Logger):
@@ -48,12 +50,7 @@ class Chat:
             "role": role
         })
 
-    def _add_image_message(self, image_path: str, from_internet, detail: str):
-        if not from_internet:
-            base64_image = encode_image(image_path)
-            url = f"data:image/jpeg;base64,{base64_image}"
-        else:
-            url = image_path
+    def _add_image_message(self, url: str, detail: str):
         self.history.append({
             "role": "user",
             "content": [{
@@ -73,7 +70,20 @@ class Chat:
         :param image_path: The path of the image
         :param detail: Low or high fidelity image understanding ("auto", "low", "high")
         """
-        self._add_image_message(image_path, from_internet, detail)
+        if not from_internet:
+            with open(image_path, "rb") as image_file:
+                base64_image = encode_image(image_file)
+            url = f"data:image/jpeg;base64,{base64_image}"
+        else:
+            url = image_path
+        self._add_image_message(url, detail)
+
+    def add_image_message_by_obj(self, image: Image, detail="auto"):
+        buffered = BytesIO()
+        image.save(buffered, format="png")
+        base64_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        url = f"data:image/jpeg;base64,{base64_image}"
+        self._add_image_message(url, detail)
 
     def add_assistant_message(self, content: any):
         self._add_message(content, "assistant")

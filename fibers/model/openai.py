@@ -40,6 +40,7 @@ def _complete_chat(chat: Chat, options=None):
     _options = {"model": normal_model, **options, **default_options}
     if contains_image(chat):
         _options["model"] = "gpt-4-vision-preview"
+        _options["max_tokens"] = 2000
     return openai.ChatCompletion.create(
         messages=chat.get_log_list(), **_options).choices[
         0].message.content

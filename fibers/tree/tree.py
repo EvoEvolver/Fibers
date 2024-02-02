@@ -246,9 +246,9 @@ class Tree:
 
         forest_connector = ForestConnector(dev_mode=dev_mode)
         forest_connector.run()
+        time.sleep(0.2)
         forest_connector.update_tree(tree_json)
-
-        time.sleep(0.1)
+        time.sleep(0.2)
         forest_connector.stop()
 
     def show_interactive_gui(self, renderer):

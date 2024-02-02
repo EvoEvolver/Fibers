@@ -1,4 +1,4 @@
-from typing import  List
+from typing import List
 
 import numpy
 
@@ -14,6 +14,7 @@ from fibers.compose.decorate.code_summary import CodeSummarizedNodeClass, \
 from fibers.compose.utils_code.header import get_function_header
 from fibers.tree import Node
 from asteval import Interpreter
+
 
 class VariableTable:
     def __init__(self):
@@ -53,7 +54,8 @@ def get_value_in_prompt(value):
     elif isinstance(value, tuple) or isinstance(value, list):
         res = "[" if isinstance(value, list) else "("
         if len(value) > long_limit:
-            res += get_value_in_prompt(value[0]) + ", " + get_value_in_prompt(value[1]) + ", ..."
+            res += get_value_in_prompt(value[0]) + ", " + get_value_in_prompt(
+                value[1]) + ", ..."
             res += ", " + get_value_in_prompt(value[-1])
         else:
             res += ", ".join([get_value_in_prompt(v) for v in value])
@@ -78,6 +80,7 @@ def get_value_in_prompt(value):
         repr_str, classname = get_truncated_repr(value)
         return f"{repr_str} Type: {classname}"
 
+
 def get_truncated_repr(obj, limit=30):
     classname = obj.__class__.__name__
     repr_str = repr(obj)
@@ -92,7 +95,7 @@ def get_functions_in_prompt(nodes: List[Node]):
         func = get_obj(node)
         func_header = get_function_header(func)
         prompt += f"""
-Function header and content summary:
+Header and content summary of a function:
 {func_header}"""
         if node.isinstance(CodeSummarizedNodeClass):
             summary = CodeSummarizedNodeClass.get_summary(node)
@@ -100,8 +103,10 @@ Function header and content summary:
 """
     return prompt
 
+
 @standard_multi_attempts
-def call_function_node(func_nodes: List[Node], var_table: VariableTable, requirement: str):
+def call_function_node(func_nodes: List[Node], var_table: VariableTable,
+                       requirement: str):
     prompt = f"""You are required to directly output Python codes to meet the following requirement:
 {requirement}
 """
@@ -144,7 +149,7 @@ Start your answer with "def answer()"
     return code_exec
 
 
-def process_and_run_code(code_raw, func_nodes, var_table):
+def process_and_run_code(code_raw, func_nodes, var_table) -> str:
     if "```python" in code_raw:
         code_raw = code_raw.split("```python")[1]
         code_raw = code_raw.split("```")[0]
