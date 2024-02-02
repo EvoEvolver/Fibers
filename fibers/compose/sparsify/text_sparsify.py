@@ -64,8 +64,6 @@ def weight_reduce_brutal(tree: Tree, fat_limit=50):
         for node in tree.iter_with_bfs():
             if count_words(node.content) > fat_limit * 1.5:
                 big_fat_nodes.append(node)
-                print(f"Fat node: {node.path()}")
-                print(node.content)
             elif count_words(node.content) > fat_limit:
                 mid_fat_nodes.append(node)
         if len(big_fat_nodes) == 0:
@@ -132,6 +130,7 @@ def get_left_most_descendant(node: Node):
 def merge_children(root: Node):
     children_list = list(root.children().values())
     nodes_to_remove = []
+    node_map = {}
     i = 0
     while i < len(children_list) - 1:
         child = children_list[i]
@@ -155,7 +154,12 @@ def merge_children(root: Node):
             remove_bad_reason(child, "overlap_to_sibling")
             i += 1
         elif relation == "subsequent":
-            node_1.content += "\n" + node_2.content
+            if node_1 in nodes_to_remove:
+                node_to_add = node_map[node_1]
+            else:
+                node_to_add = node_1
+            node_to_add.content += "\n" + node_2.content
+            node_map[node_2] = node_to_add
             nodes_to_remove.append(node_2)
             children_list = list(root.children().values())
             i -= 1

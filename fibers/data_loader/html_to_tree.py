@@ -95,14 +95,7 @@ segment_length_threshold = 1500
 def set_content(node: Node, contents: List):
     segment_contents = [""]
     for segment in contents:
-        # judge if element is <p>
-        if hasattr(segment, "name"):
-            if segment.name in ["p", "ul", "ol", "blockquote", "pre"]:
-                segment = str(segment)
-            else:
-                segment = str(segment)
-        else:
-            segment = str(segment)
+        segment = str(segment)
         if len(segment.strip()) == 0:
             continue
         segment_contents.append(segment)

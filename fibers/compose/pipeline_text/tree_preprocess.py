@@ -1,3 +1,4 @@
+from fibers.compose.sparsify.shape_optimize import merge_single_child_into_parent
 from moduler.decorator import example
 
 from fibers.helper.cache.cache_service import caching
@@ -13,13 +14,13 @@ def make_summary_and_title(tree: Tree):
 
 
 def preprocess_text_tree(tree: Tree, fat_limit=100):
+    merge_single_child_into_parent(tree.root)
     break_and_merge_siblings(tree)
     weight_reduce_brutal(tree, fat_limit)
+    merge_single_child_into_parent(tree.root)
     reset_bad_titles(tree.root.first_child())
     set_content_summary(tree.root.first_child(), "The summary should be about 50 words")
     caching.save()
-    #reduce_max_children_number(tree.root.first_child(), 5)
-    #caching.save()
 
 
 @example
