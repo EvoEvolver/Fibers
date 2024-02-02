@@ -1,96 +1,25 @@
 from __future__ import annotations
-
-import time
-from multiprocessing import Process, Pipe
-from multiprocessing.connection import Connection
-
 import webbrowser
-
-from flask import Flask, render_template, request
-from flask_socketio import SocketIO, emit
-import threading
-
 import os
-
 from forest import build_dir, asset_dir, lazy_build, build
-import sys
+import time
+import requests
+import json
+import subprocess
+import atexit
 
-class ForestServer:
-    def __init__(self, fibers_conn: Connection):
-        lazy_build()
-        self.app = Flask(__name__, template_folder=build_dir, static_folder=asset_dir, static_url_path='/assets')
-        self.app.config['SECRET_KEY'] = 'secret!'
-        self.socketio = SocketIO(self.app, cors_allowed_origins="*")
+DEFAULT_PORT = 29999
 
-        # check if mode exists in environment variable, and check if it is dev if present.
-        self.in_dev_mode = (os.getenv("forest_dev_mode") is not None and os.getenv("forest_dev_mode") == "True")
-        self.port = 30000 + os.getpid() % 10000 if not self.in_dev_mode else 29999
-
-        self.connected = False
-
-        self.fibers_conn = fibers_conn
-        # to hide warnings from flask.
-        import logging
-        log = logging.getLogger('werkzeug')
-        log.disabled = True
-        cli = sys.modules['flask.cli']
-        cli.show_server_banner = lambda *x: None
-
-    def run(self):
-        @self.socketio.on('connect')
-        def handle_connect():
-            emit('Connected!')
-            self.connected = True
-
-        @self.socketio.on('requestTree')
-        def requestTree():
-            pass
-            #emit('setTree', self.tree)
-
-        @self.app.route('/visualization')
-        def visualization():
-            return render_template('index.html')
-
-        @self.app.route('/stop')
-        def stop():
-            self.socketio.stop()
-
-        def run_socketio():
-            self.socketio.run(self.app, allow_unsafe_werkzeug=True, port=self.port)
-
-        socketio_thread = threading.Thread(target=run_socketio)
-        socketio_thread.start()
-
-        url = f"http://127.0.0.1:{self.port}/visualization"
-        # Open the URL in the default web browser
-        if not self.in_dev_mode: webbrowser.open(url)
-
-        while not self.connected:
-            time.sleep(0.1)
-
-        print("Running on", url)
-        self.fibers_conn.send(("connected", None))
-
-        while True:
-            try:
-                msg, data = self.fibers_conn.recv()
-                if msg == "stop":
-                    stop()
-                elif msg == "update_tree":
-                    self.update_tree(data)
-            except EOFError:
-                break
+def cleanup_subprocess(process):
+    if process.poll() is None:
+        process.terminate()
+        process.wait()
 
 
-    def update_tree(self, tree_json):
-        self.socketio.emit('setTree', tree_json)
-
-
-
-def run_server(fibers_conn: Connection):
-    server = ForestServer(fibers_conn)
-    server.run()
-
+def is_port_in_use(port: int) -> bool:
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
 
 
 class ForestConnector:
@@ -99,37 +28,74 @@ class ForestConnector:
     Flask and socket will be running to exchange information between.
     """
 
-    def __init__(self, dev_mode=False):
-        self.forest_conn: Connection = None
-        self.forest_server_process: Process = None
-        os.putenv("forest_dev_mode", "True" if dev_mode else "False")
+    def __init__(self, dev_mode = False):
+        lazy_build()
+        self.trees = {}
+        self.port = 30000 + os.getpid() % 10000 if not dev_mode else 29999
+        self.p = None
+        self.dev_mode = dev_mode
+
+    def update_tree(self, tree, tree_id):
+
+        self.trees[tree_id] = tree
+        url = f'http://127.0.0.1:{self.port}/updateTree'
+
+        payload = json.dumps({
+            "tree": tree,
+            "tree_id": tree_id
+        })
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        response = requests.request("PUT", url, headers=headers, data=payload)
 
     def run(self):
-        fibers_end, forest_end = Pipe()
-        p = Process(target=run_server, args=((forest_end,)))
-        self.forest_server_process = p
-        p.start()
-        self.forest_conn = fibers_end
-        if self.forest_conn.poll(1):
-            msg, data = self.forest_conn.recv()
-            assert msg == "connected"
-        else:
-            print("Forest visualization server not responding.")
+        # check if current process has finished its bootstrapping phase or not.
+        # get project root.
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-    def update_tree(self, tree_json):
-        self.forest_conn.send(("update_tree", tree_json))
+        if is_port_in_use(self.port):
+            # throw error
+            raise Exception(f"Port {self.port} is not available.")
+        self.p = subprocess.Popen(['python3', f'{project_root}/fibers/gui/forest_connector/server.py', str(self.port)])
+
+        atexit.register(cleanup_subprocess, self.p)
+
+        # Wait for the server to start.
+        url = f"http://127.0.0.1:{self.port}/visualization"
+
+        initialization_success = False
+        while not initialization_success or not is_port_in_use(self.port):
+            try:
+                initialization_success = True
+            except Exception as e:
+                print(e)
+                time.sleep(0.1)
+                continue
+
+        # Open the URL in the default web browser
+        if not self.dev_mode:
+            webbrowser.open(url)
 
     def stop(self):
-        self.forest_server_process.terminate()
+        try:
+            # terminate the subprocess associated with this connector when this function is called.
+            # TODO: check if the subprocess is still running.
+            self.p.terminate()
+            self.p.wait()  # Wait for the subprocess to complete after termination
+            print("Subprocess terminated successfully!")
 
+        except KeyboardInterrupt:
+            # If the user presses Ctrl+C, terminate the subprocess
+            self.p.terminate()
+            self.p.wait()
+            print("Subprocess terminated successfully!")
+
+        finally:
+            # Ensure the subprocess is terminated even if an exception occurs
+            self.p.terminate()
+            self.p.wait()
 
 
 class ForestConnected:
     pass
-
-
-if __name__ == '__main__':
-    from fibers.testing.testing_trees.loader import load_sample_tree
-    tree = load_sample_tree("Feyerabend.md")
-    tree.show_tree_gui_react()
-
