@@ -244,10 +244,11 @@ class Tree:
             renderer = Renderer
 
         tree_json = renderer().render_to_json(self.root)
-
-        self.forest_connector = ForestConnector(dev_mode=dev_mode)
-        self.forest_connector.run()
+        if self.forest_connector is None:
+            self.forest_connector = ForestConnector(dev_mode=dev_mode)
+            self.forest_connector.run()
         self.forest_connector.update_tree(tree_json, self.tree_id)
+        time.sleep(0.3)
 
     def stop_tree_gui_react(self):
         self.forest_connector.stop()

@@ -52,12 +52,12 @@ class ForestConnector:
     def run(self):
         # check if current process has finished its bootstrapping phase or not.
         # get project root.
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        project_root = os.path.dirname(os.path.abspath(__file__))
 
         if is_port_in_use(self.port):
             # throw error
             raise Exception(f"Port {self.port} is not available.")
-        self.p = subprocess.Popen(['python3', f'{project_root}/fibers/gui/forest_connector/server.py', str(self.port)])
+        self.p = subprocess.Popen(['python3', f'{project_root}/server.py', str(self.port)])
 
         atexit.register(cleanup_subprocess, self.p)
 
