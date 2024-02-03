@@ -15,6 +15,7 @@ class Tree:
     The information is mainly the path and children of each node
     """
     tree_id = 0
+    forest_connector = None
     def __init__(self, root_content=""):
         """
         :param root_content: The content of the root of the tree
@@ -31,7 +32,6 @@ class Tree:
         self.class_data = {}
         self.tree_id = Tree.tree_id
         Tree.tree_id += 1
-        self.forest_connector = None
 
     """
     ## Node information query
@@ -244,13 +244,14 @@ class Tree:
             renderer = Renderer
 
         tree_json = renderer().render_to_json(self.root)
-        if self.forest_connector is None:
-            self.forest_connector = ForestConnector(dev_mode=dev_mode)
-            self.forest_connector.run()
-        self.forest_connector.update_tree(tree_json, self.tree_id)
+        if Tree.forest_connector is None:
+            Tree.forest_connector = ForestConnector(dev_mode=dev_mode)
+            Tree.forest_connector.run()
+        Tree.forest_connector.update_tree(tree_json, self.tree_id)
         time.sleep(0.3)
 
     def stop_tree_gui_react(self):
-        self.forest_connector.stop()
+        Tree.forest_connector.stop()
+
     def show_interactive_gui(self, renderer):
         pass
