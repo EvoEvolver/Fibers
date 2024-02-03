@@ -7,6 +7,7 @@ from fibers.tree.node_class import NodeClass
 
 if TYPE_CHECKING:
     from fibers.tree import Tree
+    from fibers.tree.node_attr import Attr
 
 
 class Node:
@@ -26,6 +27,8 @@ class Node:
         self.tree: Tree = tree
         # The class data is used to store the data of the node class
         self.class_data = {}
+
+        self.attrs: Dict[Type[Attr], Attr] = {}
         # The node id is used to identify the node
         self.node_id = Node.node_id
         Node.node_id += 1
@@ -34,6 +37,7 @@ class Node:
         new_node = Node(tree)
         new_node.content = copy(self.content)
         new_node.class_data = copy(self.class_data)
+        new_node.attrs = copy(self.attrs)
         return new_node
 
     """
@@ -296,6 +300,19 @@ class Node:
 
     def isinstance(self, node_class: Type[NodeClass]):
         return node_class in self.class_data.keys()
+
+    def has_attr(self, attr_class: Type[Attr]):
+        return attr_class in self.attrs.keys()
+
+    def get_attr(self, attr_class: Type[Attr]):
+        attr_value = self.get_attr_or_none(attr_class)
+        if attr_value is None:
+            return attr_class(self)
+        return attr_value
+
+
+    def get_attr_or_none(self, attr_class: Type[Attr]):
+        return self.attrs.get(attr_class, None)
 
     def add_class(self, node_class: Type[NodeClass]):
         if self.isinstance(node_class):

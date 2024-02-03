@@ -12,13 +12,13 @@ from fibers.helper.utils import RobustParse
 from fibers.model.chat import Chat
 from fibers.tree import Tree, Node
 from fibers.tree.node import ContentMap
-from fibers.tree.node_class import NodeClass
+from fibers.tree.node_attr import Attr
 from fibers.tree.prompt_utils import get_node_list_prompt
 
 
-class InstRunInfo(NodeClass):
-    init_by = "obj"
-    def __init__(self):
+class InstRun(Attr):
+    def __init__(self, node: Node):
+        super().__init__(node)
         self.decomposable = None
         self.executed = False
         self.code = None
@@ -26,16 +26,15 @@ class InstRunInfo(NodeClass):
         self.report_of_old_siblings = None
         self.report_of_self = None
 
-    @classmethod
-    def render(cls, node: Node, rendered):
-        obj = node.class_data[InstRunInfo]
+
+    def render(self, node: Node, rendered):
         content = [f"""
-    report_of_old_siblings: {obj.report_of_old_siblings} 
+    report_of_old_siblings: {self.report_of_old_siblings} 
     """]
-        if obj.code is not None:
-            content.append(f"""<Code code = "{html.escape(obj.code)}" language = "python" />""")
-        if obj.var_table_at_run is not None:
-            content.append(html.escape(obj.var_table_at_run).replace("\n", "<br/>"))
+        if self.code is not None:
+            content.append(f"""<Code code = "{html.escape(self.code)}" language = "python" />""")
+        if self.var_table_at_run is not None:
+            content.append(html.escape(self.var_table_at_run).replace("\n", "<br/>"))
 
         rendered.tabs["inst_run"] = "<br/>".join(content)
 
@@ -55,16 +54,16 @@ class InstructionRunner:
         self.beam_searcher = make_code_searcher("function", content_map)
         self.map_to_code_summary = content_map
 
-    def run_instruction(self, node: Node, related_functions: List[Node]):
-        instruction = node.content
+    def run_short_instruction(self, inst_node: Node, related_functions: List[Node]):
+        instruction = inst_node.content
         code = call_function_node(related_functions, self.variable_table, instruction)
-        node.add_class(InstRunInfo)
-        node.class_data[InstRunInfo].executed = True
-        node.class_data[InstRunInfo].code = code
-        node.class_data[InstRunInfo].var_table_at_run = self.variable_table.get_prompt()
-        node.tree.show_tree_gui_react()
+        inst_info: InstRun = inst_node.get_attr(InstRun)
+        inst_info.executed = True
+        inst_info.code = code
+        inst_info.var_table_at_run = self.variable_table.get_prompt()
+        inst_node.tree.show_tree_gui_react()
         report = code_to_report(code, instruction)
-        node.class_data[InstRunInfo].report_of_self = report
+        inst_info.report_of_self = report
 
     def search_by_requirement(self, requirement) -> List[Node]:
         return self.beam_searcher(self.tree.root, requirement)
@@ -101,7 +100,7 @@ There exist some variables you can use.
         if len(children_list) == 0:
             sibling_summary = ""
         else:
-            youngest_sibling_info = children_list[-1].class_data[InstRunInfo]
+            youngest_sibling_info = children_list[-1].get_attr(InstRun)
             sibling_summary = merge_reports(youngest_sibling_info.report_of_old_siblings,
                                             youngest_sibling_info.report_of_self)
         if len(sibling_summary) == 0:
@@ -120,29 +119,40 @@ There exist some variables you can use.
         if inst_node.is_empty():
             return
 
+        # The inst_node is not empty
+        # The inst_node has no child
+        # This two points implies we need to grow the tree
+
+        # Search for related functions
         related_func_nodes = self.get_related_functions(
             "The function can be used to implement the following instructions \n <instruction>" + inst_node.content + "</instruction>")
 
 
         word_count = len(inst_node.content.split(" "))
         if word_count < 40:
-            self.run_instruction(inst_node, related_func_nodes)
+            self.run_short_instruction(inst_node, related_func_nodes)
             return
 
-
+        # The instruction is long, so we need to decompose it
         while True:
             env = self.get_environment(related_func_nodes, inst_node)
             next_step = get_next_step(inst_node.content, env)
-            if next_step == "":
+
+            if next_step != "":
+                progress_so_far = self.get_progress_of_inst_node(inst_node)
+                children_list = list(inst_node.children().values())
+                new_child = inst_node.new_child("Step " + str(len(children_list) + 1)).be(
+                    next_step)
+                inst_info = InstRun(new_child)
+                inst_info.report_of_old_siblings = progress_so_far
+                self.grow_instruction_tree(new_child)
+
+            else:
                 parent = inst_node.parent()
-                parent.class_data[InstRunInfo].report_of_old_siblings = self.get_progress_of_inst_node(parent)
-                return
-            progress_so_far = self.get_progress_of_inst_node(inst_node)
-            children_list = list(inst_node.children().values())
-            new_child = inst_node.new_child("Step " + str(len(children_list) + 1)).be(next_step)
-            new_child.class_data[InstRunInfo] = InstRunInfo()
-            new_child.class_data[InstRunInfo].report_of_old_siblings = progress_so_far
-            self.grow_instruction_tree(new_child)
+                parent.get_attr(InstRun).report_of_self = self.get_progress_of_inst_node(parent)
+                break
+
+
 
 
 @auto_cache
@@ -196,12 +206,14 @@ This is what you have done now:
 
 Update the old report with the new report and summarize the progress.
 The summary should be no more than 100 words. 
-Start your answer with "Summary: ".
+Also, you need to decide whether the instruction is finished or not.
+Output your answer in a JSON dict with the first key being "summary", whose value is the summary in string.
+The second key should be "finished" whose value is a boolean.
 """
     chat = Chat(prompt, "You are an helpful assistant who help analyze instructions.")
     res = chat.complete_chat()
-    res = res[len("Summary: "):]
-    return res
+    res = RobustParse.dict(res)
+    return res["summary"]
 
 
 @auto_cache

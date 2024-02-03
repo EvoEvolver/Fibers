@@ -31,23 +31,11 @@ class Rendered:
 
 class Renderer:
     def __init__(self):
-        self.node_class_renderers: Dict[Type[NodeClass], Callable] = {
-            CodeNodeClass: CodeNodeClass.render
-        }
+        pass
 
-    """
-    def add_default_class_render(self, node_class: Type[NodeClass]):
-        self.node_class_renderers[node_class] = node_class.render
-
-    def add_class_render(self, node_class: Type[NodeClass], render: Callable):
-        self.node_class_renderers[node_class] = render
-
-    """
-
-    def node_handler(self, node, rendered: Rendered):
-        for node_class in node.class_data:
-            node_class.render(node, rendered)
-
+    def node_handler(self, node: Node, rendered: Rendered):
+        for attr_class, attr_value in node.attrs.items():
+            attr_value.render(node, rendered)
 
     def render(self, node: Node) -> Rendered:
         rendered = Rendered()
