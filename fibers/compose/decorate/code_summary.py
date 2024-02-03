@@ -32,6 +32,10 @@ class CodeSummary(Attr):
     def serialize(node: Node):
         return CodeSummary.get_summary(node)
 
+    def render(self, node: Node, rendered):
+        if self.summary is not None:
+            rendered.tabs["summary"] = self.summary
+
 
 @auto_cache
 def summarize_function(node: Node):

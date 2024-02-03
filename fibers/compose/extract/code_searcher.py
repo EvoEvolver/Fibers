@@ -1,5 +1,6 @@
 from typing import List
 
+from fibers.indexing.indexing import VectorIndexing
 from fibers.model.chat import Chat
 from fibers.compose.decorate.code_summary import CodeSummary
 from fibers.compose.extract.traverser import beam_search
@@ -7,6 +8,31 @@ from fibers.tree import Node
 from fibers.tree.node import ContentMap
 from fibers.tree.node_class.code_node import get_type
 from fibers.tree.prompt_utils import get_node_list_prompt
+
+
+class CodeSearcher:
+    def __init__(self, root: Node):
+        self.content_map = ContentMap(
+            lambda n: CodeSummary.get_summary(n) or n.content)
+        self.root = root
+        self.vector_indexing = VectorIndexing(list(root.iter_subtree_with_dfs()), self.content_map)
+
+    def search(self, requirement: str, code_type: str):
+        assert code_type in ["function", "class", "section", "module"]
+        assert requirement.startswith("The " + code_type)
+        nodes_from_beam = beam_search(self.root, requirement,
+                                    self.content_map)
+        nodes_from_vector = self.vector_indexing.get_top_k_nodes(requirement, 5)
+        nodes_related = list(set(nodes_from_beam + nodes_from_vector))
+        nodes_related = [node for node in nodes_related if get_type(
+                         node) == code_type]
+        if len(nodes_related) == 0:
+            return []
+
+        nodes_related = filter_code_nodes(nodes_related,
+                                          requirement + "\nYou must select at least one index unless it is totally not related.",
+                                          self.content_map)
+        return nodes_related
 
 
 def code_beam_searcher(root: Node, requirement: str, code_type: str, content_map: ContentMap = None):
@@ -20,6 +46,7 @@ def code_beam_searcher(root: Node, requirement: str, code_type: str, content_map
                          node) == code_type]
     if len(nodes_related) == 0:
         return []
+
     nodes_related = filter_code_nodes(nodes_related, requirement+"\nYou must select at least one index unless it is totally not related.", content_map)
     return nodes_related
 

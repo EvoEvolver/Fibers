@@ -4,7 +4,7 @@ from typing import List
 
 from fibers.compose.decorate.code_summary import CodeSummary, \
     summarize_code_tree
-from fibers.compose.extract.code_searcher import make_code_searcher
+from fibers.compose.extract.code_searcher import CodeSearcher
 from fibers.compose.utils_code.call_function import VariableTable, call_function_node
 from fibers.data_loader.module_to_tree import add_module_tree_to_node
 from fibers.helper.cache.cache_service import auto_cache
@@ -43,16 +43,16 @@ class InstructionRunner:
     def __init__(self, modules, variable_table=None):
         self.modules = modules
         self.variable_table = variable_table or VariableTable()
-        self.tree = Tree("Available modules")
+        self.module_tree = Tree("Available modules")
         for module in modules:
-            add_module_tree_to_node(module, self.tree.root)
+            add_module_tree_to_node(module, self.module_tree.root)
 
-        summarize_code_tree(self.tree)
+        summarize_code_tree(self.module_tree)
 
-        content_map = ContentMap(
+        self.code_searcher = CodeSearcher(self.module_tree.root)
+
+        self.map_to_code_summary = ContentMap(
             lambda n: CodeSummary.get_summary(n) or n.content)
-        self.beam_searcher = make_code_searcher("function", content_map)
-        self.map_to_code_summary = content_map
 
     def run_short_instruction(self, inst_node: Node, related_functions: List[Node]):
         instruction = inst_node.content
@@ -66,7 +66,7 @@ class InstructionRunner:
         inst_info.report_of_self = report
 
     def search_by_requirement(self, requirement) -> List[Node]:
-        return self.beam_searcher(self.tree.root, requirement)
+        return self.code_searcher.search(requirement, "function")
 
     def get_related_functions(self, requirement):
         function_nodes = self.search_by_requirement(requirement)
@@ -102,7 +102,7 @@ There exist some variables you can use.
         else:
             youngest_sibling_info = children_list[-1].get_attr(InstRun)
             sibling_summary = merge_reports(youngest_sibling_info.report_of_old_siblings,
-                                            youngest_sibling_info.report_of_self)
+                                            youngest_sibling_info.report_of_self, inst_node.content)
         if len(sibling_summary) == 0:
             progress_env = "Nothing has been done before."
         else:
@@ -196,13 +196,21 @@ Start your answer with "Summary: ".
     res = res[len("Summary: "):]
     return res
 
-def merge_reports(report_of_old_sibling, new_report):
+def merge_reports(report_of_old_sibling, new_report, instruction):
     prompt = f"""
 You are trying to report your progress on implementing some instructions.
+The instruction is as follows:
+<instruction>
+{instruction}
+<instruction end>
 This is what has been done before:
+<old report>
 {report_of_old_sibling}
+<old report end>
 This is what you have done now:
+<new report>
 {new_report}
+<new report end>
 
 Update the old report with the new report and summarize the progress.
 The summary should be no more than 100 words. 

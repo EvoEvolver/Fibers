@@ -343,6 +343,9 @@ class ContentMap:
             [Node], str] = title_map if title_map is not None else lambda x: x.title()
 
     def get_title_and_content(self, node: Node):
+        """
+        Usage: title, content = content_map.get_title_and_content(node)
+        """
         return self._title_map(node), self._content_map(node)
 
 

@@ -32,7 +32,7 @@ def count_children(node: Node):
 
 def get_fat_nodes(root: Node, doc_word_limit=50, code_col_limit=100):
     for node in root.iter_subtree_with_bfs():
-        if node.has_child(CodeData):
+        if node.has_attr(CodeData):
             n_body_line, n_docs_words = count_function_class_lines(node)
             if n_docs_words > doc_word_limit:
                 yield node
