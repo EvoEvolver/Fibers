@@ -300,7 +300,14 @@ class Node:
     def add_class(self, node_class: Type[NodeClass]):
         if self.isinstance(node_class):
             return
-        self.class_data[node_class] = {}
+        if hasattr(node_class, "init_by"):
+            init_by = node_class.init_by
+        else:
+            init_by = ""
+        if init_by == "":
+            self.class_data[node_class] = {}
+        elif init_by == "obj":
+            self.class_data[node_class] = node_class()
 
     def remove_class(self, node_class: Type[NodeClass]):
         if node_class in self.class_data.keys():

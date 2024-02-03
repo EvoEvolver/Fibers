@@ -1,5 +1,8 @@
 import numpy as np
+from PIL.Image import Image
 from matplotlib import pyplot as plt
+
+from fibers.helper.image import matplotlib_plot_to_image
 
 """
 # Data generation
@@ -49,14 +52,22 @@ def get_average_and_variance(y):
 # Plot
 """
 
-def draw_x_y_plot(x, y):
+def get_x_y_plot(x, y) -> Image:
     """
-    Draw x-y plot.
+    Get an x-y plot.
+    Args:
+        x (np.ndarray): The x-axis data.
+        y (np.ndarray): The y-axis data.
+    Returns:
+         The image object.
     """
     plt.plot(x, y)
-    plt.show()
-
+    # plt to fig
+    fig = plt.gcf()
+    img = matplotlib_plot_to_image(fig)
+    return img
 
 if __name__ == '__main__':
-    x, y = get_data()
-    draw_x_y_plot(x, y)
+    x, y = get_experiment_data()
+    img = get_x_y_plot(x, y)
+    img.show()

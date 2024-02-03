@@ -17,6 +17,7 @@ from fibers.tree.prompt_utils import get_node_list_prompt
 
 
 class InstRunInfo(NodeClass):
+    init_by = "obj"
     def __init__(self):
         self.decomposable = None
         self.executed = False
@@ -57,6 +58,7 @@ class InstructionRunner:
     def run_instruction(self, node: Node, related_functions: List[Node]):
         instruction = node.content
         code = call_function_node(related_functions, self.variable_table, instruction)
+        node.add_class(InstRunInfo)
         node.class_data[InstRunInfo].executed = True
         node.class_data[InstRunInfo].code = code
         node.class_data[InstRunInfo].var_table_at_run = self.variable_table.get_prompt()
@@ -123,7 +125,7 @@ There exist some variables you can use.
 
 
         word_count = len(inst_node.content.split(" "))
-        if word_count < 50:
+        if word_count < 40:
             self.run_instruction(inst_node, related_func_nodes)
             return
 
@@ -132,6 +134,8 @@ There exist some variables you can use.
             env = self.get_environment(related_func_nodes, inst_node)
             next_step = get_next_step(inst_node.content, env)
             if next_step == "":
+                parent = inst_node.parent()
+                parent.class_data[InstRunInfo].report_of_old_siblings = self.get_progress_of_inst_node(parent)
                 return
             progress_so_far = self.get_progress_of_inst_node(inst_node)
             children_list = list(inst_node.children().values())
