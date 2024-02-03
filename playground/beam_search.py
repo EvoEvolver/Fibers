@@ -1,7 +1,7 @@
 from fibers import compose
 from fibers.data_loader.module_to_tree import get_tree_for_module
 from fibers.helper.cache.cache_service import caching
-from fibers.compose.decorate.code_summary import CodeSummarizedNodeClass, \
+from fibers.compose.decorate.code_summary import CodeSummary, \
     summarize_code_tree
 from fibers.compose.extract.code_searcher import code_beam_searcher
 from fibers.tree.node import ContentMap
@@ -11,7 +11,7 @@ tree = get_tree_for_module(compose)
 
 summarize_code_tree(tree)
 
-content_map = ContentMap(lambda n: CodeSummarizedNodeClass.get_summary(n) or n.content)
+content_map = ContentMap(lambda n: CodeSummary.get_summary(n) or n.content)
 
 nodes_related = code_beam_searcher(tree.root, "The function is to summarize code content.", "function", content_map)
 

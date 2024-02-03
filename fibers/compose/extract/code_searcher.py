@@ -1,7 +1,7 @@
 from typing import List
 
 from fibers.model.chat import Chat
-from fibers.compose.decorate.code_summary import CodeSummarizedNodeClass
+from fibers.compose.decorate.code_summary import CodeSummary
 from fibers.compose.extract.traverser import beam_search
 from fibers.tree import Node
 from fibers.tree.node import ContentMap
@@ -16,7 +16,7 @@ def code_beam_searcher(root: Node, requirement: str, code_type: str, content_map
                                 content_map)
 
     nodes_related = [node for node in nodes_related if
-                     node.isinstance(CodeSummarizedNodeClass) and get_type(
+                     node.isinstance(CodeSummary) and get_type(
                          node) == code_type]
     if len(nodes_related) == 0:
         return []

@@ -1,6 +1,6 @@
 from tqdm import tqdm
 
-from fibers.compose.decorate.text_summary import TextSummaryNode
+from fibers.compose.decorate.text_summary import TextSummary
 from fibers.compose.decorate.tree_map import node_map_with_dependency
 from fibers.data_loader.bad_text_node_class import has_bad_reason, remove_bad_reason, \
     BadTextNodeClass, add_bad_reason
@@ -222,7 +222,7 @@ def reduce_max_children_number(root: Node, max_children_number=5):
 
 
 def group_children(node: Node):
-    content_map = ContentMap(lambda node: TextSummaryNode.get_attr(node, "text_summary"))
+    content_map = ContentMap(lambda node: node.get_attr(TextSummary).text_summary)
     children_prompt = get_node_list_prompt(list(node.children().values()), content_map)
     prompt = f"""
 You are trying to group the following sub-sections into larger chapters based on their content for reducing the number of sub-sections in the article.

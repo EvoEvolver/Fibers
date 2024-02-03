@@ -25,9 +25,9 @@ class Node:
         self.content: str = ""
         # The root node helps merge two tree bases
         self.tree: Tree = tree
-        # The class data is used to store the data of the node class
-        self.class_data = {}
 
+        self.class_data = {}
+        # The attr data is used to store the data of the node
         self.attrs: Dict[Type[Attr], Attr] = {}
         # The node id is used to identify the node
         self.node_id = Node.node_id

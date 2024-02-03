@@ -2,7 +2,7 @@ import inspect
 
 from fibers.compose.sparsify.text_sparsify import count_words
 from fibers.tree import Node
-from fibers.tree.node_class.code_node import get_type, get_docs, get_obj, CodeNodeClass
+from fibers.tree.node_class.code_node import get_type, get_docs, get_obj, CodeData
 
 
 def count_lines(string):
@@ -32,7 +32,7 @@ def count_children(node: Node):
 
 def get_fat_nodes(root: Node, doc_word_limit=50, code_col_limit=100):
     for node in root.iter_subtree_with_bfs():
-        if node.isinstance(CodeNodeClass):
+        if node.has_child(CodeData):
             n_body_line, n_docs_words = count_function_class_lines(node)
             if n_docs_words > doc_word_limit:
                 yield node

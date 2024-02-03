@@ -9,7 +9,7 @@ from moduler.decorator import example
 from fibers.data_loader.module_to_tree import get_tree_for_module
 from fibers.model.chat import Chat
 
-from fibers.compose.decorate.code_summary import CodeSummarizedNodeClass, \
+from fibers.compose.decorate.code_summary import CodeSummary, \
     summarize_code_tree
 from fibers.compose.utils_code.header import get_function_header
 from fibers.tree import Node
@@ -97,8 +97,8 @@ def get_functions_in_prompt(nodes: List[Node]):
         prompt += f"""
 Header and content summary of a function:
 {func_header}"""
-        if node.isinstance(CodeSummarizedNodeClass):
-            summary = CodeSummarizedNodeClass.get_summary(node)
+        if node.isinstance(CodeSummary):
+            summary = CodeSummary.get_summary(node)
             prompt += f"""    # {summary}
 """
     return prompt

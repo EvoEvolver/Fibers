@@ -2,7 +2,7 @@ import html
 from typing import List
 
 
-from fibers.compose.decorate.code_summary import CodeSummarizedNodeClass, \
+from fibers.compose.decorate.code_summary import CodeSummary, \
     summarize_code_tree
 from fibers.compose.extract.code_searcher import make_code_searcher
 from fibers.compose.utils_code.call_function import VariableTable, call_function_node
@@ -50,7 +50,7 @@ class InstructionRunner:
         summarize_code_tree(self.tree)
 
         content_map = ContentMap(
-            lambda n: CodeSummarizedNodeClass.get_summary(n) or n.content)
+            lambda n: CodeSummary.get_summary(n) or n.content)
         self.beam_searcher = make_code_searcher("function", content_map)
         self.map_to_code_summary = content_map
 

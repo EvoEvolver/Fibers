@@ -7,26 +7,30 @@ from fibers.compose.decorate.tree_map import node_map_with_dependency
 from fibers.compose.utils_code.code_env import get_function_module_env
 from fibers.tree import Node, Tree
 from fibers.tree.node import ContentMap
-from fibers.tree.node_class import CodeNodeClass, NodeClass
+from fibers.tree.node_attr import Attr
+from fibers.tree.node_class import CodeData
 from fibers.tree.node_class.code_node import get_obj, get_type
 from fibers.tree.prompt_utils import get_node_list_prompt
 
 
-class CodeSummarizedNodeClass(NodeClass):
-    @staticmethod
-    def set_summary(node: Node, summary: str, prefix="main"):
-        node.add_class(CodeSummarizedNodeClass)
-        CodeSummarizedNodeClass.set_attr(node, prefix + "_summary", summary)
+class CodeSummary(Attr):
+    def __init__(self, node: Node):
+        super().__init__(node)
+        self.summary = None
 
     @staticmethod
-    def get_summary(node: Node, prefix="main"):
-        if not node.isinstance(CodeSummarizedNodeClass):
+    def set_summary(node: Node, summary: str):
+        node.get_attr(CodeSummary).summary = summary
+
+    @staticmethod
+    def get_summary(node: Node):
+        if not node.has_attr(CodeSummary):
             return None
-        return CodeSummarizedNodeClass.get_attr(node, prefix + "_summary")
+        return node.get_attr(CodeSummary).summary
 
     @staticmethod
     def serialize(node: Node):
-        return CodeSummarizedNodeClass.get_summary(node)
+        return CodeSummary.get_summary(node)
 
 
 @auto_cache
@@ -83,7 +87,7 @@ docstring:
     if len(children) > 0:
         children_list = get_node_list_prompt(children, ContentMap(
             title_map=lambda n: get_type(n) + " " + n.title(),
-            content_map=lambda n: CodeSummarizedNodeClass.get_summary(n)
+            content_map=lambda n: CodeSummary.get_summary(n)
         )
                                              )
         prompt += f"""
@@ -100,9 +104,9 @@ Without mentioning the {node_type} name, start you summary with "Summary: The {n
 
 def summarize_code_node(node: Node) -> bool:
     # If the node is already summarized, return True
-    if node.isinstance(CodeSummarizedNodeClass):
+    if node.has_attr(CodeSummary):
         return True
-    if not node.isinstance(CodeNodeClass):
+    if not node.has_attr(CodeData):
         return True
     module_tree_type = get_type(node)
     if module_tree_type in ["module", "class", "section"]:
@@ -113,7 +117,7 @@ def summarize_code_node(node: Node) -> bool:
             # TODO: consider the README node too
             if get_type(item) == "document":
                 continue
-            if not item.isinstance(CodeSummarizedNodeClass):
+            if not item.has_attr(CodeSummary):
                 children_all_summarized = False
                 break
         # If not all children are summarized, this round failed, need to return False
@@ -122,13 +126,13 @@ def summarize_code_node(node: Node) -> bool:
         # If all children are summarized, summarize the node
         else:
             summary = summary_children(node)
-            CodeSummarizedNodeClass.set_summary(node, summary)
+            CodeSummary.set_summary(node, summary)
             return True
     # If the node is a function, ensure it is summarized
     elif module_tree_type == "function":
-        if not node.isinstance(CodeSummarizedNodeClass):
+        if not node.has_attr(CodeSummary):
             summary = summarize_function(node)
-            CodeSummarizedNodeClass.set_summary(node, summary)
+            CodeSummary.set_summary(node, summary)
             return True
     # If the node is neither a function nor a container, skip it
     else:
@@ -166,7 +170,7 @@ if __name__ == "__main__":
     from moduler import core
     tree = get_tree_for_module(core)
     summarize_code_tree(tree)
-    content_map = ContentMap(lambda n: CodeSummarizedNodeClass.get_summary(n) or n.content)
+    content_map = ContentMap(lambda n: CodeSummary.get_summary(n) or n.content)
     tree.show_tree_gui_old(content_map)
     caching.save_used()
 

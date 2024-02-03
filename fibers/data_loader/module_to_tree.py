@@ -10,7 +10,7 @@ from moduler import Struct
 from fibers.data_loader.markdown_to_tree import markdown_to_tree
 from fibers.tree import Node, Tree
 
-from fibers.tree.node_class import CodeNodeClass
+from fibers.tree.node_class import CodeData
 
 """
 This modules is for extract the information from python modules and build a tree for it.
