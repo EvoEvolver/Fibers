@@ -14,7 +14,7 @@ def main():
 Generate experiment data with noise scale being 0.01
 Generate the plot of the experiment data
 # Data display
-Display the plot of experiment data
+Display the image of experiment data
 """
 
     tree = markdown_to_tree(instructions)

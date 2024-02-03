@@ -20,7 +20,6 @@ class InstRun(Attr):
     def __init__(self, node: Node):
         super().__init__(node)
         self.decomposable = None
-        self.executed = False
         self.code = None
         self.var_table_at_run = None
         self.report_of_old_siblings = None
@@ -40,9 +39,14 @@ class InstRun(Attr):
 
 
 class InstructionRunner:
-    def __init__(self, modules, variable_table=None):
+    def __init__(self, modules, external_modules=None, variable_table=None):
         self.modules = modules
         self.variable_table = variable_table or VariableTable()
+
+        external_modules = external_modules or []
+        for module in external_modules:
+            self.variable_table.add_variable(module.__name__, module, f"The {module.__name__} module")
+
         self.module_tree = Tree("Available modules")
         for module in modules:
             add_module_tree_to_node(module, self.module_tree.root)
@@ -58,7 +62,6 @@ class InstructionRunner:
         instruction = inst_node.content
         code = call_function_node(related_functions, self.variable_table, instruction)
         inst_info: InstRun = inst_node.get_attr(InstRun)
-        inst_info.executed = True
         inst_info.code = code
         inst_info.var_table_at_run = self.variable_table.get_prompt()
         inst_node.tree.show_tree_gui_react()
@@ -188,7 +191,8 @@ You are trying to follow this instruction:
 This is the code you have written:
 {code}
 
-You are trying to summarize the progress that instruction is implemented by the code.
+You are trying to summarize the progress that instruction is implemented by the code. 
+You do not need to mention the detail of code in the summary.
 Start your answer with "Summary: ".
 """
     chat = Chat(prompt, "You are an helpful assistant who help analyze instructions.")
