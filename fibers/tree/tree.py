@@ -31,6 +31,7 @@ class Tree:
         self.class_data = {}
         self.tree_id = Tree.tree_id
         Tree.tree_id += 1
+        self.forest_connector = None
 
     """
     ## Node information query
@@ -244,12 +245,11 @@ class Tree:
 
         tree_json = renderer().render_to_json(self.root)
 
-        forest_connector = ForestConnector(dev_mode=dev_mode)
-        forest_connector.run()
-        time.sleep(0.2)
-        forest_connector.update_tree(tree_json)
-        time.sleep(0.2)
-        forest_connector.stop()
+        self.forest_connector = ForestConnector(dev_mode=dev_mode)
+        self.forest_connector.run()
+        self.forest_connector.update_tree(tree_json, self.tree_id)
 
+    def stop_tree_gui_react(self):
+        self.forest_connector.stop()
     def show_interactive_gui(self, renderer):
         pass
