@@ -9,6 +9,7 @@ app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, cors_allowed_origins="*")
 tree = {}
 tree_id = None
+trees = {}
 
 import logging
 
@@ -25,7 +26,8 @@ def handle_connect():
 
 @socketio.on('requestTree')
 def requestTree():
-    emit('setTree', {"tree": tree, "tree_id": tree_id})
+    print(trees.keys())
+    emit('requestTree', trees)
 
 
 @app.route('/visualization')
@@ -38,9 +40,12 @@ def visualization():
 def updateTree():
     global tree
     global tree_id
+    global trees
     # TODO: check if the tree is valid.
     tree = request.get_json()['tree']
     tree_id = request.get_json()['tree_id']
+    trees[tree_id] = tree
+    print(f'updateTree {tree_id}')
     # TODO: check if the tree_id is valid.
     socketio.emit('setTree', {"tree": tree, "tree_id": tree_id})
     return "OK"

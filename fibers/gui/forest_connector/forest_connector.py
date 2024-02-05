@@ -47,6 +47,7 @@ class ForestConnector:
         headers = {
             'Content-Type': 'application/json'
         }
+        print(f"Updating tree {tree_id} to {url}")
         response = requests.request("PUT", url, headers=headers, data=payload)
 
     def run(self):
