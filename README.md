@@ -13,6 +13,7 @@ Currently, Fibers is not ready for production usage. Please refer to  [Developme
 
 - In order to use OpenAI API, the environment variables `OPENAI_API_KEY` should be set to your API key.
 - PyCharm is recommended.
+- See `./scripts` for useful scripts that do all the followings.
 
 
 You need to have `node` and `npm` installed for the development environment. For this, you can run
