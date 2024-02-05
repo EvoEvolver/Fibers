@@ -72,7 +72,7 @@ def _complete_chat_expensive(chat: Chat, options=None):
 """
 
 def _get_embeddings(texts, options):
-    options = {**options, "model": "text-embedding-ada-002"}
-    return openai.Embedding.create(input=texts, **options)["data"]
+    options = {**options, "model": "text-embedding-3-large"}
+    return client.embeddings.create(input=texts, **options).data
 
 

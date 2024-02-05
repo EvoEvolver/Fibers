@@ -8,7 +8,7 @@ import numpy as np
 from fibers.helper.cache.cache_service import caching
 from fibers.model.openai import _get_embeddings
 
-model_for_embedding = "text-embedding-ada-002"
+model_for_embedding = "text-embedding-3-large"
 model_to_embedding_dim = {
     "text-embedding-ada-002": 1536
 }
@@ -24,7 +24,7 @@ def flatten_nested_list(texts: list[list[str]]) -> (List[float], List[int]):
 
 
 def get_embeddings(texts: list[str]) -> list[list[float]]:
-    embedding_dim_using = model_to_embedding_dim[model_for_embedding]
+    #embedding_dim_using = model_to_embedding_dim[model_for_embedding]
 
     cache_table = caching.cache_embed.load_cache_table(model_for_embedding)
     hash_keys = [hashlib.md5(text.encode()).hexdigest() for text in texts]
@@ -34,7 +34,7 @@ def get_embeddings(texts: list[str]) -> list[list[float]]:
     texts_without_cache = []
     for i, text in enumerate(texts):
         if len(text) == 0:
-            embeddings.append(np.zeros(embedding_dim_using))
+            embeddings.append(0)#np.zeros(embedding_dim_using))
             continue
         if hash_keys[i] not in cache_table:
             texts_without_cache.append(text)
@@ -49,7 +49,7 @@ def get_embeddings(texts: list[str]) -> list[list[float]]:
             print(e)
             print(texts_without_cache)
             raise e
-        res = [r["embedding"] for r in res]
+        res = [r.embedding for r in res]
         print(f"{len(res)} embeddings generated")
         for i, r in zip(index_for_eval, res):
             cache_table[hash_keys[i]] = r
