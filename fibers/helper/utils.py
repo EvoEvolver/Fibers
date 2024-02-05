@@ -44,7 +44,8 @@ class RobustParse:
         if start == -1 or end == -1:
             raise ValueError(f"Invalid json: {src}")
         try:
-            res = ast.literal_eval(src[start:end + 1])
+            #res = ast.literal_eval(src[start:end + 1])
+            res = json.loads(src[start:end + 1])
         except:
             raise ValueError(f"Invalid json: {src}")
         return res

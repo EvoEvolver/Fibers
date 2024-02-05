@@ -58,6 +58,8 @@ class InstructionRunner:
         self.map_to_code_summary = ContentMap(
             lambda n: CodeSummary.get_summary(n) or n.content)
 
+        self.inst_len_limit = 40
+
     def run_short_instruction(self, inst_node: Node, related_functions: List[Node]):
         instruction = inst_node.content
         code = call_function_node(related_functions, self.variable_table, instruction)
@@ -68,11 +70,8 @@ class InstructionRunner:
         report = code_to_report(code, instruction)
         inst_info.report_of_self = report
 
-    def search_by_requirement(self, requirement) -> List[Node]:
-        return self.code_searcher.search(requirement, "function")
-
     def get_related_functions(self, requirement):
-        function_nodes = self.search_by_requirement(requirement)
+        function_nodes = self.code_searcher.search(requirement, "function")
         return function_nodes
 
     def get_environment(self, function_nodes, inst_node: Node):
@@ -130,9 +129,12 @@ There exist some variables you can use.
         related_func_nodes = self.get_related_functions(
             "The function can be used to implement the following instructions \n <instruction>" + inst_node.content + "</instruction>")
 
+        if len(related_func_nodes) == 0:
+            pass
+
 
         word_count = len(inst_node.content.split(" "))
-        if word_count < 40:
+        if word_count < self.inst_len_limit:
             self.run_short_instruction(inst_node, related_func_nodes)
             return
 
@@ -172,15 +174,17 @@ The instruction/description is as follows:
 
 You are going to generate one step the next step of for finishing the instruction.
 Output your answer by a JSON dict with first key "next step" being the content of the next step.
-How to stop:
-If the instruction is already finished and no more step is needed, set the value of "next step" to be a empty string.
+The second key should be "finished" whose value is a boolean.
 """
     chat = Chat(prompt, "You are an helpful assistant who help analyze instructions.")
     res = chat.complete_chat()
     res = RobustParse.dict(res)
     print(chat)
     next_step = res["next step"]
-    return next_step
+    if res["finished"]:
+        return ""
+    else:
+        return next_step
 
 
 def code_to_report(code, instruction):

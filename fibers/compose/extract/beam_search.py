@@ -14,7 +14,7 @@ def beam_search(root: Node, requirement: str, content_map: ContentMap = None) ->
     matched_nodes_set = set()
 
     def pick_next_wrapped(node: Node):
-        return pick_next(node, requirement, content_map)
+        return pick_next_CoT(node, requirement, content_map)
 
     while len(node_queue) > 0:
         node_touched = []
@@ -32,7 +32,7 @@ def beam_search(root: Node, requirement: str, content_map: ContentMap = None) ->
 
 
 def pick_next(node: Node, requirement: str, content_map: ContentMap = None) -> (
-List[Node], List[Node]):
+        List[Node], List[Node]):
     if content_map is None:
         content_map = ContentMap()
     children = node.children()
@@ -66,6 +66,44 @@ Output a JSON dict with key "matched_indices" for a list of indices of the child
     matched_children = [children_list[i] for i in matched_indices]
     parent_indices = [children_list[i] for i in parent_indices]
     return matched_children, parent_indices
+
+
+def pick_next_CoT(node: Node, requirement: str, content_map: ContentMap = None) -> (
+        List[Node], List[Node]):
+    if content_map is None:
+        content_map = ContentMap()
+    children = node.children()
+    children_list = list(children.values())
+    if len(children_list) == 0:
+        return [], []
+
+    if len(children_list) == 1:
+        return [children_list[0]], []
+
+    children_in_prompt = get_node_list_prompt(children_list, content_map)
+
+    prompt = f"""
+You are traveling on a tree of knowledge. From the following list, you should pick the children that satisfies the requirement, and the children might be the ancestor of the required node.
+
+Children:
+{children_in_prompt}
+
+Requirement:
+{requirement}
+
+Format:
+Output a JSON list with items being a dict for the corresponding child. The dict should has three keys: "index" for the index of the child, "analysis" for a short analysis for whether the child satisfies the requirement, and key "matched" for a boolean value indicating the result.
+"""
+    chat = Chat(user_message=prompt,
+                system_message="You are a helpful assistant for arranging knowledge. You should output merely JSON.")
+    res = chat.complete_chat()
+    res = RobustParse.list(res)
+    print(chat)
+    matched_children = []
+    for i, item in enumerate(res):
+        if item["matched"]:
+            matched_children.append(children_list[i])
+    return matched_children, []
 
 
 if __name__ == "__main__":

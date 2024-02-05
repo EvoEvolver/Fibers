@@ -1,9 +1,10 @@
 from typing import List
 
+from fibers.helper.utils import RobustParse
 from fibers.indexing.indexing import VectorIndexing
 from fibers.model.chat import Chat
 from fibers.compose.decorate.code_summary import CodeSummary
-from fibers.compose.extract.traverser import beam_search
+from fibers.compose.extract.beam_search import beam_search
 from fibers.tree import Node
 from fibers.tree.node import ContentMap
 from fibers.tree.node_class.code_node import get_type
@@ -35,21 +36,6 @@ class CodeSearcher:
         return nodes_related
 
 
-def code_beam_searcher(root: Node, requirement: str, code_type: str, content_map: ContentMap = None):
-    assert code_type in ["function", "class", "section", "module"]
-    assert requirement.startswith("The "+code_type)
-    nodes_related = beam_search(root, requirement,
-                                content_map)
-
-    nodes_related = [node for node in nodes_related if
-                     node.isinstance(CodeSummary) and get_type(
-                         node) == code_type]
-    if len(nodes_related) == 0:
-        return []
-
-    nodes_related = filter_code_nodes(nodes_related, requirement+"\nYou must select at least one index unless it is totally not related.", content_map)
-    return nodes_related
-
 def filter_code_nodes(nodes: List[Node], requirement: str, content_map):
     prompt = f"""
 Here are a few Python objects:
@@ -58,19 +44,12 @@ Here are a few Python objects:
 You are trying to find Python objects that most satisfy the following requirement:
 {requirement}
 
-Output the indices that matches the requirement the most. Give your answer like "Index: 1, 2".
+Output the indices that matches the requirement the most by a JSON dict with key "indices" whose value is a list of numbers. If you are not sure, output an empty list.
 """
     chat = Chat(user_message=prompt,
                 system_message="You are a helpful assistant.")
     res = chat.complete_chat_expensive()
-    res = res.split("Index:")[1].strip()
-    res = res.split(",")
-    res = [int(i.strip()) for i in res]
+    res = RobustParse.dict(res)
+    res = res["indices"]
     matched_node = [nodes[i] for i in res]
     return matched_node
-
-
-def make_code_searcher(code_type: str, content_map: ContentMap = None):
-    def code_searcher(root: Node, requirement):
-        return code_beam_searcher(root, requirement, code_type, content_map)
-    return code_searcher
