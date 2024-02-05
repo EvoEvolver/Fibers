@@ -49,7 +49,7 @@ def get_embeddings(texts: list[str]) -> list[list[float]]:
             print(e)
             print(texts_without_cache)
             raise e
-        res = [r["embedding"] for r in res]
+        res = [r.embedding for r in res]
         print(f"{len(res)} embeddings generated")
         for i, r in zip(index_for_eval, res):
             cache_table[hash_keys[i]] = r
