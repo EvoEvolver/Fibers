@@ -22,14 +22,14 @@ conda install nodejs
 
 You can set up your development environment by the following steps. 
 ```shell
-mkdir EvoEvolver
+conda create -n Evo python=3.10
+conda activate Evo # You can replace the name
+conda install nodejs # if you haven't installed it
+mkdir EvoEvolver # Create the folder for the projects
 cd EvoEvolver
 git clone https://github.com/EvoEvolver/Fibers.git
 git clone https://github.com/EvoEvolver/Moduler.git
 git clone https://github.com/EvoEvolver/Forest.git
-cd Forest
-npm install
-cd ..
 ```
 
 If you are using PyCharm, do the following steps:
@@ -43,6 +43,20 @@ pip install -e Moduler
 pip install -e Forest
 pip install -e Fibers
 ```
+
+Add your OpenAI API key to the environment variables. You can do this by adding the following line to your `.bashrc` or `.zshrc` file. Remember to replace `your_api_key` with your actual API key starting with `sk-`.
+
+
+For Linux:
+```shell
+echo "export OPENAI_API_KEY='your_api_key'" >> ~/.bashrc
+```
+
+For MacOS:
+```shell
+echo "export OPENAI_API_KEY='your_api_key'" >> ~/.zshrc
+```
+
 
 ## Acknowledgement
 
