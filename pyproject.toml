@@ -14,7 +14,7 @@ dependencies = [
     "plotly==5.16.1",
     "numpy==1.25.2",
     "pyyaml~=6.0.1",
-    "openai==0.28.0",
+    "openai~=1.0.0",
     "pyhyphen==4.0.3",
     "dill~=0.3.7",
     "html2text~=2020.1.16",

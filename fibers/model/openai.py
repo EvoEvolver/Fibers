@@ -1,8 +1,21 @@
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 import openai
+from openai import OpenAI
+
+openai_api_key = os.getenv("OPENAI_API_KEY")
+
+if openai_api_key is None:
+    print("You must set environment variable OPENAI_API_KEY before use")
+    raise Exception("OPENAI_API_KEY is not set")
+else:
+    client = OpenAI(
+        # This is the default and can be omitted
+        api_key=openai_api_key,
+    )
 
 verbose = 1
 
@@ -41,7 +54,7 @@ def _complete_chat(chat: Chat, options=None):
     if contains_image(chat):
         _options["model"] = "gpt-4-vision-preview"
         _options["max_tokens"] = 2000
-    return openai.ChatCompletion.create(
+    return client.chat.completions.create(
         messages=chat.get_log_list(), **_options).choices[
         0].message.content
 
@@ -49,7 +62,7 @@ def _complete_chat(chat: Chat, options=None):
 def _complete_chat_expensive(chat: Chat, options=None):
     options = options or {}
     _options = {**options, **default_options, "model": expensive_model}
-    return openai.ChatCompletion.create(
+    return client.chat.completions.create(
         messages=chat.get_log_list(), **_options).choices[
         0].message.content
 
