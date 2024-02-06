@@ -1,9 +1,11 @@
-from typing import List
+from __future__ import annotations
+from types import ModuleType
+from typing import List, Tuple
 
 import numpy
 
 from fibers.helper.utils import standard_multi_attempts
-from fibers.tree.node_class.code_node import get_obj
+from fibers.tree.node_class.code_node import get_obj, CodeData, get_source
 from moduler.decorator import example
 
 from fibers.data_loader.module_to_tree import get_tree_for_module
@@ -20,29 +22,58 @@ class VariableTable:
     def __init__(self):
         self.variable_objs = {}
         self.variable_docs = {}
+        self._parent_tables = []
 
     def add_variable(self, name, obj, docs):
         self.variable_objs[name] = obj
         self.variable_docs[name] = docs
 
-    def get_variable(self, name):
+    def get_variable(self, name) -> Tuple["object", str]:
         return self.variable_objs[name], self.variable_docs[name]
 
     def get_prompt(self):
-        prompt_list = []
-        for name, docs in self.variable_docs.items():
-            value = self.variable_objs[name]
-            prompt_list.append(f"{name}: {docs}. Value: {get_value_in_prompt(value)}")
+        prompt_dict = {}
+        for table in self._parent_tables:
+            prompt_dict.update(table.get_local_prompt_dict())
+        prompt_dict.update(self.get_local_prompt_dict())
+        prompt_list = [f"{prompt}" for prompt in prompt_dict.values()]
         return "\n".join(prompt_list)
 
+    def get_local_prompt(self):
+        prompt_dict = self.get_local_prompt_dict()
+        prompt_list = [f"{prompt}" for prompt in prompt_dict.values()]
+        return "\n".join(prompt_list)
+
+    def get_local_prompt_dict(self):
+        prompt_dict = {}
+        for name, docs in self.variable_docs.items():
+            value = self.variable_objs[name]
+            prompt_dict[name] = f"{name}: {docs}. Value: {get_value_in_prompt(value)}"
+        return prompt_dict
+
     def is_empty(self):
-        return len(self.variable_objs) == 0
+        return len(self.get_local_prompt().strip()) == 0
 
     def get_interpreter(self):
         interpreter = Interpreter()
+        self.add_to_interpreter(interpreter)
+        return interpreter
+
+    def add_to_interpreter(self, interpreter: Interpreter):
+        for parent_table in self._parent_tables:
+            for name, obj in parent_table.variable_objs.items():
+                interpreter.symtable[name] = obj
         for name, obj in self.variable_objs.items():
             interpreter.symtable[name] = obj
         return interpreter
+
+    def push_new_table(self) -> VariableTable:
+        new_table = VariableTable()
+        new_table._parent_tables = self._parent_tables + [self]
+        return new_table
+
+    def pop_table(self) -> VariableTable:
+        return self._parent_tables[-1]
 
 
 def get_value_in_prompt(value):
@@ -76,6 +107,9 @@ def get_value_in_prompt(value):
         repr_str, classname = get_truncated_repr(value)
         shape = value.shape
         return f"{repr_str} Type: numpy array, Shape: {shape}"
+    elif isinstance(value, ModuleType):
+        name = value.__name__.split(".")[-1]
+        return f"Module: {name}"
     else:
         repr_str, classname = get_truncated_repr(value)
         return f"{repr_str} Type: {classname}"
@@ -89,36 +123,48 @@ def get_truncated_repr(obj, limit=30):
     return repr_str, classname
 
 
-def get_functions_in_prompt(nodes: List[Node]):
+def get_codes_in_prompt(nodes: List[Node]):
     prompt = ""
     for node in nodes:
-        func = get_obj(node)
-        func_header = get_function_header(func)
-        prompt += f"""
-Header and content summary of a function:
-{func_header}"""
-        if node.isinstance(CodeSummary):
-            summary = CodeSummary.get_summary(node)
-            prompt += f"""    # {summary}
+        if not node.has_attr(CodeData):
+            prompt += f"""Document:
+{node.content}
 """
+            continue
+        node_type = node.get_attr(CodeData).module_tree_type
+        if node_type == "function":
+            func = get_obj(node)
+            func_header = get_function_header(func)
+            prompt += f"""
+Function:
+{func_header}"""
+            if node.has_attr(CodeSummary):
+                summary = CodeSummary.get_summary(node)
+                prompt += f"""# {summary}
+"""
+        elif node_type == "example":
+            prompt += f"""
+Example of code to refer:
+{get_source(node)}"""
     return prompt
 
 
 @standard_multi_attempts
-def call_function_node(func_nodes: List[Node], var_table: VariableTable,
-                       requirement: str):
+def call_function_node(context: str, requirement: str, var_table: VariableTable,
+                       hidden_var_table: VariableTable = None):
     prompt = f"""You are required to directly output Python codes to meet the following requirement:
+<requirement>
 {requirement}
+<requirement end>
 """
-    if len(func_nodes) != 0:
+    if len(context) != 0:
         prompt += f"""
-Here are the functions in the scope that you can call to meet the requirement:
+{context}
 """
-        prompt += get_functions_in_prompt(func_nodes)
 
     prompt += f"""
 You are required to output Python code in the following format. You have to write the documentation of the return values. Your code must be executable.
-def answer():
+def step():
     ... (Your code here)
     return return_value_1, return_value_2, ...
     # return_value_1: documentation of the return value
@@ -137,19 +183,22 @@ Variables:
 You are not allowed to modify the variables expect in the line of function call.
 You should not use any variable that is not in the current scope.
 You should not use import statement.
-Start your answer with "def answer()"
+Again, the requirement is:
+{requirement}
+
+Start your answer with "def step():" (don't add arguments!)
 """
     chat = Chat(prompt,
                 "You are a code generator who only outputs Python code. You should only output Python code.")
     code_raw = chat.complete_chat_expensive()
     print(chat)
 
-    code_exec = process_and_run_code(code_raw, func_nodes, var_table)
+    code_exec, new_variables = process_and_run_code(code_raw, var_table, hidden_var_table)
 
-    return code_exec
+    return code_exec, new_variables
 
 
-def process_and_run_code(code_raw, func_nodes, var_table) -> str:
+def process_and_run_code(code_raw, var_table, hidden_var_table=None) -> str:
     if "```python" in code_raw:
         code_raw = code_raw.split("```python")[1]
         code_raw = code_raw.split("```")[0]
@@ -173,21 +222,23 @@ def process_and_run_code(code_raw, func_nodes, var_table) -> str:
                 else:
                     break
             break
+
     interpreter = var_table.get_interpreter()
-    for func_node in func_nodes:
-        func = get_obj(func_node)
-        interpreter.symtable[func.__name__] = func
+    if hidden_var_table is not None:
+        hidden_var_table.add_to_interpreter(interpreter)
     code_exec = code_raw
     if len(new_vars) == 0:
-        code_exec += "\nanswer()"
+        code_exec += "\nstep()"
     else:
         return_value = ", ".join(new_vars.keys())
         code_exec += f"""
-{return_value} = answer()"""
+{return_value} = step()"""
     interpreter(code_exec)
+    new_variables = VariableTable()
     for name, docs in new_vars.items():
         var_table.add_variable(name, interpreter.symtable[name], docs)
-    return code_exec
+        new_variables.add_variable(name, interpreter.symtable[name], docs)
+    return code_exec, new_variables
 
 
 @example

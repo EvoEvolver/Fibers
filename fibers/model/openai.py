@@ -27,9 +27,9 @@ if TYPE_CHECKING:
 """
 
 normal_model = "gpt-3.5-turbo"
-expensive_model = "gpt-4"
+expensive_model = "gpt-4-turbo-preview"#"gpt-4"
 vision_model = "gpt-4-vision-preview"
-model_list = [normal_model, expensive_model, vision_model]
+model_list = [normal_model, expensive_model, vision_model, "gpt-4"]
 
 default_options = {
     "temperature": 0.7,

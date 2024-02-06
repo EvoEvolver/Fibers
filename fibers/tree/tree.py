@@ -228,12 +228,12 @@ class Tree:
        ## Visualization of tree
        """
 
-    def show_tree_gui_old(self, content_map: ContentMap = None):
+    def show_tree_gui_old(self):
         """
         Show the tree in a webpage
         """
         from fibers.gui.tree import draw_treemap
-        draw_treemap(self.root, content_map)
+        draw_treemap(self.root)
 
 
     def show_tree_gui_react(self, renderer=None, dev_mode=False):
@@ -248,7 +248,7 @@ class Tree:
             Tree.forest_connector = ForestConnector(dev_mode=dev_mode)
             Tree.forest_connector.run()
         Tree.forest_connector.update_tree(tree_json, self.tree_id)
-        time.sleep(0.3)
+
 
     def stop_tree_gui_react(self):
         Tree.forest_connector.stop()

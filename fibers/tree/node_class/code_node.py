@@ -17,15 +17,21 @@ class CodeData(Attr):
 
     @classmethod
     def render(cls, node: Node, rendered):
-            if get_type(node) == "function":
-                rendered.tabs["code"] = f"""
+        content = []
+        if get_type(node) in ["function", "example"]:
+            content.append(f"""
         <Code
         code="{html.escape(get_source(node))}"
-        """ + """
+        """ + f"""
         language="python"
         />
-        """
-            del rendered.tabs["content"]
+        
+        """)
+        content.append(f"Type: {get_type(node)}")
+
+        del rendered.tabs["content"]
+        rendered.tabs["code"] = "<br/>".join(content)
+
 
 
 def set_code_obj(node: Node, type_name: str, obj: Any):
@@ -36,6 +42,7 @@ def set_code_obj(node: Node, type_name: str, obj: Any):
 
 def get_type(node: Node):
     return node.get_attr(CodeData).module_tree_type
+
 def get_obj(node: Node) -> object:
     return node.get_attr(CodeData).module_tree_obj
 

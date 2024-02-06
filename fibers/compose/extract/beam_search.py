@@ -14,7 +14,7 @@ def beam_search(root: Node, requirement: str, content_map: ContentMap = None) ->
     matched_nodes_set = set()
 
     def pick_next_wrapped(node: Node):
-        return pick_next_CoT(node, requirement, content_map)
+        return pick_next(node, requirement, content_map)
 
     while len(node_queue) > 0:
         node_touched = []

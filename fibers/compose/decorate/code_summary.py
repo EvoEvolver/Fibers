@@ -174,7 +174,6 @@ if __name__ == "__main__":
     from moduler import core
     tree = get_tree_for_module(core)
     summarize_code_tree(tree)
-    content_map = ContentMap(lambda n: CodeSummary.get_summary(n) or n.content)
-    tree.show_tree_gui_old(content_map)
+    tree.show_tree_gui_react()
     caching.save_used()
 

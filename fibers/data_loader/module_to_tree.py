@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-from textwrap import dedent
 
 from fibers.tree.node_class.code_node import set_code_obj
 from moduler.core import build_module_tree
@@ -60,7 +59,11 @@ def build_tree_for_struct(curr_struct: Struct, root_note: Node) -> Node:
             case "todo":
                 build_tree_for_struct(child_struct, curr_node)
             case "example":
-                build_tree_for_struct(child_struct, curr_node)
+                example_node = build_tree_for_struct(child_struct, curr_node)
+                example_function_node = example_node.first_child()
+                example_node.get_attr(CodeData).module_tree_obj = example_function_node.get_attr(CodeData).module_tree_obj
+                example_function_node.remove_self()
+
             case "document":
                 markdown_src = child_struct.obj
                 readme_tree = markdown_to_tree(markdown_src, title="README")

@@ -1,5 +1,6 @@
 from typing import List
 
+from fibers.compose.decorate.text_summary import TextSummary
 from fibers.helper.utils import RobustParse
 from fibers.indexing.indexing import VectorIndexing
 from fibers.model.chat import Chat
@@ -18,15 +19,15 @@ class CodeSearcher:
         self.root = root
         self.vector_indexing = VectorIndexing(list(root.iter_subtree_with_dfs()), self.content_map)
 
-    def search(self, requirement: str, code_type: str):
-        assert code_type in ["function", "class", "section", "module"]
-        assert requirement.startswith("The " + code_type)
+    def search(self, requirement: str, code_types: List[str]):
+        for code_type in code_types:
+            assert code_type in ["function", "class", "section", "module", "example"]
         nodes_from_beam = beam_search(self.root, requirement,
                                     self.content_map)
         nodes_from_vector = self.vector_indexing.get_top_k_nodes(requirement, 5)
         nodes_related = list(set(nodes_from_beam + nodes_from_vector))
         nodes_related = [node for node in nodes_related if get_type(
-                         node) == code_type]
+                         node) in code_types]
         if len(nodes_related) == 0:
             return []
 
@@ -34,6 +35,49 @@ class CodeSearcher:
                                           requirement + "\nYou must select at least one index unless it is totally not related.",
                                           self.content_map)
         return nodes_related
+
+
+class DocsSearcher:
+    def __init__(self, root: Node):
+        self.content_map = ContentMap(
+            lambda n: TextSummary.get(n).text_summary or n.content)
+        self.root = root
+        self.vector_indexing = VectorIndexing(list(root.iter_subtree_with_dfs()), self.content_map)
+
+    def search(self, requirement: str):
+        nodes_from_beam = beam_search(self.root, requirement,
+                                    self.content_map)
+        nodes_from_vector = self.vector_indexing.get_top_k_nodes(requirement, 5)
+        nodes_related = list(set(nodes_from_beam + nodes_from_vector))
+
+        if len(nodes_related) == 0:
+            return []
+
+        nodes_related = [node for node in nodes_related if not node.is_empty()]
+
+        nodes_related = filter_docs_nodes(nodes_related,
+                                          requirement,
+                                          self.content_map)
+        return nodes_related
+
+
+def filter_docs_nodes(nodes: List[Node], requirement: str, content_map):
+    prompt = f"""
+Here are a few documents:
+{get_node_list_prompt(nodes, content_map)}
+
+You are trying to find the documents that most satisfy the following requirement:
+{requirement}
+
+Output the indices that matches the requirement the most by a JSON dict with key "indices" whose value is a list of numbers. If you are not sure, output an empty list.
+"""
+    chat = Chat(user_message=prompt,
+                system_message="You are a helpful assistant who output in JSON.")
+    res = chat.complete_chat_expensive()
+    res = RobustParse.dict(res)
+    res = res["indices"]
+    matched_node = [nodes[i] for i in res]
+    return matched_node
 
 
 def filter_code_nodes(nodes: List[Node], requirement: str, content_map):
