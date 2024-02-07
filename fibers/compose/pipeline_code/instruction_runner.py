@@ -31,7 +31,7 @@ class InstRun(Attr):
 
     def render(self, node: Node, rendered):
         content = [f"""
-    report_of_self: {self.report_of_self} 
+    report_of_self: {html.escape(self.report_of_self)} 
     """]
         if self.code is not None:
             content.append(f"""<Code code = "{html.escape(self.code)}" language = "python" />""")
@@ -152,7 +152,6 @@ class InstructionRunner:
             next_step = get_next_step(inst_node.content, env)
 
             if next_step != "":
-                progress_so_far = self.get_progress_of_inst_node(inst_node)
                 children_list = list(inst_node.children().values())
                 new_child = inst_node.new_child("Step " + str(len(children_list) + 1)).be(
                     next_step)
@@ -160,13 +159,18 @@ class InstructionRunner:
 
             else:
                 inst_node.get_attr(InstRun).report_of_self = self.get_progress_of_inst_node(inst_node)
-                var_names_to_keep = filter_variables(self.var_table, inst_node)
-                parent_table = self.var_table.pop_table()
-                for var_name in var_names_to_keep:
-                    obj, docs = self.var_table.get_variable(var_name)
-                    parent_table.add_variable(var_name, obj, docs)
-                self.var_table = parent_table
+                # Whenever go up to parent, we try discard some variables
+                self.reduce_var_table(inst_node)
+
                 break
+
+    def reduce_var_table(self, inst_node):
+        var_names_to_keep = filter_variables(self.var_table, inst_node)
+        parent_table = self.var_table.pop_table()
+        for var_name in var_names_to_keep:
+            obj, docs = self.var_table.get_variable(var_name)
+            parent_table.add_variable(var_name, obj, docs)
+        self.var_table = parent_table
 
     def get_environment(self, code_nodes, inst_node: Node):
 
@@ -208,6 +212,8 @@ There exist some variables you can use.
         return inst_info.report_of_self
 
 
+
+
 def filter_variables(var_table, inst_node: Node):
     prompt = f"""
 You tried to follow the instruction below and have finished it.
@@ -226,8 +232,8 @@ Output your answer by a JSON dict with the first key being "analysis", whose val
 The second key should be "variables" whose value is a list of strings, each string is a variable name to be treated as the output.
 """
     chat = Chat(prompt, "You are an helpful assistant who help analyze instruction execution.")
-    print(chat)
     res = chat.complete_chat()
+    print(chat)
     res = RobustParse.dict(res)
     return res["variables"]
 
@@ -245,9 +251,9 @@ The instruction/description is as follows:
 {environment}
 
 You are going to generate one step the next step of for finishing the instruction.
-Output your answer by a JSON dict with first key being "analysis" for a string that analyze the situation. Notice that the information above might be irrelevant to the next step. You should check carefully whether the instruction is finished or not.
-The second key should be "finished" whose value is a boolean.
-Then third key "next step" being a concise description of the next step for the instruction in *natural language* for passing to someone else.
+Output your answer by a JSON dict with first key being "analysis" for a string that analyze the situation *step-by-step*. Notice that the information above might be irrelevant to the next step. 
+The second key should be "finished" whose value is a boolean. If only some of the points are finished, you should output false.
+Then third key "next step" being a concise description of the next step for the instruction in *natural language* for passing to someone else to execute.
 """
     chat = Chat(prompt, "You are an helpful assistant who help analyze instructions.")
     res = chat.complete_chat(options={"model": "gpt-4"})
@@ -283,6 +289,7 @@ Start your answer with "Summary: ".
     res = res[len("Summary: "):]
     return res
 
+
 def merge_reports(report_of_old_sibling, new_report, instruction):
     prompt = f"""
 You are trying to report your progress on implementing some instructions.
@@ -312,36 +319,6 @@ Then, the section key should be "summary" whose value is a string that summarize
 
     print(chat)
     return res["summary"]
-
-
-@auto_cache
-def try_decompose(inst: str, environment=""):
-    prompt = f"""
-You are trying to generate codes based on some instructions.
-
-The instruction/description is as follows:
-<instruction start>
-{inst}
-<instruction end>
-
-{environment}
-
-You are trying to decompose the following instruction. It is decomposable if it contains multiple steps explicitly.
-Output your answer by a JSON dict with first key "type" being "directly implementable" or "decomposable".
-If it is decomposable, the second key should be "steps" and value should be a list of strings, each string is a step.
-You should output that the instruction is "directly implementable" if it can be implemented by a functions above.
-You MUST not decompose the function calling. Just output it is "directly implementable" if it is.
-"""
-    chat = Chat(prompt, "You are an helpful assistant who help analyze instructions.")
-    res = chat.complete_chat()
-    res = RobustParse.dict(res)
-    print(chat)
-    if res["type"] == "decomposable":
-        return res["steps"]
-    else:
-        return None
-
-
 
 
 

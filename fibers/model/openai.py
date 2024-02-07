@@ -32,8 +32,8 @@ vision_model = "gpt-4-vision-preview"
 model_list = [normal_model, expensive_model, vision_model, "gpt-4"]
 
 default_options = {
-    "temperature": 0.7,
-    "timeout": 15,
+    "temperature": 0.2,
+    "timeout": 20,
 }
 
 def contains_image(chat: Chat):
