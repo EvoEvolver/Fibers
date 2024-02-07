@@ -1,13 +1,28 @@
 import base64
+import html
+import os
+import pathlib
 import re
 from typing import List
 
 import html2text
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, PageElement
 
 from fibers.data_loader.bad_text_node_class import add_bad_reason
 from fibers.tree import Tree, Node
+from fibers.tree.node_attr import Attr
+
+
+class SoupInfo(Attr):
+    def __init__(self, soup: BeautifulSoup, node: Node):
+        super().__init__(node)
+        self.soup = soup
+
+    @staticmethod
+    def soup_to_content(root: Node):
+        for node in root.iter_subtree_with_dfs():
+            node.content = str(SoupInfo.get(node).soup)
 
 
 def url_to_tree(url: str) -> Tree:
@@ -25,10 +40,20 @@ def html_to_tree(html: str, to_markdown=False) -> Tree:
         title = ""
     root = extract_article_root(soup)
     tree = html_to_raw_tree(root, title=title)
+    init_soup_info(tree.root)
     if to_markdown:
         html_to_markdown(tree.root)
     post_process_html_tree(tree)
     return tree
+
+
+def init_soup_info(root: Node):
+    for node in root.iter_subtree_with_dfs():
+        soup = BeautifulSoup(node.content, "html.parser")
+        if node.has_attr(SoupInfo):
+            node.get_attr(SoupInfo).soup = soup
+        else:
+            SoupInfo(soup, node)
 
 
 def pre_process_html_tree(soup: BeautifulSoup):
@@ -36,17 +61,46 @@ def pre_process_html_tree(soup: BeautifulSoup):
         # remove all javascript and stylesheet code
         script.decompose()
 
-def image_to_base64_on_tree(tree: Tree):
-    for node in tree.all_nodes():
-        soup = BeautifulSoup(node.content, "html.parser")
-        image_to_base64(soup)
+
+def remove_attrs(root: Node, attrs_to_keep: List[str]):
+    for node in root.iter_subtree_with_dfs():
+        soup = SoupInfo.get(node).soup
+        for ele in soup.descendants:
+            if ele.name:
+                for attr in list(ele.attrs):
+                    if attr not in attrs_to_keep:
+                        del ele.attrs[attr]
+        node.content = html.escape(str(soup))
+
+def remove_elements(root: Node, elements: List[str]):
+    for node in root.iter_subtree_with_dfs():
+        soup = SoupInfo.get(node).soup
+        for ele in soup.find_all(elements):
+            ele.decompose()
         node.content = str(soup)
 
-def image_to_base64(soup: BeautifulSoup):
+
+def unwrap_elements(root: Node, elements: List[str]):
+    for node in root.iter_subtree_with_dfs():
+        soup = SoupInfo.get(node).soup
+        for ele in soup.find_all(elements):
+            ele.unwrap()
+        node.content = str(soup)
+
+
+def image_to_base64_on_tree(tree: Tree, base_path=""):
+    for node in tree.all_nodes():
+        soup = SoupInfo.get(node).soup
+        image_to_base64(soup, base_path)
+
+def image_to_base64(soup: BeautifulSoup, base_path):
     img_elements = soup.find_all("img")
     for img_element in img_elements:
         # get src of img element
         src = img_element.get("src")
+        if src.startswith("data:image"):
+            continue
+        src = os.path.join(base_path, src)
         # open image file
         with open(src, "rb") as f:
             # convert image to base64
@@ -56,7 +110,7 @@ def image_to_base64(soup: BeautifulSoup):
 
 def post_process_html_tree(tree):
     for node in tree.all_nodes():
-        node.content = "<span>" + node.content + "</span>"
+        node.content = node.content
 
 
 
@@ -65,7 +119,7 @@ def html_to_raw_tree(soup: BeautifulSoup, title="") -> Tree:
     tree = Tree()
     curr_node = tree.root.s(title)
     node_stack = []
-    curr_content = []
+    curr_content: List[PageElement] = []
     curr_level = -1
     for child in soup.children:
         # check whether it's hn use regex
@@ -92,9 +146,10 @@ def html_to_raw_tree(soup: BeautifulSoup, title="") -> Tree:
 
 segment_length_threshold = 1500
 
-def set_content(node: Node, contents: List):
+def set_content(node: Node, contents: List[PageElement]):
     segment_contents = [""]
     for segment in contents:
+        segment = unwrap_useless_tags(segment)
         segment = str(segment)
         if len(segment.strip()) == 0:
             continue
@@ -107,6 +162,15 @@ def set_content(node: Node, contents: List):
         node_added = node.s(f"Segment {i+1}").be(segment)
         add_bad_reason(node_added, "overlap_to_sibling")
         add_bad_reason(node_added, "bad_title")
+
+
+def unwrap_useless_tags(content: PageElement):
+    if content.name in ["p", "div", "span"]:
+        # return all children
+        if len(content.contents) == 1:
+            return unwrap_useless_tags(content.contents[0])
+        return "".join([str(child) for child in content.children])
+    return content
 
 
 def bfs_on_soup(soup: BeautifulSoup):
