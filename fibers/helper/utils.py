@@ -3,6 +3,7 @@ import concurrent.futures
 import json
 import os
 import sys
+import time
 from typing import List
 
 from tenacity import retry, stop_after_attempt, wait_fixed, \
@@ -64,12 +65,16 @@ def parallel_map(func, *args, n_workers=8):
     from fibers.helper.cache.cache_service import caching
 
     arg_lists = [list(arg) for arg in args]
-
+    start_time = time.time()
     with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
         results = []
-        for result in tqdm(executor.map(func, *arg_lists, timeout=20), total=len(arg_lists[0]),
+        for result in tqdm(executor.map(func, *arg_lists, timeout=30), total=len(arg_lists[0]),
                            desc=func.__name__):
             results.append(result)
+            time_now = time.time()
+            if time_now - start_time > 5:
+                caching.save()
+                start_time = time_now
     caching.save()
     return enumerate(results)
 
