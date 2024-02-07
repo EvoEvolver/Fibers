@@ -41,6 +41,18 @@ def ask_vision_model(image: Image, question: str) -> bool:
         return False
 
 
+def ask_human(question: str):
+    """
+    Ask a human a question.
+    :param question: The question for the human to answer.
+    :return: The response from the human.
+    """
+    print("Human, please answer the following question:")
+    print(question)
+    res = input()
+    return res
+
+
 """
 # Text and Image Input/Output
 """
