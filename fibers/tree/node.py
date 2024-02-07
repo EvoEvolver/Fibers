@@ -103,7 +103,7 @@ class Node:
         self.tree.add_child(key, self, node)
         return node
 
-    def new_sibling_after(self, key: str) -> Node:
+    def new_sibling_after(self, key: str, index_to_insert=None) -> Node:
         self_path = list(self.path())
         new_path = self_path[:-1] + [key]
         try:
@@ -111,16 +111,23 @@ class Node:
             new_path[-1] = new_path[-1] + " *"
         except:
             existing_node = None
-        assert existing_node is None
+        #assert existing_node is None
         new_node = self.tree.new_node_by_path(self_path[:-1] + [key])
         parent_children = self.parent().children()
+        index_to_insert = index_to_insert if index_to_insert is not None else self.sibling_list()[1] + 1
+
+        i = 0
         new_children_dict = {}
-        for title, node in list(parent_children.items())[:-1]:
-            new_children_dict[title] = node
-            if node is self:
+        for title, node in list(parent_children.items()):
+            if i == index_to_insert:
                 new_children_dict[key] = new_node
+                i += 1
+            new_children_dict[title] = node
+            i += 1
+
         self.tree.children[self.parent()] = new_children_dict
         return new_node
+
 
     def s(self, key) -> Node:
         """

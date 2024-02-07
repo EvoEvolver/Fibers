@@ -1,17 +1,16 @@
-import math
 from typing import List
 
+from fibers.compose.sparsify.shape_optimize import make_all_content_on_leaf, \
+    combine_single_child
 from moduler.decorator import example
 from tqdm import tqdm
 
-from fibers.data_loader.bad_text_node_class import add_bad_reason, has_bad_reason
+from fibers.data_loader.bad_text_node_class import has_bad_reason
 from fibers.data_loader.html_to_tree import html_to_tree
 from fibers.helper.cache.cache_service import caching, auto_cache
 from fibers.helper.utils import parallel_map, RobustParse
 from fibers.model.chat import Chat
 from fibers.testing.testing_nl_dataset.loader import extract_dataset
-from fibers.testing.testing_trees.loader import load_sample_tree
-from fibers.compose.sparsify.text_sparsify import count_words
 from fibers.tree import Tree, Node
 from fibers.tree.node_class import NodeClass
 from fibers.tree.prompt_utils import get_node_list_prompt
@@ -192,18 +191,26 @@ def make_tree_from_layered_summary(node: Node, layer_lists, children_dict):
                 child_node = parent_node.s(title).be(content)
                 node_pos_map[child_pos] = child_node
 
+def moving_window_decompose_impl(content, window_size, overlap_size):
+    if len(content) <= window_size:
+        return [content]
 
-def combine_single_child(root: Node):
-    for node in list(root.iter_subtree_with_dfs()):
-        if len(node.children()) != 1:
-            continue
-        child = list(node.children().values())[0]
-        if has_bad_reason(child, "bad_title"):
-            node.content = child.content
-            node.class_data = child.class_data
-            child.remove_self()
+    split_contents = content.split(" ")
+    contents_by_window = []
 
+    for i in range(0, len(split_contents), window_size - overlap_size):
+        chunk_end = i + window_size
+        chunk_start = i
+        if chunk_end > len(split_contents):
+            chunk_end = len(split_contents)
+            chunk_start = chunk_end - window_size
+        chunk = " ".join(split_contents[chunk_start:chunk_end]).strip()
+        if len(chunk) > 0:
+            contents_by_window.append(chunk)
+        if chunk_end == len(split_contents):
+            break
 
+    return contents_by_window
 
 def make_layer_summary_for_ancestor(node: Node, new_summary, group_size=3, summary_limit=50):
     parent = node.parent()
@@ -224,14 +231,6 @@ def make_layer_summary_for_ancestor(node: Node, new_summary, group_size=3, summa
                                    children_dict, summary_limit=summary_limit)
         top_summary = parent_layered_summary[-1][0]
         make_layer_summary_for_ancestor(parent, top_summary, group_size=group_size, summary_limit=summary_limit)
-
-
-def make_all_content_on_leaf(tree: Tree):
-    for node in list(tree.root.iter_subtree_with_dfs()):
-        if node.is_empty() or not node.has_child():
-            continue
-        print(node.children())
-        node.s("direct content").be(node.content)
 
 
 def moving_window_decompose(root: Node, window_size=50, overlap_size=10):
@@ -266,25 +265,6 @@ def moving_window_decompose(root: Node, window_size=50, overlap_size=10):
         if has_chunked_children:
             LayeredSummary.set_attr(node, "layered_summary", [[]])
 
-def moving_window_decompose_impl(content, window_size, overlap_size):
-    if len(content) <= window_size:
-        return [content]
-
-    split_contents = content.split(" ")
-    contents_by_window = []
-    for i in range(0, len(split_contents), window_size - overlap_size):
-        chunk_end = i + window_size
-        chunk_start = i
-        if chunk_end > len(split_contents):
-            chunk_end = len(split_contents)
-            chunk_start = chunk_end - window_size
-        chunk = " ".join(split_contents[chunk_start:chunk_end]).strip()
-        if len(chunk) > 0:
-            contents_by_window.append(chunk)
-        if chunk_end == len(split_contents):
-            break
-
-    return contents_by_window
 
 def dependent_summarize_node(node: Node, up_context_on_tree: List[str], group_size=3, summary_limit=50):
     assert node.isinstance(Chunked)
