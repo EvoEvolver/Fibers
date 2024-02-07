@@ -1,5 +1,5 @@
 
-# Fibers: knowledge with bones
+# Fibers
 
 <div style="text-align: center;">
 <a href="https://f.evoevo.org/html/project_tree.html">ProjectTree</a>

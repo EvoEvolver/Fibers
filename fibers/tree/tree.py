@@ -248,6 +248,7 @@ class Tree:
             Tree.forest_connector = ForestConnector(dev_mode=dev_mode)
             Tree.forest_connector.run()
         Tree.forest_connector.update_tree(tree_json, self.tree_id)
+        time.sleep(0.3)
 
 
     def stop_tree_gui_react(self):

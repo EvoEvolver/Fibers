@@ -26,7 +26,7 @@ class InstRun(Attr):
         self.code = None
         self.var_table_at_run = None
         self.report_of_old_siblings = None
-        self.report_of_self = None
+        self.report_of_self = ""
 
 
     def render(self, node: Node, rendered):
@@ -38,7 +38,7 @@ class InstRun(Attr):
         if self.var_table_at_run is not None:
             content.append(html.escape(self.var_table_at_run).replace("\n", "<br/>"))
 
-        rendered.tabs["inst_run"] = "<br/>".join(content)
+        rendered.tabs["inst_run"] = "<span>"+"<br/>".join(content)+"</span>"
 
 
 class InstructionRunner:
@@ -192,10 +192,13 @@ There exist some functions that might be used to implement the instructions.
             module_list = [f"{module.__name__}" for module in self.external_modules]
             module_env = "Available modules:\n" + "\n".join(module_list)
 
-        env = f"""
+        env = ""
+        if progress_env != "":
+            env += f"""
 Progress so far:        
 {progress_env}
-
+"""
+        env = f"""
 {func_env}
 
 {module_env}
