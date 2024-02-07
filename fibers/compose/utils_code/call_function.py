@@ -198,7 +198,7 @@ Start your answer with "def step():" (don't add arguments!)
     return code_exec, new_variables
 
 
-def process_and_run_code(code_raw, var_table, hidden_var_table=None) -> str:
+def process_and_run_code(code_raw, var_table, hidden_var_table=None):
     if "```python" in code_raw:
         code_raw = code_raw.split("```python")[1]
         code_raw = code_raw.split("```")[0]
@@ -241,21 +241,3 @@ def process_and_run_code(code_raw, var_table, hidden_var_table=None) -> str:
     return code_exec, new_variables
 
 
-@example
-def example():
-    from fibers.testing.testing_modules.v_lab import operation
-    tree = get_tree_for_module(operation)
-    summarize_code_tree(tree)
-    node = tree.get_node_by_path(('fibers.testing.testing_modules.v_lab.operation',
-                                  'Operations', 'Salt water making',
-                                  'get_a_beaker_of_salt_water',
-                                  'get_a_beaker_of_salt_water'))
-    variables = VariableTable()
-    variables.add_variable("water_volume", 1000, "The volume of water in the beaker.")
-    available_vars = call_function_node([node], variables,
-                                        "the water volume should be water_volume, salt volume is 10. name the returned beaker as zijian_water")
-    print(available_vars.get_prompt())
-
-
-if __name__ == '__main__':
-    example()

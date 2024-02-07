@@ -24,18 +24,21 @@ def call_chat_model(prompt) -> str:
     return res
 
 
-def call_vision_model(image: Image, prompt: str) -> str:
+def ask_vision_model(image: Image, question: str) -> bool:
     """
-    Call the vision model.
+    Ask the vision model a question with answer being True or False.
     :param image: The image for the vision model.
-    :param prompt: The prompt for the vision model.
-    :return: The response from the vision model.
+    :param question: The question for the vision model to answer.
+    :return: The response from the vision model with answer being True or False.
     """
-    chat = Chat()
+    chat = Chat(system_message="You are a helpful assistant who only answer in `yes` of `no`")
     chat.add_image_message_by_obj(image)
-    chat.add_user_message(prompt)
+    chat.add_user_message(question)
     res = chat.complete_chat()
-    return res
+    if "yes" in res.lower():
+        return True
+    else:
+        return False
 
 
 """
