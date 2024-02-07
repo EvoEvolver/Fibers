@@ -12,15 +12,17 @@ class Rendered:
         self.children = []
         self.title = ""
 
-    def to_json(self):
+    def to_json(self, parent_path: str = "") -> dict:
         children = []
+        my_path = parent_path + "/" + self.title
         for child in self.children:
-            children.append(child.to_json())
+            children.append(child.to_json(my_path))
         return {
             "title": self.title,
             "tabs": self.tabs,
             "tools": self.tools,
             "children": children,
+            "path": my_path,
             "data": {}
         }
 
