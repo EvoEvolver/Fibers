@@ -1,5 +1,6 @@
 from typing import List
 
+from fibers.helper.cache.cache_service import auto_cache
 from fibers.helper.utils import RobustParse, parallel_map
 from fibers.model.chat import Chat
 from fibers.tree import Node
@@ -30,7 +31,7 @@ def beam_search(root: Node, requirement: str, content_map: ContentMap = None) ->
                 visited_nodes.add(node)
     return list(matched_nodes_set)
 
-
+@auto_cache
 def pick_next(node: Node, requirement: str, content_map: ContentMap = None) -> (
         List[Node], List[Node]):
     if content_map is None:

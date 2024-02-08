@@ -75,7 +75,7 @@ if __name__ == '__main__':
     from q_lab import draw_x_y_plot
     img = draw_x_y_plot(np.array([1, 2, 3]), np.array([1, 2, 3]), x_label='X',
                         y_label='Y')
-    res = call_vision_model(img, "What is in this image?")
+    res = ask_vision_model(img, "Is the x-y plot a straight line?")
     print(res)
 
 

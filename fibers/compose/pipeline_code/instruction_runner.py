@@ -1,6 +1,5 @@
 import html
-from typing import List
-
+from typing import List, Dict
 
 from fibers.compose.decorate.code_summary import CodeSummary, \
     summarize_code_tree
@@ -8,7 +7,7 @@ from fibers.compose.extract.searcher import CodeSearcher, DocsSearcher
 from fibers.compose.utils_code.call_function import VariableTable, call_function_node, \
     get_codes_in_prompt
 from fibers.data_loader.module_to_tree import add_module_tree_to_node
-from fibers.helper.cache.cache_service import auto_cache
+from fibers.helper.cache.cache_service import auto_cache, caching
 from fibers.helper.utils import RobustParse
 from fibers.model.chat import Chat
 from fibers.tree import Tree, Node
@@ -22,10 +21,8 @@ from fibers.tree.prompt_utils import get_node_list_prompt
 class InstRun(Attr):
     def __init__(self, node: Node):
         super().__init__(node)
-        self.decomposable = None
         self.code = None
         self.var_table_at_run = None
-        self.report_of_old_siblings = None
         self.report_of_self = ""
 
 
@@ -47,9 +44,17 @@ class InstructionRunner:
         self.var_table = variable_table or VariableTable()
         self.var_table_hidden = VariableTable()
 
-        self.external_modules = external_modules or []
-        for module in self.external_modules:
-            self.var_table_hidden.add_variable(module.__name__, module, f"The {module.__name__} module")
+        self.external_modules: Dict = {}
+        for module in external_modules:
+            if isinstance(module, tuple) or isinstance(module, list):
+                module_name = module[0]
+                module_obj = module[1]
+            else:
+                module_name = module.__name__
+                module_obj = module
+            module_doc = f"{module_obj.__name__} module"
+            self.external_modules[module_name] = module_doc
+            self.var_table_hidden.add_variable(module_name, module_obj, module_doc)
 
         self.module_tree = Tree("Available modules")
         for module in modules:
@@ -69,15 +74,15 @@ class InstructionRunner:
         self.inst_run_limit = 40
 
     def run_short_instruction(self, inst_node: Node, code_nodes: List[Node]):
-        instruction = inst_node.content
+        instruction = NormInst.get(inst_node).get_prompt()
         context = ""
         if len(code_nodes) != 0:
             context += f"""Here are the functions in the scope that you can call to meet the requirement: """
             context += get_codes_in_prompt(code_nodes)
         if len(self.external_modules) != 0:
-            context += """\nHere are modules you can use\n"""
-            for mod in self.external_modules:
-                context += f"""{mod.__name__}"""
+            context += """\nHere are modules you can directly use without import\n"""
+            for var_name, mod_doc in self.external_modules.items():
+                context += f"{var_name}: {mod_doc} \n"
             context += "\n"
 
         self.var_table_hidden = self.var_table_hidden.push_new_table()
@@ -96,17 +101,15 @@ class InstructionRunner:
         inst_info.report_of_self = report
 
         parent_info = inst_node.parent().get_attr(InstRun)
-        parent_info.report_of_self = merge_reports(parent_info.report_of_self, report, inst_node.content)
+        parent_info.report_of_self = merge_reports(parent_info.report_of_self, report, NormInst.get(inst_node).get_prompt())
 
 
 
-        inst_node.tree.show_tree_gui_react()
+
 
 
     def grow_instruction_tree(self, inst_node: Node):
-        progress_so_far = None
-        if inst_node.parent() is None:
-            progress_so_far = self.get_progress_of_inst_node(inst_node.parent())
+        caching.save()
 
         inst_info = InstRun.get(inst_node)
 
@@ -114,10 +117,11 @@ class InstructionRunner:
             for child in inst_node.children().values():
                 InstRun.get(child).report_of_self = inst_info.report_of_self
                 self.grow_instruction_tree(child)
-                inst_info.report_of_self = merge_reports(inst_info.report_of_self, child.get_attr(InstRun).report_of_self, inst_node.content)
+                inst_info.report_of_self = merge_reports(inst_info.report_of_self, child.get_attr(InstRun).report_of_self, NormInst.get(inst_node).get_prompt())
             return
 
-        if inst_node.is_empty():
+        norm_inst = NormInst.get(inst_node)
+        if len(norm_inst.procedure) == 0:
             return
 
         # The inst_node is not empty
@@ -125,7 +129,7 @@ class InstructionRunner:
         # This two points implies we need to grow the tree
 
         # Search for related functions
-        function_requirement = "The children might be useful to implement the following instructions \n <instruction>" + inst_node.content + "</instruction>"
+        function_requirement = "The children might be useful to implement the following instructions \n <instruction>" + norm_inst.get_prompt() + "</instruction>"
         related_func_nodes = self.code_searcher.search(function_requirement, ["function", "example"])
 
         #related_docs_nodes = self.doc_searcher.search(inst_node.content)
@@ -140,41 +144,50 @@ class InstructionRunner:
         # If no clue: use llm to generate or ask human
 
 
-        word_count = len(inst_node.content.split(" "))
+        word_count = len(" ".join(norm_inst.procedure).split(" "))
         if word_count < self.inst_run_limit:
             self.run_short_instruction(inst_node, related_func_nodes)
+            inst_node.tree.show_tree_gui_react()
             return
 
         # The instruction is long, so we need to decompose it
         self.var_table = self.var_table.push_new_table()
         while True:
             env = self.get_environment(related_func_nodes, inst_node)
-            next_step = get_next_step(inst_node.content, env)
 
-            if next_step != "":
-                children_list = list(inst_node.children().values())
-                new_child = inst_node.new_child("Step " + str(len(children_list) + 1)).be(
-                    next_step)
+            print("generating next step")
+
+            next_steps, exp_result, title = get_next_step(NormInst.get(inst_node).get_procedure_prompt(), env)
+
+            if len(next_steps) > 0:
+                new_child = inst_node.new_child(title)
+                norm_inst = NormInst(new_child)
+                norm_inst.procedure = next_steps
+                norm_inst.result = exp_result
+                InstRun.get(new_child).report_of_self = ""
+
+                new_child.tree.show_tree_gui_react()
+
                 self.grow_instruction_tree(new_child)
-
             else:
-                inst_node.get_attr(InstRun).report_of_self = self.get_progress_of_inst_node(inst_node)
                 # Whenever go up to parent, we try discard some variables
                 self.reduce_var_table(inst_node)
-
                 break
 
     def reduce_var_table(self, inst_node):
         var_names_to_keep = filter_variables(self.var_table, inst_node)
         parent_table = self.var_table.pop_table()
         for var_name in var_names_to_keep:
-            obj, docs = self.var_table.get_variable(var_name)
-            parent_table.add_variable(var_name, obj, docs)
+            try:
+                obj, docs = self.var_table.get_variable(var_name)
+                parent_table.add_variable(var_name, obj, docs)
+            except KeyError:
+                pass
         self.var_table = parent_table
 
     def get_environment(self, code_nodes, inst_node: Node):
 
-        progress_env = self.get_progress_of_inst_node(inst_node)
+        progress_env = InstRun.get(inst_node).report_of_self
 
         var_env = self.var_table.get_prompt()
 
@@ -189,8 +202,10 @@ There exist some functions that might be used to implement the instructions.
 
         module_env = ""
         if len(self.external_modules) != 0:
-            module_list = [f"{module.__name__}" for module in self.external_modules]
-            module_env = "Available modules:\n" + "\n".join(module_list)
+            module_env += """\nModules in scope\n"""
+            for var_name, mod_doc in self.external_modules.items():
+                module_env += f"{var_name}: {mod_doc} \n"
+            module_env += "\n"
 
         env = ""
         if progress_env != "":
@@ -198,7 +213,7 @@ There exist some functions that might be used to implement the instructions.
 Progress so far:        
 {progress_env}
 """
-        env = f"""
+        env += f"""
 {func_env}
 
 {module_env}
@@ -210,10 +225,6 @@ There exist some variables you can use.
 """
         return env
 
-    def get_progress_of_inst_node(self, inst_node):
-        inst_info: InstRun = inst_node.get_attr(InstRun)
-        return inst_info.report_of_self
-
 
 
 
@@ -221,7 +232,7 @@ def filter_variables(var_table, inst_node: Node):
     prompt = f"""
 You tried to follow the instruction below and have finished it.
 <instruction start>
-{inst_node.content}
+{NormInst.get(inst_node).get_prompt()}
 <instruction end>
 
 Your task now is to pick the variables that can be treated as the output of the instruction.
@@ -244,7 +255,7 @@ The second key should be "variables" whose value is a list of strings, each stri
 @auto_cache
 def get_next_step(inst: str, environment=""):
     prompt = f"""
-You are trying to generate codes based on some instructions.
+You are trying to implement some instructions by calling Python functions.
 
 The instruction/description is as follows:
 <instruction start>
@@ -254,19 +265,21 @@ The instruction/description is as follows:
 {environment}
 
 You are going to generate one step the next step of for finishing the instruction.
-Output your answer by a JSON dict with first key being "analysis" for a string that analyze the situation *step-by-step*. Notice that the information above might be irrelevant to the next step. 
+Output your answer by a JSON dict with first key being "analysis" for a string that analyze the situation. Notice that the information above might be irrelevant to the next step. 
 The second key should be "finished" whose value is a boolean. If only some of the points are finished, you should output false.
-Then third key "next step" being a concise description of the next step for the instruction in *natural language* for passing to someone else to execute.
+Then third key "next_steps" being a list of strings of the plan for next a few steps for others who don't know the context to carry out. The list should contain as few steps as possible.
+The forth key "result" should be a list of description of the expected result of the next steps.
+The forth key "title" being a string that summarize the next steps.
 """
-    chat = Chat(prompt, "You are an helpful assistant who help analyze instructions.")
-    res = chat.complete_chat(options={"model": "gpt-4"})
+    chat = Chat(prompt, "You are an helpful analyzer for planing who only output JSON")
+    res = chat.complete_chat_expensive()
     res = RobustParse.dict(res)
     print(chat)
-    next_step = res["next step"]
+    next_steps = res["next_steps"]
     if res["finished"]:
-        return ""
+        return [], [], ""
     else:
-        return next_step
+        return next_steps, res["result"], res["title"]
 
 
 def code_to_report(code, instruction, new_variables: VariableTable):
@@ -277,13 +290,13 @@ You are trying to follow this instruction:
 This is the code you have written:
 {code}
 """
-    if not new_variables.is_empty():
+    if not new_variables.is_local_empty():
         prompt += f"""
 Here is the results you have got:
 {new_variables.get_prompt()}
 """
     prompt += """
-You are trying to summarize the progress that instruction is implemented by the code. 
+You are trying to summarize the progress that instruction is implemented by the code.
 You do not need to mention the detail of code in the summary.
 Start your answer with "Summary: ".
 """
@@ -294,6 +307,7 @@ Start your answer with "Summary: ".
 
 
 def merge_reports(report_of_old_sibling, new_report, instruction):
+    report_of_old_sibling = report_of_old_sibling if report_of_old_sibling != "" else "Nothing has been done."
     prompt = f"""
 You are trying to report your progress on implementing some instructions.
 The instruction is as follows:
@@ -320,8 +334,73 @@ Then, the section key should be "summary" whose value is a string that summarize
     res = chat.complete_chat()
     res = RobustParse.dict(res)
 
-    print(chat)
     return res["summary"]
 
 
+class NormInst(Attr):
+    def __init__(self, node: Node):
+        super().__init__(node)
+        self.procedure = []
+        self.result = []
+        self.knowledge = []
 
+    def render(self, node: Node, rendered):
+        content = f"""
+Procedure: {list_to_prompt(self.procedure)}<br/>
+Result: {list_to_prompt(self.result)}<br/>
+Knowledge: {list_to_prompt(self.knowledge)}
+"""
+        rendered.tabs["NormInst"] = content
+
+    def get_procedure_prompt(self):
+        return list_to_prompt(self.procedure)
+
+    def get_prompt(self):
+        res = ""
+        if len(self.procedure) == 0:
+            res += "The node is empty"
+        else:
+            res += self.get_procedure_prompt()
+        if len(self.result) != 0:
+            res += f"""
+Expected result: 
+{list_to_prompt(self.result)}"""
+        if len(self.knowledge) != 0:
+            res += f"""
+Knowledge:
+{list_to_prompt(self.knowledge)}"""
+        return res
+
+
+def list_to_prompt(l):
+    return "\n".join([f"{i+1}. {html.escape(c)}" for i, c in enumerate(l)])
+
+
+@auto_cache
+def normalize_inst_node(node: Node):
+    if node.is_empty():
+        return
+    prompt = f"""
+You are trying to divide the content into 3 parts: 
+- procedure to execute
+- the final result expected by the description (ignoring intermediate results)
+- knowledge for executing the procedures that is hard to include in the procedure part.
+
+You output should be a JSON dict with keys being "procedure", "result" and "knowledge", each of which should be a list of strings. 
+You should try your best not lose any information in the content.
+
+The content is:
+{node.content}
+<end>
+
+Start your answer.
+"""
+    chat = Chat(system_message="You are a useful assistant who only output JSON")
+    chat.add_user_message(prompt)
+    res = chat.complete_chat()
+    res = RobustParse.dict(res)
+    #node.content = list_to_prompt(res["procedure"])
+    inst_content = NormInst(node)
+    inst_content.procedure = res["procedure"]
+    inst_content.result = res["result"]
+    inst_content.knowledge = res["knowledge"]

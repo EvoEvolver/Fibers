@@ -52,6 +52,9 @@ class VariableTable:
         return prompt_dict
 
     def is_empty(self):
+        return len(self.get_prompt().strip()) == 0
+
+    def is_local_empty(self):
         return len(self.get_local_prompt().strip()) == 0
 
     def get_interpreter(self):
@@ -163,12 +166,11 @@ def call_function_node(context: str, requirement: str, var_table: VariableTable,
 """
 
     prompt += f"""
-You are required to output Python code in the following format. You have to write the documentation of the return values. Your code must be executable.
+You are required to output Python code in the following format. You have to write the documentation of the return values. Your code must be executable. Do not put tuple in return values.
 def step():
     ... (Your code here)
     return return_value_1, return_value_2, ...
     # return_value_1: documentation of the return value
-    # return_value_2: documentation of the return value
     # ...
     
 """
@@ -178,19 +180,22 @@ def step():
 You can use the following variables that is available in the current scope.
 Variables:
 {var_table.get_prompt()}
+
 """
     prompt += f"""Requirement of output: 
 You are not allowed to modify the variables expect in the line of function call.
 You should not use any variable that is not in the current scope.
-You should not use import statement.
+You should not use import statement. 
+The return values will overwrite the variables in the scope. And you should only return the required variables.
 Again, the requirement is:
 {requirement}
 
 Start your answer with "def step():" (don't add arguments!)
 """
     chat = Chat(prompt,
-                "You are a code generator who only outputs Python code. You should only output Python code.")
+                "You are a code generator who only outputs Python code.")
     code_raw = chat.complete_chat_expensive()
+    print("Generating code...")
     print(chat)
 
     code_exec, new_variables = process_and_run_code(code_raw, var_table, hidden_var_table)
