@@ -45,6 +45,7 @@ class InstructionRunner:
         self.var_table_hidden = VariableTable()
 
         self.external_modules: Dict = {}
+        external_modules = external_modules or []
         for module in external_modules:
             if isinstance(module, tuple) or isinstance(module, list):
                 module_name = module[0]
