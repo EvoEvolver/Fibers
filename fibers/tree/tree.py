@@ -240,15 +240,20 @@ class Tree:
         """
         Show the tree in a webpage
         """
-        if renderer is None:
-            renderer = Renderer
-
-        tree_json = renderer().render_to_json(self.root)
         if Tree.forest_connector is None:
             Tree.forest_connector = ForestConnector(dev_mode=dev_mode)
             Tree.forest_connector.run()
-        Tree.forest_connector.update_tree(tree_json, self.tree_id)
-        time.sleep(0.5)
+
+
+    def update_tree_gui(self, renderer=None):
+        if renderer is None:
+            renderer = Renderer
+        tree_json = renderer().render_to_json(self.root)
+        if Tree.forest_connector is None:
+            return
+        else:
+            Tree.forest_connector.update_tree(tree_json, self.tree_id)
+            time.sleep(0.5)
 
 
     def stop_tree_gui_react(self):

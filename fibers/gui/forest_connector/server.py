@@ -45,7 +45,6 @@ def updateTree():
     tree = request.get_json()['tree']
     tree_id = request.get_json()['tree_id']
     trees[tree_id] = tree
-    print(f'updateTree {tree_id}')
     # TODO: check if the tree_id is valid.
     socketio.emit('setTree', {"tree": tree, "tree_id": tree_id})
     return "OK"

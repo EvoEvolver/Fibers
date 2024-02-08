@@ -1,11 +1,8 @@
-from fibers.compose.pipeline_code import tool_box
-from fibers.compose.pipeline_code.instruction_runner import InstructionRunner, \
-    normalize_inst_node
-from fibers.compose.pipeline_text.tree_preprocess import preprocess_text_tree
+from fibers.compose.agent import tool_box
+from fibers.compose.agent.instruction_runner import InstructionRunner
 from fibers.data_loader.markdown_to_tree import markdown_to_tree
 from fibers.helper.cache.cache_service import caching
-from fibers.helper.utils import parallel_map
-from playground.instruction_run import data_analyst_lab
+import data_analyst_lab
 
 
 def main():
@@ -21,17 +18,11 @@ def main():
 
     tree = markdown_to_tree(instructions)
 
-    preprocess_text_tree(tree, fat_limit=3000)
-
-    parallel_map(normalize_inst_node, tree.iter_with_dfs())
-
     tree.show_tree_gui_react()
 
     inst_runner = InstructionRunner([data_analyst_lab, tool_box], None)
 
-    inst_runner.inst_run_limit = 40
-
-    inst_runner.grow_instruction_tree(tree.root.first_child())
+    inst_runner.run_instruction_tree(tree.root)
 
     caching.save_used()
 

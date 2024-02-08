@@ -1,5 +1,4 @@
 from fibers import debug
-from fibers.agent import Agent
 from fibers.helper.utils import standard_multi_attempts, RobustParse
 from fibers.indexing.indexing import Indexing
 from fibers.indexing.key_phrase import KeyPhraseIndexing
@@ -9,7 +8,7 @@ from fibers.tree import Tree
 from fibers.tree.prompt_utils import get_path_content_str_for_prompt
 
 
-class QuestionAnswerer(Agent):
+class QuestionAnswerer:
     def __init__(self, tree: Tree):
         super().__init__()
         self.tree = tree

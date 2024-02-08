@@ -57,11 +57,12 @@ Article part:
     return segments
 
 
-def weight_reduce_brutal(tree: Tree, fat_limit=50):
+def weight_reduce_brutal(root: Node, fat_limit=50):
     while True:
         big_fat_nodes = []
         mid_fat_nodes = []
-        for node in tree.iter_with_bfs():
+        sub_tree_nodes = list(root.iter_subtree_with_bfs())
+        for node in sub_tree_nodes:
             if count_words(node.content) > fat_limit * 1.5:
                 big_fat_nodes.append(node)
             elif count_words(node.content) > fat_limit:
@@ -69,7 +70,7 @@ def weight_reduce_brutal(tree: Tree, fat_limit=50):
         if len(big_fat_nodes) == 0:
             break
 
-        print(f"Fat nodes: {len(big_fat_nodes)}/{len(tree.all_nodes())}")
+        print(f"Fat nodes: {len(big_fat_nodes)}/{len(sub_tree_nodes)}")
         for i, res in parallel_map(decompose_content, big_fat_nodes):
             node = big_fat_nodes[i]
             node.reset_title("to_delete")
@@ -178,9 +179,9 @@ def merge_children(root: Node):
     return nodes_to_remove
 
 
-def merge_overlapping_siblings_once(tree: Tree) -> bool:
+def merge_overlapping_siblings_once(node: Node) -> bool:
     nodes_to_remove = []
-    nodes = list(tree.iter_with_dfs())
+    nodes = list(node.iter_subtree_with_dfs())
     for node in tqdm(nodes):
         nodes_to_remove += merge_children(node)
     for node in nodes_to_remove:
@@ -188,13 +189,13 @@ def merge_overlapping_siblings_once(tree: Tree) -> bool:
     return len(nodes_to_remove) > 0
 
 
-def break_and_merge_siblings(tree: Tree, fat_limit=100, max_iter=10):
+def break_and_merge_siblings(root: Node, fat_limit=100, max_iter=10):
     for i in range(max_iter):
-        weight_reduce_brutal(tree, fat_limit)
-        finished = merge_overlapping_siblings_once(tree)
+        weight_reduce_brutal(root, fat_limit)
+        finished = merge_overlapping_siblings_once(root)
         if finished:
             break
-    weight_reduce_brutal(tree, fat_limit)
+    weight_reduce_brutal(root, fat_limit)
 
 
 """

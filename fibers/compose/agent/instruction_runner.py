@@ -4,8 +4,10 @@ from typing import List, Dict
 from fibers.compose.decorate.code_summary import CodeSummary, \
     summarize_code_tree
 from fibers.compose.extract.searcher import CodeSearcher, DocsSearcher
-from fibers.compose.utils_code.call_function import VariableTable, call_function_node, \
+from fibers.compose.pipeline_text.tree_preprocess import preprocess_text_tree
+from fibers.compose.agent.call_function import call_function_node, \
     get_codes_in_prompt
+from fibers.compose.agent.var_table import VariableTable
 from fibers.data_loader.module_to_tree import add_module_tree_to_node
 from fibers.helper.cache.cache_service import auto_cache, caching
 from fibers.helper.utils import RobustParse, parallel_map
@@ -18,7 +20,7 @@ from fibers.tree.node_class.code_node import get_obj
 from fibers.tree.prompt_utils import get_node_list_prompt
 
 
-class InstRun(Attr):
+class InstRes(Attr):
     def __init__(self, node: Node):
         super().__init__(node)
         self.code = None
@@ -44,18 +46,8 @@ class InstructionRunner:
         self.var_table = variable_table or VariableTable()
         self.var_table_hidden = VariableTable()
 
-        self.external_modules: Dict = {}
-        external_modules = external_modules or []
-        for module in external_modules:
-            if isinstance(module, tuple) or isinstance(module, list):
-                module_name = module[0]
-                module_obj = module[1]
-            else:
-                module_name = module.__name__
-                module_obj = module
-            module_doc = f"{module_obj.__name__} module"
-            self.external_modules[module_name] = module_doc
-            self.var_table_hidden.add_variable(module_name, module_obj, module_doc)
+        self.external_module_docs: Dict = {}
+        self.load_external_modules(external_modules)
 
         self.module_tree = Tree("Available modules")
         for module in modules:
@@ -64,7 +56,6 @@ class InstructionRunner:
         summarize_code_tree(self.module_tree)
 
         self.code_searcher: CodeSearcher = CodeSearcher(self.module_tree.root)
-
         self.doc_searcher: DocsSearcher = None
         if docs_tree is not None:
             self.doc_searcher: DocsSearcher = DocsSearcher(docs_tree.root)
@@ -74,38 +65,60 @@ class InstructionRunner:
 
         self.inst_run_limit = 40
 
+    def load_external_modules(self, external_modules):
+        external_modules = external_modules or []
+        for module in external_modules:
+            if isinstance(module, tuple) or isinstance(module, list):
+                module_name = module[0]
+                module_obj = module[1]
+            else:
+                module_name = module.__name__
+                module_obj = module
+            module_doc = f"{module_obj.__name__} module"
+            self.external_module_docs[module_name] = module_doc
+            self.var_table_hidden.add_variable(module_name, module_obj, module_doc)
+
+    def run_instruction_tree(self, root: Node, show_tree=True):
+        if show_tree:
+            root.tree.show_tree_gui_react()
+        preprocess_text_tree(root, fat_limit=3000)
+        root.tree.update_tree_gui()
+        self.grow_instruction_tree(root)
+
     def run_short_instruction(self, inst_node: Node, code_nodes: List[Node]):
         instruction = NormInst.get(inst_node).get_prompt()
+
         context = ""
         if len(code_nodes) != 0:
             context += f"""Here are the functions in the scope that you can call to meet the requirement: """
             context += get_codes_in_prompt(code_nodes)
-        if len(self.external_modules) != 0:
+        if len(self.external_module_docs) != 0:
             context += """\nHere are modules you can directly use without import\n"""
-            for var_name, mod_doc in self.external_modules.items():
+            for var_name, mod_doc in self.external_module_docs.items():
                 context += f"{var_name}: {mod_doc} \n"
             context += "\n"
 
+        # Add the functions to the hidden var table
         self.var_table_hidden = self.var_table_hidden.push_new_table()
         for node in code_nodes:
             if node.get_attr(CodeData).module_tree_type == "function":
                 func = get_obj(node)
                 self.var_table_hidden.add_variable(func.__name__, func, "")
 
+        # Run the code
         code, new_variables = call_function_node(context, instruction, self.var_table, self.var_table_hidden)
+
+        # Remove the functions from the hidden var table
         self.var_table_hidden = self.var_table_hidden.pop_table()
 
-        inst_info: InstRun = inst_node.get_attr(InstRun)
+        inst_info: InstRes = inst_node.get_attr(InstRes)
         inst_info.code = code
         inst_info.var_table_at_run = self.var_table.get_prompt()
         report = code_to_report(code, instruction, new_variables)
         inst_info.report_of_self = report
 
-        parent_info = inst_node.parent().get_attr(InstRun)
+        parent_info = inst_node.parent().get_attr(InstRes)
         parent_info.report_of_self = merge_reports(parent_info.report_of_self, report, NormInst.get(inst_node).get_prompt())
-
-
-
 
 
 
@@ -115,13 +128,13 @@ class InstructionRunner:
 
         caching.save()
 
-        inst_info = InstRun.get(inst_node)
+        inst_info = InstRes.get(inst_node)
 
         if inst_node.has_child():
             for child in inst_node.children().values():
-                InstRun.get(child).report_of_self = inst_info.report_of_self
+                InstRes.get(child).report_of_self = inst_info.report_of_self
                 self.grow_instruction_tree(child)
-                inst_info.report_of_self = merge_reports(inst_info.report_of_self, child.get_attr(InstRun).report_of_self, NormInst.get(inst_node).get_prompt())
+                inst_info.report_of_self = merge_reports(inst_info.report_of_self, child.get_attr(InstRes).report_of_self, NormInst.get(inst_node).get_prompt())
             return
 
         norm_inst = NormInst.get(inst_node)
@@ -151,7 +164,7 @@ class InstructionRunner:
         word_count = len(" ".join(norm_inst.procedure).split(" "))
         if word_count < self.inst_run_limit:
             self.run_short_instruction(inst_node, related_func_nodes)
-            inst_node.tree.show_tree_gui_react()
+            inst_node.tree.update_tree_gui()
             return
 
         # The instruction is long, so we need to decompose it
@@ -168,68 +181,75 @@ class InstructionRunner:
                 norm_inst = NormInst(new_child)
                 norm_inst.procedure = next_steps
                 norm_inst.result = exp_result
-                InstRun.get(new_child).report_of_self = ""
+                InstRes.get(new_child).report_of_self = ""
 
-                new_child.tree.show_tree_gui_react()
+                new_child.tree.update_tree_gui()
 
                 self.grow_instruction_tree(new_child)
             else:
                 # Whenever go up to parent, we try discard some variables
-                self.reduce_var_table(inst_node)
+                self.var_table = reduce_var_table(self.var_table, inst_node)
                 break
 
-    def reduce_var_table(self, inst_node):
-        var_names_to_keep = filter_variables(self.var_table, inst_node)
-        parent_table = self.var_table.pop_table()
-        for var_name in var_names_to_keep:
-            try:
-                obj, docs = self.var_table.get_variable(var_name)
-                parent_table.add_variable(var_name, obj, docs)
-            except KeyError:
-                pass
-        self.var_table = parent_table
+
 
     def get_environment(self, code_nodes, inst_node: Node):
 
-        progress_env = InstRun.get(inst_node).report_of_self
+        progress_env = InstRes.get(inst_node).report_of_self
+        if progress_env != "":
+            progress_env = \
+f"""Progress so far:        
+{progress_env}
+"""
 
         var_env = self.var_table.get_prompt()
+
+        if var_env != "":
+            var_env = \
+f"""There exist some variables you can use.
+<variables start>
+{var_env}
+<variables end>"""
+
 
         function_nodes = [node for node in code_nodes if
                           node.get_attr(CodeData).module_tree_type == "function"]
         func_env = get_node_list_prompt(function_nodes, self.map_to_code_summary)
-        func_env = f"""
+        func_env = \
+f"""
 There exist some functions that might be used to implement the instructions.
 <functions start>
 {func_env}       
-<functions end> """
+<functions end>"""
 
         module_env = ""
-        if len(self.external_modules) != 0:
+        if len(self.external_module_docs) != 0:
             module_env += """\nModules in scope\n"""
-            for var_name, mod_doc in self.external_modules.items():
+            for var_name, mod_doc in self.external_module_docs.items():
                 module_env += f"{var_name}: {mod_doc} \n"
             module_env += "\n"
 
-        env = ""
-        if progress_env != "":
-            env += f"""
-Progress so far:        
-{progress_env}
-"""
-        env += f"""
+        env = f"""
+{progress_env}        
+
 {func_env}
 
 {module_env}
 
-There exist some variables you can use.
-<variables start>
 {var_env}
-<variables end>
 """
         return env
 
-
+def reduce_var_table(var_table, inst_node):
+    var_names_to_keep = filter_variables(var_table, inst_node)
+    parent_table = var_table.pop_table()
+    for var_name in var_names_to_keep:
+        try:
+            obj, docs = var_table.get_variable(var_name)
+            parent_table.add_variable(var_name, obj, docs)
+        except KeyError:
+            pass
+    return parent_table
 
 
 def filter_variables(var_table, inst_node: Node):
