@@ -8,7 +8,7 @@ from fibers.compose.utils_code.call_function import VariableTable, call_function
     get_codes_in_prompt
 from fibers.data_loader.module_to_tree import add_module_tree_to_node
 from fibers.helper.cache.cache_service import auto_cache, caching
-from fibers.helper.utils import RobustParse
+from fibers.helper.utils import RobustParse, parallel_map
 from fibers.model.chat import Chat
 from fibers.tree import Tree, Node
 from fibers.tree.node import ContentMap
@@ -110,6 +110,9 @@ class InstructionRunner:
 
 
     def grow_instruction_tree(self, inst_node: Node):
+        if not inst_node.has_attr(NormInst):
+            parallel_map(normalize_inst_node, inst_node.iter_subtree_with_dfs())
+
         caching.save()
 
         inst_info = InstRun.get(inst_node)
@@ -379,7 +382,7 @@ def list_to_prompt(l):
 
 @auto_cache
 def normalize_inst_node(node: Node):
-    if node.is_empty():
+    if node.is_empty() or node.has_attr(NormInst):
         return
     prompt = f"""
 You are trying to divide the content into 3 parts: 
