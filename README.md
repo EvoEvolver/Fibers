@@ -13,8 +13,25 @@ Currently, Fibers is not ready for production usage. Please refer to  [Developme
 
 - In order to use OpenAI API, the environment variables `OPENAI_API_KEY` should be set to your API key.
 - PyCharm is recommended.
-- See `./scripts` for useful scripts that do all the followings.
 
+### Install by script
+
+1. Find a good place to put the project. `cd` to it.
+2. Run the following script in the terminal.
+```shell
+source <(curl -s https://raw.githubusercontent.com/EvoEvolver/Fibers/main/script/setup_env.sh)
+```
+3. Setup your OpenAI API key
+```shell
+source <(curl -s https://raw.githubusercontent.com/EvoEvolver/Fibers/main/script/set_open_api_key.sh)
+```
+
+You should update your project frequently by running the following script.
+```shell
+source <(curl -s https://raw.githubusercontent.com/EvoEvolver/Fibers/main/script/update_projects.sh)
+``` 
+
+### Install manually
 
 You need to have `node` and `npm` installed for the development environment. For this, you can run
 ```shell
