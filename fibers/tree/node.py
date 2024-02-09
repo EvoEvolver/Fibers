@@ -3,8 +3,6 @@ from __future__ import annotations
 from copy import copy
 from typing import TYPE_CHECKING, Dict, List, Type, Callable
 
-from fibers.tree.node_class import NodeClass
-
 if TYPE_CHECKING:
     from fibers.tree import Tree
     from fibers.tree.node_attr import Attr
@@ -25,8 +23,6 @@ class Node:
         self.content: str = ""
         # The root node helps merge two tree bases
         self.tree: Tree = tree
-
-        self.class_data = {}
         # The attr data is used to store the data of the node
         self.attrs: Dict[Type[Attr], Attr] = {}
         # The node id is used to identify the node
@@ -36,7 +32,6 @@ class Node:
     def copy_to(self, tree: Tree):
         new_node = Node(tree)
         new_node.content = copy(self.content)
-        new_node.class_data = copy(self.class_data)
         new_node.attrs = copy(self.attrs)
         return new_node
 
@@ -299,14 +294,10 @@ class Node:
                 stack.append(child)
 
     """
-    ## Node class related functions
+    ## Node attrs related functions
     
-    Node class is the class that process the node
-    It represents the type of the node
+    Node attrs stores the data of the node for different purposes.
     """
-
-    def isinstance(self, node_class: Type[NodeClass]):
-        return node_class in self.class_data.keys()
 
     def has_attr(self, attr_class: Type[Attr]):
         return attr_class in self.attrs.keys()
@@ -320,26 +311,6 @@ class Node:
 
     def get_attr_or_none(self, attr_class: Type[Attr]):
         return self.attrs.get(attr_class, None)
-
-    def add_class(self, node_class: Type[NodeClass]):
-        if self.isinstance(node_class):
-            return
-        if hasattr(node_class, "init_by"):
-            init_by = node_class.init_by
-        else:
-            init_by = ""
-        if init_by == "":
-            self.class_data[node_class] = {}
-        elif init_by == "obj":
-            self.class_data[node_class] = node_class()
-
-    def remove_class(self, node_class: Type[NodeClass]):
-        if node_class in self.class_data.keys():
-            del self.class_data[node_class]
-
-    @property
-    def node_classes(self):
-        return list(self.class_data.keys())
 
 
 class ContentMap:

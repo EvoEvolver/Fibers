@@ -2,6 +2,7 @@ from typing import List
 
 from fibers.compose.sparsify.shape_optimize import make_all_content_on_leaf, \
     combine_single_child
+from fibers.tree.node_attr import Attr
 from moduler.decorator import example
 from tqdm import tqdm
 
@@ -16,11 +17,14 @@ from fibers.tree.node_class import NodeClass
 from fibers.tree.prompt_utils import get_node_list_prompt
 
 
-class Chunked(NodeClass):
+class Chunked(Attr):
     pass
 
-class LayeredSummary(NodeClass):
-    pass
+class LayeredSummary(Attr):
+    def __init__(self, node: Node):
+        super().__init__(node)
+        self.layered_summary = None
+        self.children_dict = None
 
 
 
@@ -38,13 +42,13 @@ def example():
     for node in list(tree.root.iter_subtree_with_bfs()):
         if node == tree.root:
             continue
-        if not node.isinstance(Chunked):
-            LayeredSummary.set_attr(node, "layered_summary", [[]])
-            LayeredSummary.set_attr(node, "children_dict", {})
+        if not node.has_attr(Chunked):
+            LayeredSummary.get(node).layered_summary=[[]]
+            LayeredSummary.get(node).children_dict={}
         else:
             up_context_on_tree = find_up_context_on_tree(node, group_size=group_size)
             dependent_summarize_node(node, up_context_on_tree, group_size=group_size, summary_limit=summary_limit)
-            res_layered_summary = LayeredSummary.get_attr(node, "layered_summary")
+            res_layered_summary = LayeredSummary.get(node).layered_summary
             top_summary = res_layered_summary[-1][0]
             make_layer_summary_for_ancestor(node, top_summary, group_size=group_size, summary_limit=summary_limit)
         caching.save()
@@ -52,9 +56,9 @@ def example():
     for node in list(tree.root.iter_subtree_with_bfs()):
         if node == tree.root:
             continue
-        if node.isinstance(LayeredSummary):
-            children_dict = LayeredSummary.get_attr(node, "children_dict")
-            layer_lists = LayeredSummary.get_attr(node, "layered_summary")
+        if node.has_attr(LayeredSummary):
+            children_dict = LayeredSummary.get(node).children_dict
+            layer_lists = LayeredSummary.get(node).layered_summary
             make_tree_from_layered_summary(node, layer_lists, children_dict)
 
     #tree.show_tree_gui()
@@ -216,16 +220,16 @@ def make_layer_summary_for_ancestor(node: Node, new_summary, group_size=3, summa
     parent = node.parent()
     if parent is node.tree.root:
         return
-    parent_layered_summary = LayeredSummary.get_attr(parent, "layered_summary")
+    parent_layered_summary = LayeredSummary.get(parent).layered_summary
     parent_layered_summary[0].append(new_summary)
 
     if len(parent_layered_summary[0]) % group_size == 0:
-        children_dict = LayeredSummary.get_attr(parent, "children_dict")
+        children_dict = LayeredSummary.get(parent).children_dict
         up_context_on_tree = find_up_context_on_tree(parent, group_size=group_size)
         build_layer_list(group_size, parent_layered_summary, up_context_on_tree,
                          children_dict, summary_limit=summary_limit)
     elif len(parent_layered_summary[0]) == len(parent.children()):
-        children_dict = LayeredSummary.get_attr(parent, "children_dict")
+        children_dict = LayeredSummary.get(parent).children_dict
         up_context_on_tree = find_up_context_on_tree(parent, group_size=group_size)
         process_remaining_contents(group_size, parent_layered_summary, up_context_on_tree,
                                    children_dict, summary_limit=summary_limit)
@@ -247,7 +251,7 @@ def moving_window_decompose(root: Node, window_size=50, overlap_size=10):
                 children_chunks.extend(chunks)
             else:
                 if len(overlapped_children) >= 1:
-                    Chunked.set_attr(overlapped_children[0], "chunks", children_chunks)
+                    Chunked.get(overlapped_children[0]).chunks = children_chunks
                     overlapped_children[0].set_content("")
                     has_chunked_children = True
                     for child in overlapped_children[1:]:
@@ -256,22 +260,22 @@ def moving_window_decompose(root: Node, window_size=50, overlap_size=10):
                 overlapped_children = []
 
         if len(overlapped_children) >= 1:
-            Chunked.set_attr(overlapped_children[0], "chunks", children_chunks)
+            Chunked.get(overlapped_children[0]).chunks = children_chunks
             overlapped_children[0].set_content("")
             has_chunked_children = True
             for child in overlapped_children[1:]:
                 child.remove_self()
 
         if has_chunked_children:
-            LayeredSummary.set_attr(node, "layered_summary", [[]])
+            LayeredSummary.get(node).layered_summary= [[]]
 
 
 def dependent_summarize_node(node: Node, up_context_on_tree: List[str], group_size=3, summary_limit=50):
-    assert node.isinstance(Chunked)
-    chunks = Chunked.get_attr(node, "chunks")
+    assert node.has_attr(Chunked)
+    chunks = Chunked.get(node).chunks
     layer_lists, children_dict = dependent_summarize_impl(chunks, up_context_on_tree, group_size, summary_limit)
-    LayeredSummary.set_attr(node, "layered_summary", layer_lists)
-    LayeredSummary.set_attr(node, "children_dict", children_dict)
+    LayeredSummary.get(node).layered_summary=layer_lists
+    LayeredSummary.get(node).children_dict=children_dict
     #tree = get_tree_of_layer_lists(layer_lists, children_dict)
     #tree.show_tree_gui()
     caching.save()
@@ -422,7 +426,7 @@ def find_up_context_on_tree(node: Node, group_size)->List[str]:
         if child == node:
             self_index = i
             break
-    parent_layered_summary = LayeredSummary.get_attr(parent, "layered_summary")
+    parent_layered_summary = LayeredSummary.get(parent).layered_summary
     up_context_in_parent = find_up_context_in_layer_lists(parent_layered_summary, (0, self_index), group_size)
     up_context.extend(up_context_in_parent)
     return up_context

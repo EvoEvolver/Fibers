@@ -31,5 +31,5 @@ def combine_single_child(root: Node):
         child = list(node.children().values())[0]
         if has_bad_reason(child, "bad_title"):
             node.content = child.content
-            node.class_data = child.class_data
+            node.attrs = child.attrs
             child.remove_self()

@@ -83,30 +83,3 @@ def add_node_to_list(labels, parents, values, ids, node: Node, tree: Tree):
         ids.append("/".join(node_path))
         add_node_to_list(labels, parents, values, ids, child, tree)
         i += 1
-
-
-# Produce dict of tree for forest to use
-
-def node_to_dict(node: Node, data_classes):
-    children_list = []
-    add_children_to_list(node, children_list, data_classes)
-    content = node.content
-    filtered_class_data = {}
-    if data_classes is not None:
-        for cls in data_classes:
-            if cls is None:
-                filtered_class_data["content"] = content
-            if cls in node.class_data:
-                filtered_class_data[str(cls)] = str(node.class_data[cls])
-
-    return {
-        "title": node.title(),
-        "sections": children_list,
-        "content": str(filtered_class_data),
-        "id": node.title()
-    }
-
-def add_children_to_list(node, children_list, data_classes):
-    children = node.children()
-    for child in children.values():
-        children_list.append(node_to_dict(child, data_classes))

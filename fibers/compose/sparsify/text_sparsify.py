@@ -1,7 +1,6 @@
 from tqdm import tqdm
 
 from fibers.compose.decorate.text_summary import TextSummary
-from fibers.compose.decorate.tree_map import node_map_with_dependency
 from fibers.data_loader.bad_text_node_class import has_bad_reason, remove_bad_reason, \
     BadTextNodeClass, add_bad_reason
 from fibers.helper.cache.cache_service import cached_function, caching, auto_cache
@@ -138,7 +137,7 @@ def merge_children(root: Node):
         next_child = children_list[i + 1]
         if not (has_bad_reason(child, "overlap_to_sibling") and
                 has_bad_reason(next_child, "overlap_to_sibling")):
-            if child.isinstance(BadTextNodeClass):
+            if child.has_attr(BadTextNodeClass):
                 remove_bad_reason(child, "overlap_to_sibling")
             i += 1
             continue

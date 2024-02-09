@@ -1,7 +1,12 @@
-from fibers.tree.node_class import NodeClass
+from fibers.tree import Node
+from fibers.tree.node_attr import Attr
 
 
-class BadTextNodeClass(NodeClass):
+class BadTextNodeClass(Attr):
+    def __init__(self, node):
+        super().__init__(node)
+        self.bad_reasons = set()
+
     @staticmethod
     def add_bad_reason(node, reason: str):
         add_bad_reason(node, reason)
@@ -15,29 +20,22 @@ class BadTextNodeClass(NodeClass):
         return has_bad_reason(node, reason)
 
 
-def add_bad_reason(node, reason: str):
+def add_bad_reason(node: Node, reason: str):
     assert reason in ["overlap_to_sibling", "bad_title"]
-    node.add_class(BadTextNodeClass)
-    data = BadTextNodeClass.get_data(node)
-    if "bad_reasons" not in data:
-        data["bad_reasons"] = set()
-    data["bad_reasons"].add(reason)
+    data = BadTextNodeClass.get(node)
+    data.bad_reasons.add(reason)
 
 
-def remove_bad_reason(node, reason: str):
-    data = BadTextNodeClass.get_data(node)
-    if "bad_reasons" not in data:
-        return
-    if reason in data["bad_reasons"]:
-        data["bad_reasons"].remove(reason)
-    if len(data["bad_reasons"]) == 0:
-        node.remove_class(BadTextNodeClass)
+def remove_bad_reason(node: Node, reason: str):
+    data = BadTextNodeClass.get(node)
+    if reason in data.bad_reasons:
+        data.bad_reasons.remove(reason)
+    if len(data.bad_reasons) == 0:
+        del node.attrs[BadTextNodeClass]
 
 
-def has_bad_reason(node, reason: str) -> bool:
-    if not node.isinstance(BadTextNodeClass):
+def has_bad_reason(node: Node, reason: str) -> bool:
+    if not node.has_attr(BadTextNodeClass):
         return False
-    data = BadTextNodeClass.get_data(node)
-    if "bad_reasons" not in data:
-        return False
-    return reason in data["bad_reasons"]
+    data = BadTextNodeClass.get(node)
+    return reason in data.bad_reasons
