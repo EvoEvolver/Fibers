@@ -13,7 +13,6 @@ from fibers.helper.utils import parallel_map, RobustParse
 from fibers.model.chat import Chat
 from fibers.testing.testing_nl_dataset.loader import extract_dataset
 from fibers.tree import Tree, Node
-from fibers.tree.node_class import NodeClass
 from fibers.tree.prompt_utils import get_node_list_prompt
 
 

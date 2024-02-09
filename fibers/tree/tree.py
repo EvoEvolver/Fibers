@@ -243,6 +243,7 @@ class Tree:
         if Tree.forest_connector is None:
             Tree.forest_connector = ForestConnector(dev_mode=dev_mode)
             Tree.forest_connector.run()
+        self.update_tree_gui(renderer)
 
 
     def update_tree_gui(self, renderer=None):
@@ -253,7 +254,6 @@ class Tree:
             return
         else:
             Tree.forest_connector.update_tree(tree_json, self.tree_id)
-            time.sleep(0.5)
 
 
     def stop_tree_gui_react(self):

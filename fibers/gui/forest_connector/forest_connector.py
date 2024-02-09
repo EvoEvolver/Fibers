@@ -1,19 +1,21 @@
 from __future__ import annotations
 import webbrowser
 import os
+from multiprocessing import Process
+
+from fibers.gui.forest_connector.server import main
 from forest import build_dir, asset_dir, lazy_build, build
 import time
 import requests
 import json
-import subprocess
 import atexit
 
 DEFAULT_PORT = 29999
 
+
 def cleanup_subprocess(process):
-    if process.poll() is None:
-        process.terminate()
-        process.wait()
+    time.sleep(0.5)
+    process.terminate()
 
 
 def is_port_in_use(port: int) -> bool:
@@ -28,7 +30,7 @@ class ForestConnector:
     Flask and socket will be running to exchange information between.
     """
 
-    def __init__(self, dev_mode = False):
+    def __init__(self, dev_mode=False):
         lazy_build()
         self.trees = {}
         self.port = 30000 + os.getpid() % 10000 if not dev_mode else 29999
@@ -58,8 +60,10 @@ class ForestConnector:
         if is_port_in_use(self.port):
             # throw error
             raise Exception(f"Port {self.port} is not available.")
-        self.p = subprocess.Popen(['python3', f'{project_root}/server.py', str(self.port)])
-
+        # self.p = subprocess.Popen(['python3', f'{project_root}/server.py', str(self.port)])
+        self.p = Process(target=main, args=(self.port,))
+        self.p.start()
+        #if not self.keep_alive_at_exit:
         atexit.register(cleanup_subprocess, self.p)
 
         # Wait for the server to start.

@@ -3,53 +3,54 @@ from flask_socketio import SocketIO, emit
 from forest import build_dir, asset_dir
 import sys
 
+class ServerData:
+    def __init__(self):
+        self.tree = {}
+        self.tree_id = None
+        self.trees = {}
 
-app = Flask(__name__, template_folder=build_dir, static_folder=asset_dir, static_url_path='/assets')
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*")
-tree = {}
-tree_id = None
-trees = {}
+def main(port):
+    app = Flask(__name__, template_folder=build_dir, static_folder=asset_dir,
+                static_url_path='/assets')
+    app.config['SECRET_KEY'] = 'secret!'
+    socketio = SocketIO(app, cors_allowed_origins="*")
 
-import logging
+    data = ServerData()
 
-log = logging.getLogger('werkzeug')
-log.disabled = True
-cli = sys.modules['flask.cli']
-cli.show_server_banner = lambda *x: None
+    import logging
 
+    log = logging.getLogger('werkzeug')
+    log.disabled = True
+    cli = sys.modules['flask.cli']
+    cli.show_server_banner = lambda *x: None
 
-@socketio.on('connect')
-def handle_connect():
-    emit('Connected!')
+    @socketio.on('connect')
+    def handle_connect():
+        emit('Connected!')
 
+    @socketio.on('requestTree')
+    def requestTree():
+        emit('requestTree', data.trees)
 
-@socketio.on('requestTree')
-def requestTree():
-    print(trees.keys())
-    emit('requestTree', trees)
+    @app.route('/visualization')
+    def visualization():
+        return render_template('index.html')
 
-
-@app.route('/visualization')
-def visualization():
-    return render_template('index.html')
-
-
-# update tree
-@app.route('/updateTree', methods=['PUT'])
-def updateTree():
-    global tree
-    global tree_id
-    global trees
-    # TODO: check if the tree is valid.
-    tree = request.get_json()['tree']
-    tree_id = request.get_json()['tree_id']
-    trees[tree_id] = tree
-    # TODO: check if the tree_id is valid.
-    socketio.emit('setTree', {"tree": tree, "tree_id": tree_id})
-    return "OK"
+    # update tree
+    @app.route('/updateTree', methods=['PUT'])
+    def updateTree():
+        # TODO: check if the tree is valid.
+        data.tree = request.get_json()['tree']
+        data.tree_id = request.get_json()['tree_id']
+        data.trees[data.tree_id] = data.tree
+        # TODO: check if the tree_id is valid.
+        socketio.emit('setTree', {"tree": data.tree, "tree_id": data.tree_id})
+        return "OK"
 
 
-if __name__ == "__main__":
-    port = int(sys.argv[1])
     socketio.run(app, allow_unsafe_werkzeug=True, port=port)
+
+
+if __name__ == '__main__':
+    port = int(sys.argv[1])
+    main(port)

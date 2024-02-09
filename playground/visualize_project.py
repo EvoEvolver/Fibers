@@ -4,10 +4,4 @@ import time
 
 if __name__ == '__main__':
     tree = get_tree_for_module(fibers)
-    tree.tree_id = 0
-    tree.show_tree_gui_react(dev_mode=True)
-    tree.tree_id = 2
-    tree.show_tree_gui_react(dev_mode=True)
-
-while True:
-    pass
+    tree.show_tree_gui_react()

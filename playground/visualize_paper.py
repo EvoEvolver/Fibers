@@ -8,8 +8,6 @@ if __name__ == '__main__':
 
     tree = loader.load_sample_tree("scientific_understanding.tex")
 
-    tree.show_tree_gui_react()
-
     preprocess_text_tree(tree)
 
     tree.show_tree_gui_react()
