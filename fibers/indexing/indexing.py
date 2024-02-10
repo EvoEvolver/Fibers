@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Callable, Tuple
 
 import numpy as np
 
@@ -12,10 +12,8 @@ from fibers.tree.node import ContentMap
 
 
 class Indexing:
-    def __init__(self, nodes: List[Node], content_map: ContentMap = None):
-        self.content_map = content_map or ContentMap()
+    def __init__(self, nodes: List[Node]):
         self.add_nodes(nodes)
-
 
     def add_nodes(self, nodes: List[Node]):
         raise NotImplementedError
@@ -31,10 +29,17 @@ class Indexing:
         raise NotImplementedError
 
 
+WeightedContent = Tuple[str, float]
+WeightedContentGetter = Callable[[Node], List[WeightedContent]]
+default_weighted_content_getter: WeightedContentGetter = lambda node: [(node.content, 1.0)]
+
 class VectorIndexing(Indexing):
-    def __init__(self, nodes: List[Node], content_map: ContentMap = None):
+    def __init__(self, nodes: List[Node],
+                 get_weighted_contents: WeightedContentGetter = None):
         self.vector_store = VectorStore()
-        super().__init__(nodes, content_map)
+        self.get_weighted_contents: WeightedContentGetter = get_weighted_contents or default_weighted_content_getter
+        super().__init__(nodes)
+
 
     def add_nodes(self, nodes: List[Node]):
         vecs, nodes = self.get_vectors(nodes)
@@ -47,19 +52,26 @@ class VectorIndexing(Indexing):
         non_empty_nodes = []
         contents = []
         for node in nodes:
-            title, content = self.content_map.get_title_and_content(node)
-            if len(content) > 0:
-                non_empty_nodes.append(node)
-                contents.append(content)
+            content_weight_tuples = self.get_weighted_contents(node)
+            for content, weight in content_weight_tuples:
+                if len(content) > 0 and weight > 0.0:
+                    non_empty_nodes.append(node)
+                    contents.append(content)
         text_embeddings = get_embeddings(contents)
         return text_embeddings, non_empty_nodes
 
-    def get_similarities(self, query, nodes=None) -> (List[float], List[Node]):
-        query_vector = self.get_query_vector(query)
-        similarities, nodes = self.vector_store.get_similarities(query_vector, nodes)
+    def get_similarities(self, query: str | List[str], nodes=None) -> (List[float], List[Node]):
+        if isinstance(query, str):
+            query_tensor = self.get_query_vector(query)
+        else:
+            query_tensor = np.array(
+                [self.get_query_vector(query) for query in query])
+        similarities, nodes = self.vector_store.get_similarities(query_tensor, nodes)
         return similarities, nodes
 
-    def get_top_k_nodes(self, query, k: int = 10,
+    def get_top_k_nodes(self,
+                        query: str | List[str],
+                        k: int = 10,
                         items=None) -> List[Node]:
         similarities, nodes = self.get_similarities(query, items)
         top_k = top_k_node_by_similarity(similarities, nodes, k)

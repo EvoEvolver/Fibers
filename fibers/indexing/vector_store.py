@@ -73,7 +73,7 @@ class VectorStore:
 
         # Decide the order of filtering by the number of items
         if len(items_to_search) > len(self.items_to_index) / 2:
-            flatten_inner_prod = (self._vectors.dot(vec))[item_indices]
+            flatten_inner_prod = (self._vectors.dot(vec.T))[item_indices]
         else:
             flatten_inner_prod = self._vectors[item_indices].dot(vec)
 
@@ -81,14 +81,18 @@ class VectorStore:
 
         return summed_similarities, items_to_search
 
+
 def similarity_by_exp(vector_store, flatten_inner_prod, item_indices, items_to_search):
+    a = 2.0
+    b = 0.05
     # Batch normalization & Add bias
     average_similarity = np.average(flatten_inner_prod)
-    flatten_inner_prod = flatten_inner_prod - average_similarity - 0.05
+    flatten_inner_prod = flatten_inner_prod - average_similarity - b
     # Add non-linearity
-    flatten_inner_prod = np.exp(flatten_inner_prod * 2)
+    flatten_inner_prod = np.exp(flatten_inner_prod * a)
     # Apply weights
-    flatten_inner_prod = flatten_inner_prod * np.array(vector_store.weights)[item_indices]
+    flatten_inner_prod = flatten_inner_prod.T * np.array(vector_store.weights)[item_indices]
+    flatten_inner_prod = np.sum(flatten_inner_prod, axis=0)
     # Sum by node
     summed_similarities = np.zeros(len(items_to_search))
     for i in range(len(items_to_search)):
