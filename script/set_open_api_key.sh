@@ -1,6 +1,6 @@
 # get input from console what is the api key
 # Path: script/setup_env.sh
-echo "Please enter your OpenAI API key (it looks like 'sk-...'):
+echo "Please enter your OpenAI API key (it looks like 'sk-...'):"
 read -r API_KEY
 
 # check terminal type
