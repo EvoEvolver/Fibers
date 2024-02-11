@@ -14,7 +14,7 @@ DEFAULT_PORT = 29999
 
 
 def cleanup_subprocess(process):
-    time.sleep(0.5)
+    time.sleep(1.0)
     process.terminate()
 
 
