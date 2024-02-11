@@ -147,7 +147,9 @@ class InstructionRunner:
         # This two points implies we need to grow the tree
 
         # Search for related functions
-        function_requirement = "The children might be useful to implement the following instructions \n <instruction>" + norm_inst.get_prompt() + "</instruction>"
+        norm_inst.result = []
+        norm_inst.knowledge = []
+        function_requirement = "The function can be used to implement the following instruction \n <instruction>" + norm_inst.get_prompt() + "</instruction>"
         related_func_nodes = self.code_searcher.search(function_requirement,
                                                        ["function", "example"])
 

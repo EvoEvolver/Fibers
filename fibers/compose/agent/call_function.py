@@ -42,7 +42,6 @@ Example of code to refer:
 def call_function_node(context: str, requirement: str, var_table: VariableTable,
                        hidden_var_table: VariableTable = None):
     prompt = f"""You are required to directly output Python codes to meet the following requirement:
-<requirement>
 {requirement}
 <requirement end>
 """
@@ -59,13 +58,13 @@ def step():
     # return_value_1: documentation of the return value
     # ...
 
-Requirement of output: 
-You are not allowed to modify the variables expect in the line of function call.
-You should not use any variable that is not in the current scope.
-You should not use import statement. 
-When the instruction ask you to define or output something, you should return the value of the variable.
+Requirement of output:
+You should only use variable that is in the current scope.
+You must not use import statement!
+
 Again, the requirement is:
 {requirement}
+<requirement end>
 
 Start your answer with "def step():" (don't add arguments!)
 """
@@ -77,12 +76,13 @@ Start your answer with "def step():" (don't add arguments!)
 
     code_raw = chat.complete_chat_expensive()
 
+    print(code_raw)
 
     code_exec, new_variables = process_and_run_code(code_raw, var_table, hidden_var_table)
 
     return code_exec, new_variables
 
-
+@standard_multi_attempts
 def process_and_run_code(code_raw, var_table, hidden_var_table=None):
     if "```python" in code_raw:
         code_raw = code_raw.split("```python")[1]

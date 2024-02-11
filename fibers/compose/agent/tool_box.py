@@ -27,7 +27,7 @@ def call_chat_model(prompt) -> str:
 def ask_vision_model(image: Image, question: str) -> bool:
     """
     Ask the vision model a question with answer being True or False.
-    :param image: The image for the vision model.
+    :param image: The image send to the vision model.
     :param question: The question for the vision model to answer.
     :return: The response from the vision model with answer being True or False.
     """

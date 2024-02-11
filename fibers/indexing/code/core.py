@@ -61,9 +61,9 @@ You are trying to generate some sentences that characterize the code and help ot
 The sentences should together cover the following aspects:
 - the function name
 - what the function does
-- what the function is used for
-- the arguments 
-- the return value of the function.
+- what the function is for
+- the arguments
+- the return value of the function
 
 The code is:
 <code start>
@@ -75,7 +75,7 @@ Output your result as a JSON list of strings. All the strings should start with 
     chat = Chat(
         system_message="You are a smart summarizer of codes who only output in JSON format.")
     chat.add_user_message(prompt)
-    res = chat.complete_chat()
+    res = chat.complete_chat_expensive()
     res = RobustParse.list(res)
     return res
 

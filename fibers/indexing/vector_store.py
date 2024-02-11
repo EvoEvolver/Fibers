@@ -84,7 +84,7 @@ class VectorStore:
 
 def similarity_by_exp(vector_store, flatten_inner_prod, item_indices, items_to_search):
     a = 2.0
-    b = 0.05
+    b = 0.1
     # Batch normalization & Add bias
     average_similarity = np.average(flatten_inner_prod)
     flatten_inner_prod = flatten_inner_prod - average_similarity - b
@@ -97,8 +97,9 @@ def similarity_by_exp(vector_store, flatten_inner_prod, item_indices, items_to_s
     summed_similarities = np.zeros(len(items_to_search))
     for i in range(len(items_to_search)):
         vec_index_tuple = vector_store.items_to_index[items_to_search[i]]
+        n_vecs = vec_index_tuple[1] - vec_index_tuple[0]
         summed_similarities[i] = np.sum(
-            flatten_inner_prod[vec_index_tuple[0]:vec_index_tuple[1]])
+            flatten_inner_prod[vec_index_tuple[0]:vec_index_tuple[1]]) / (n_vecs ** 0.5)
     return summed_similarities
 
 
