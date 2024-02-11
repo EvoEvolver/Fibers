@@ -10,6 +10,7 @@ from fibers.model.chat import Chat
 from fibers.compose.decorate.code_summary import CodeSummary
 from fibers.compose.utils_code.header import get_function_header
 from fibers.tree import Node
+from fibers.tree.prompt_utils import get_node_list_prompt
 
 
 def get_codes_in_prompt(nodes: List[Node]):
@@ -24,13 +25,12 @@ def get_codes_in_prompt(nodes: List[Node]):
         if node_type == "function":
             func = get_obj(node)
             func_header = get_function_header(func)
-            prompt += f"""
-Function:
-{func_header}"""
+            prompt += "Function:\n"
             if node.has_attr(CodeSummary):
                 summary = CodeSummary.get_summary(node)
-                prompt += f"""# {summary}
-"""
+                prompt += f"# {summary}\n"
+            prompt += f"""{func_header}"""
+
         elif node_type == "example":
             prompt += f"""
 Example of code to refer:
@@ -58,21 +58,12 @@ def step():
     return return_value_1, return_value_2, ...
     # return_value_1: documentation of the return value
     # ...
-    
-"""
 
-    if not var_table.is_empty():
-        prompt += f"""
-You can use the following variables that is available in the current scope.
-Variables:
-{var_table.get_prompt()}
-
-"""
-    prompt += f"""Requirement of output: 
+Requirement of output: 
 You are not allowed to modify the variables expect in the line of function call.
 You should not use any variable that is not in the current scope.
 You should not use import statement. 
-The return values will overwrite the variables in the scope. And you should only return the required variables.
+When the instruction ask you to define or output something, you should return the value of the variable.
 Again, the requirement is:
 {requirement}
 
@@ -80,9 +71,12 @@ Start your answer with "def step():" (don't add arguments!)
 """
     chat = Chat(prompt,
                 "You are a code generator who only outputs Python code.")
-    code_raw = chat.complete_chat_expensive()
-    print("Generating code...")
+
     print(chat)
+    print("generating code...")
+
+    code_raw = chat.complete_chat_expensive()
+
 
     code_exec, new_variables = process_and_run_code(code_raw, var_table, hidden_var_table)
 
@@ -125,6 +119,8 @@ def process_and_run_code(code_raw, var_table, hidden_var_table=None):
         code_exec += f"""
 {return_value} = step()"""
     interpreter(code_exec)
+    if len(interpreter.error) > 0:
+        raise ValueError(f"Invalid Python code: {interpreter.error}")
     new_variables = VariableTable()
     for name, docs in new_vars.items():
         var_table.add_variable(name, interpreter.symtable[name], docs)
@@ -132,3 +128,39 @@ def process_and_run_code(code_raw, var_table, hidden_var_table=None):
     return code_exec, new_variables
 
 
+def get_code_gen_context(code_nodes, var_table, external_module_docs, func_content_map, context: str = ""):
+    var_env = var_table.get_prompt()
+
+    if var_env != "":
+        var_env = \
+f"""There exist some variables you can use.
+<variables start>
+{var_env}
+<variables end>
+"""
+
+    function_nodes = [node for node in code_nodes if
+                      node.get_attr(CodeData).module_tree_type == "function"]
+    func_env = get_node_list_prompt(function_nodes, func_content_map)
+    func_env = \
+f"""There exist some functions that might be used to implement the instructions.
+<functions start>
+{func_env}       
+<functions end>
+"""
+
+    module_env = ""
+    if len(external_module_docs) != 0:
+        module_env += """\nModules in scope\n"""
+        for var_name, mod_doc in external_module_docs.items():
+            module_env += f"{var_name}: {mod_doc} \n"
+        module_env += "\n"
+
+    code_gen_env = f"""
+{context}
+{func_env}
+{module_env}
+{var_env}
+"""
+
+    return code_gen_env

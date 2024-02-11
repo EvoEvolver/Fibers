@@ -6,7 +6,7 @@ from fibers.compose.decorate.code_summary import CodeSummary, \
 from fibers.compose.extract.searcher import CodeSearcher, DocsSearcher
 from fibers.compose.pipeline_text.tree_preprocess import preprocess_text_tree
 from fibers.compose.agent.call_function import call_function_node, \
-    get_codes_in_prompt
+    get_codes_in_prompt, get_code_gen_context
 from fibers.compose.agent.var_table import VariableTable
 from fibers.data_loader.module_to_tree import add_module_tree_to_node
 from fibers.helper.cache.cache_service import auto_cache, caching
@@ -19,6 +19,7 @@ from fibers.tree.node_class import CodeData
 from fibers.tree.node_class.code_node import get_obj
 from fibers.tree.prompt_utils import get_node_list_prompt
 
+map_to_code_summary = ContentMap(lambda n: CodeSummary.get_summary(n) or n.content)
 
 class InstRes(Attr):
     def __init__(self, node: Node):
@@ -27,21 +28,22 @@ class InstRes(Attr):
         self.var_table_at_run = None
         self.report_of_self = ""
 
-
     def render(self, node: Node, rendered):
         content = [f"""
     report_of_self: {html.escape(self.report_of_self)} 
     """]
         if self.code is not None:
-            content.append(f"""<Code code = "{html.escape(self.code)}" language = "python" />""")
+            content.append(
+                f"""<Code code = "{html.escape(self.code)}" language = "python" />""")
         if self.var_table_at_run is not None:
             content.append(html.escape(self.var_table_at_run).replace("\n", "<br/>"))
 
-        rendered.tabs["inst_run"] = "<span>"+"<br/>".join(content)+"</span>"
+        rendered.tabs["inst_run"] = "<span>" + "<br/>".join(content) + "</span>"
 
 
 class InstructionRunner:
-    def __init__(self, modules, docs_tree=None, external_modules=None, variable_table=None):
+    def __init__(self, modules, docs_tree=None, external_modules=None,
+                 variable_table=None):
         self.modules = modules
         self.var_table = variable_table or VariableTable()
         self.var_table_hidden = VariableTable()
@@ -59,9 +61,6 @@ class InstructionRunner:
         self.doc_searcher: DocsSearcher = None
         if docs_tree is not None:
             self.doc_searcher: DocsSearcher = DocsSearcher(docs_tree.root)
-
-        self.map_to_code_summary = ContentMap(
-            lambda n: CodeSummary.get_summary(n) or n.content)
 
         self.inst_run_limit = 40
 
@@ -88,16 +87,6 @@ class InstructionRunner:
     def run_short_instruction(self, inst_node: Node, code_nodes: List[Node]):
         instruction = NormInst.get(inst_node).get_prompt()
 
-        context = ""
-        if len(code_nodes) != 0:
-            context += f"""Here are the functions in the scope that you can call to meet the requirement: """
-            context += get_codes_in_prompt(code_nodes)
-        if len(self.external_module_docs) != 0:
-            context += """\nHere are modules you can directly use without import\n"""
-            for var_name, mod_doc in self.external_module_docs.items():
-                context += f"{var_name}: {mod_doc} \n"
-            context += "\n"
-
         # Add the functions to the hidden var table
         self.var_table_hidden = self.var_table_hidden.push_new_table()
         for node in code_nodes:
@@ -105,8 +94,17 @@ class InstructionRunner:
                 func = get_obj(node)
                 self.var_table_hidden.add_variable(func.__name__, func, "")
 
+        map_to_code_header = ContentMap(lambda n: get_codes_in_prompt([n]))
+
+        progress_env = InstRes.get(inst_node).report_of_self
+        if progress_env != "":
+            progress_env = f"What you have done before:\n{progress_env}"
+
+        context = get_code_gen_context(code_nodes, self.var_table, self.external_module_docs, map_to_code_header, progress_env)
+
         # Run the code
-        code, new_variables = call_function_node(context, instruction, self.var_table, self.var_table_hidden)
+        code, new_variables = call_function_node(context, instruction, self.var_table,
+                                                 self.var_table_hidden)
 
         # Remove the functions from the hidden var table
         self.var_table_hidden = self.var_table_hidden.pop_table()
@@ -118,9 +116,8 @@ class InstructionRunner:
         inst_info.report_of_self = report
 
         parent_info = inst_node.parent().get_attr(InstRes)
-        parent_info.report_of_self = merge_reports(parent_info.report_of_self, report, NormInst.get(inst_node).get_prompt())
-
-
+        parent_info.report_of_self = merge_reports(parent_info.report_of_self, report,
+                                                   NormInst.get(inst_node).get_prompt())
 
     def grow_instruction_tree(self, inst_node: Node):
         if not inst_node.has_attr(NormInst):
@@ -134,7 +131,11 @@ class InstructionRunner:
             for child in inst_node.children().values():
                 InstRes.get(child).report_of_self = inst_info.report_of_self
                 self.grow_instruction_tree(child)
-                inst_info.report_of_self = merge_reports(inst_info.report_of_self, child.get_attr(InstRes).report_of_self, NormInst.get(inst_node).get_prompt())
+                inst_info.report_of_self = merge_reports(inst_info.report_of_self,
+                                                         child.get_attr(
+                                                             InstRes).report_of_self,
+                                                         NormInst.get(
+                                                             inst_node).get_prompt())
             return
 
         norm_inst = NormInst.get(inst_node)
@@ -147,9 +148,10 @@ class InstructionRunner:
 
         # Search for related functions
         function_requirement = "The children might be useful to implement the following instructions \n <instruction>" + norm_inst.get_prompt() + "</instruction>"
-        related_func_nodes = self.code_searcher.search(function_requirement, ["function", "example"])
+        related_func_nodes = self.code_searcher.search(function_requirement,
+                                                       ["function", "example"])
 
-        #related_docs_nodes = self.doc_searcher.search(inst_node.content)
+        # related_docs_nodes = self.doc_searcher.search(inst_node.content)
 
         if len(related_func_nodes) == 0:
             pass
@@ -160,7 +162,6 @@ class InstructionRunner:
         # No clue: if the instruction cannot be grounded to either codes or documentations
         # If no clue: use llm to generate or ask human
 
-
         word_count = len(" ".join(norm_inst.procedure).split(" "))
         if word_count < self.inst_run_limit:
             self.run_short_instruction(inst_node, related_func_nodes)
@@ -170,17 +171,17 @@ class InstructionRunner:
         # The instruction is long, so we need to decompose it
         self.var_table = self.var_table.push_new_table()
         while True:
-            env = self.get_environment(related_func_nodes, inst_node)
+            env = self.get_next_step_env(related_func_nodes, inst_node)
 
             print("generating next step")
-
-            next_steps, exp_result, title = get_next_step(NormInst.get(inst_node).get_procedure_prompt(), env)
+            next_steps, exp_result, title = get_next_step(
+                NormInst.get(inst_node).get_procedure_prompt(), env)
 
             if len(next_steps) > 0:
                 new_child = inst_node.new_child(title)
                 norm_inst = NormInst(new_child)
                 norm_inst.procedure = next_steps
-                norm_inst.result = exp_result
+                #norm_inst.result = exp_result
                 InstRes.get(new_child).report_of_self = ""
 
                 new_child.tree.update_tree_gui()
@@ -191,52 +192,14 @@ class InstructionRunner:
                 self.var_table = reduce_var_table(self.var_table, inst_node)
                 break
 
-
-
-    def get_environment(self, code_nodes, inst_node: Node):
+    def get_next_step_env(self, code_nodes, inst_node: Node):
 
         progress_env = InstRes.get(inst_node).report_of_self
         if progress_env != "":
-            progress_env = \
-f"""Progress so far:        
-{progress_env}
-"""
-
-        var_env = self.var_table.get_prompt()
-
-        if var_env != "":
-            var_env = \
-f"""There exist some variables you can use.
-<variables start>
-{var_env}
-<variables end>"""
-
-
-        function_nodes = [node for node in code_nodes if
-                          node.get_attr(CodeData).module_tree_type == "function"]
-        func_env = get_node_list_prompt(function_nodes, self.map_to_code_summary)
-        func_env = \
-f"""
-There exist some functions that might be used to implement the instructions.
-<functions start>
-{func_env}       
-<functions end>"""
-
-        module_env = ""
-        if len(self.external_module_docs) != 0:
-            module_env += """\nModules in scope\n"""
-            for var_name, mod_doc in self.external_module_docs.items():
-                module_env += f"{var_name}: {mod_doc} \n"
-            module_env += "\n"
-
+            progress_env = f"What you have done so far:\n{progress_env}"
+        code_gen_env = get_code_gen_context(code_nodes, self.var_table, self.external_module_docs, map_to_code_summary, progress_env)
         env = f"""
-{progress_env}        
-
-{func_env}
-
-{module_env}
-
-{var_env}
+{code_gen_env}
 """
         return env
 
@@ -269,7 +232,8 @@ Variables:
 Output your answer by a JSON dict with the first key being "analysis", whose value is a string that analyze the situation.
 The second key should be "variables" whose value is a list of strings, each string is a variable name to be treated as the output.
 """
-    chat = Chat(prompt, "You are an helpful assistant who help analyze instruction execution.")
+    chat = Chat(prompt,
+                "You are an helpful assistant who help analyze instruction execution.")
     res = chat.complete_chat()
     print(chat)
     res = RobustParse.dict(res)
@@ -293,7 +257,8 @@ Output your answer by a JSON dict with first key being "analysis" for a string t
 The second key should be "finished" whose value is a boolean. If only some of the points are finished, you should output false.
 Then third key "next_steps" being a list of strings of the plan for next a few steps for others who don't know the context to carry out. The list should contain as few steps as possible.
 The forth key "result" should be a list of description of the expected result of the next steps.
-The forth key "title" being a string that summarize the next steps.
+The fifth key "title" being a string that summarize the next steps.
+Again, you should include as few steps as possible in the next_steps. The generated steps should be as independent as possible.
 """
     chat = Chat(prompt, "You are an helpful analyzer for planing who only output JSON")
     res = chat.complete_chat_expensive()
@@ -397,7 +362,7 @@ Knowledge:
 
 
 def list_to_prompt(l):
-    return "\n".join([f"{i+1}. {html.escape(c)}" for i, c in enumerate(l)])
+    return "\n".join([f"{i + 1}. {c}" for i, c in enumerate(l)])
 
 
 @auto_cache
@@ -423,7 +388,7 @@ Start your answer.
     chat.add_user_message(prompt)
     res = chat.complete_chat()
     res = RobustParse.dict(res)
-    #node.content = list_to_prompt(res["procedure"])
+    # node.content = list_to_prompt(res["procedure"])
     inst_content = NormInst(node)
     inst_content.procedure = res["procedure"]
     inst_content.result = res["result"]
