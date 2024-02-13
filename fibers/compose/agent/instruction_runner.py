@@ -117,7 +117,7 @@ class InstructionRunner:
 
         parent_info = inst_node.parent().get_attr(InstRes)
         parent_info.report_of_self = merge_reports(parent_info.report_of_self, report,
-                                                   NormInst.get(inst_node).get_prompt())
+                                                   NormInst.get(inst_node.parent()).get_prompt())
 
     def grow_instruction_tree(self, inst_node: Node):
         if not inst_node.has_attr(NormInst):
@@ -176,13 +176,14 @@ class InstructionRunner:
             env = self.get_next_step_env(related_func_nodes, inst_node)
 
             print("generating next step")
-            next_steps, exp_result, title = get_next_step(
-                NormInst.get(inst_node).get_procedure_prompt(), env)
+            next_steps, context = get_next_step(
+                NormInst.get(inst_node).get_prompt(), env)
 
             if len(next_steps) > 0:
-                new_child = inst_node.new_child(title)
+                new_child = inst_node.new_child(f"Step {len(inst_node.children()) + 1}")
                 norm_inst = NormInst(new_child)
                 norm_inst.procedure = next_steps
+                norm_inst.knowledge = [context]
                 #norm_inst.result = exp_result
                 InstRes.get(new_child).report_of_self = ""
 
@@ -257,9 +258,9 @@ The instruction/description is as follows:
 You are going to generate one step the next step of for finishing the instruction.
 Output your answer by a JSON dict with first key being "analysis" for a string that analyze the situation. Notice that the information above might be irrelevant to the next step. 
 The second key should be "finished" whose value is a boolean. If only some of the points are finished, you should output false.
-Then third key "next_steps" being a list of strings of the plan for next a few steps for others who don't know the context to carry out. The list should contain as few steps as possible.
-The forth key "result" should be a list of description of the expected result of the next steps.
-The fifth key "title" being a string that summarize the next steps.
+Then third key "next_steps" being a list of strings for the plan of next steps
+The plan should contain as few steps as possible. The plan should be concise.
+The forth key "context" should be a string of some supplementary information for someone who don't know what happened before to carry out the steps.
 Again, you should include as few steps as possible in the next_steps. The generated steps should be as independent as possible.
 """
     chat = Chat(prompt, "You are an helpful analyzer for planing who only output JSON")
@@ -268,9 +269,9 @@ Again, you should include as few steps as possible in the next_steps. The genera
     print(chat)
     next_steps = res["next_steps"]
     if res["finished"]:
-        return [], [], ""
+        return [], ""
     else:
-        return next_steps, res["result"], res["title"]
+        return next_steps, res["context"]
 
 
 def code_to_report(code, instruction, new_variables: VariableTable):
@@ -306,13 +307,12 @@ The instruction is as follows:
 {instruction}
 <instruction end>
 This is what has been done before:
-<old report>
 {report_of_old_sibling}
-<old report end>
+<report end>
 This is what you have done now:
 <new report>
 {new_report}
-<new report end>
+<report end>
 
 Update the old report with the new report and summarize the progress.
 The summary should be no more than 100 words. 

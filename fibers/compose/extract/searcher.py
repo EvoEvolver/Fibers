@@ -47,7 +47,7 @@ You are trying to find Python functions based on a requirement:
 <requirement end>
 
 Your task is to reduce the requirement into more specific sentences, which covers
-- The possible names of the function
+- The (possible) names of the function
 - The arguments of the function
 - The return values of the function
 - What the function does
@@ -125,3 +125,15 @@ Output the indices that matches the requirement the most by a JSON dict with key
     res = res["indices"]
     matched_node = [nodes[i] for i in res]
     return matched_node
+
+
+if __name__ == '__main__':
+    req = "The function helps achieve the following: Call the 'ask_vision_model' function with 'plot_image' and a relevant question to determine if a significant peak is detected."
+    import q_lab
+    from fibers.compose.agent import tool_box
+    from fibers.data_loader.module_to_tree import add_module_tree_to_node
+    tree = Tree("Moduler")
+    add_module_tree_to_node(q_lab, tree.root)
+    add_module_tree_to_node(tool_box, tree.root)
+    searcher = CodeSearcher(tree.root)
+    print(searcher.search(req, ["function"]))

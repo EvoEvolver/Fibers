@@ -51,22 +51,20 @@ def call_function_node(context: str, requirement: str, var_table: VariableTable,
 """
 
     prompt += f"""
-You are required to output Python code in the following format. You have to write the documentation of the return values. Your code must be executable. Do not put tuple in return values.
-def step():
-    ... (Your code here)
-    return return_value_1, return_value_2, ...
-    # return_value_1: documentation of the return value
-    # ...
-
-Requirement of output:
+Requirement of code generation:
 You should only use variable that is in the current scope.
 You must not use import statement!
+In the end of the code, you should add documentation of important variables you produces in your code that might be used in following steps. You should also add documentation to the variables you are required to define in instruction. You should not add any document for the variable generated not by the current code.
+The documentation should be in the following format:
+#$ variable1_name: documentation
+#$ variable2_name: documentation
+...
 
 Again, the requirement is:
 {requirement}
 <requirement end>
 
-Start your answer with "def step():" (don't add arguments!)
+Start your answer with "```python"
 """
     chat = Chat(prompt,
                 "You are a code generator who only outputs Python code.")
@@ -84,6 +82,41 @@ Start your answer with "def step():" (don't add arguments!)
 
 @standard_multi_attempts
 def process_and_run_code(code_raw, var_table, hidden_var_table=None):
+    if "```python" in code_raw:
+        code_raw = code_raw.split("```python")[1]
+        code_raw = code_raw.split("```")[0]
+    new_vars = {}
+
+    code_lines = code_raw.split("\n")
+    for i, line in enumerate(code_lines):
+        line = line.strip()
+        if line.startswith("#$"):
+            line = line[2:].strip()
+            if ":" not in line:
+                continue
+            first = line.index(":")
+            name = line[:first]
+            docs = line[first + 1:]
+            name = name.strip()
+            docs = docs.strip()
+            if name != "None":
+                new_vars[name] = docs
+    interpreter = var_table.get_interpreter()
+    if hidden_var_table is not None:
+        hidden_var_table.add_to_interpreter(interpreter)
+    code_exec = code_raw
+    interpreter(code_exec)
+    if len(interpreter.error) > 0:
+        raise ValueError(f"Invalid Python code: {interpreter.error}")
+    new_variables = VariableTable()
+    for name, docs in new_vars.items():
+        var_table.add_variable(name, interpreter.symtable[name], docs)
+        new_variables.add_variable(name, interpreter.symtable[name], docs)
+    return code_exec, new_variables
+
+
+@standard_multi_attempts
+def process_and_run_code_1(code_raw, var_table, hidden_var_table=None):
     if "```python" in code_raw:
         code_raw = code_raw.split("```python")[1]
         code_raw = code_raw.split("```")[0]
