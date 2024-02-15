@@ -1,8 +1,9 @@
 from typing import List
 
-
+from fibers import debug
 from fibers.compose.decorate.text_summary import TextSummary
-from fibers.helper.utils import RobustParse
+from fibers.helper.cache.cache_service import caching
+from fibers.helper.utils import RobustParse, standard_multi_attempts
 from fibers.indexing.code.core import get_code_indexing
 from fibers.indexing.indexing import VectorIndexing
 from fibers.model.chat import Chat
@@ -24,7 +25,8 @@ class CodeSearcher:
     def search(self, requirement: str, code_types: List[str]):
         for code_type in code_types:
             assert code_type in ["function", "class", "section", "module", "example"]
-        nodes_from_beam = beam_search(self.root, requirement, self.content_map)
+        with debug.refresh_cache():
+            nodes_from_beam = beam_search(self.root, requirement, self.content_map)
         descriptions = get_code_descriptions(requirement)
         nodes_from_vector = []
         for description in descriptions:
@@ -108,6 +110,7 @@ Output the indices that matches the requirement the most by a JSON dict with key
     return matched_node
 
 
+@standard_multi_attempts
 def filter_code_nodes(nodes: List[Node], requirement: str, content_map):
     prompt = f"""
 Here are a few Python objects:
@@ -115,11 +118,12 @@ Here are a few Python objects:
 
 You are trying to find Python objects that most satisfy the following requirement:
 {requirement}
+<requirement end>
 
-Output the indices that matches the requirement the most by a JSON dict with key "indices" whose value is a list of numbers. If you are not sure, output an empty list.
+Output the indices that meet the requirement the most by a JSON dict with key "indices" whose value is a list of numbers.
 """
     chat = Chat(user_message=prompt,
-                system_message="You are a helpful assistant.")
+                system_message="You are a very smart assistant.")
     res = chat.complete_chat_expensive()
     res = RobustParse.dict(res)
     res = res["indices"]
@@ -128,7 +132,7 @@ Output the indices that matches the requirement the most by a JSON dict with key
 
 
 if __name__ == '__main__':
-    req = "The function helps achieve the following: Call the 'ask_vision_model' function with 'plot_image' and a relevant question to determine if a significant peak is detected."
+    req = "The function helps achieve the following: Call the vision model function with the new frequency and new phase gradient data to analyze for a significant peak."
     import q_lab
     from fibers.compose.agent import tool_box
     from fibers.data_loader.module_to_tree import add_module_tree_to_node

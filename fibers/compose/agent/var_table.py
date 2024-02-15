@@ -47,7 +47,7 @@ class VariableTable:
         return len(self.get_local_prompt().strip()) == 0
 
     def get_interpreter(self):
-        interpreter = Interpreter()
+        interpreter = Interpreter(config={'import': True, 'importfrom': True})
         self.add_to_interpreter(interpreter)
         return interpreter
 
@@ -65,7 +65,15 @@ class VariableTable:
         return new_table
 
     def pop_table(self) -> VariableTable:
+        if len(self._parent_tables) == 0:
+            return None
         return self._parent_tables[-1]
+
+    def filter_table(self, names_to_keep):
+        for name in list(self.variable_objs.keys()):
+            if name not in names_to_keep:
+                self.variable_objs.pop(name)
+                self.variable_docs.pop(name)
 
 
 def get_value_in_prompt(value):
@@ -98,6 +106,11 @@ def get_value_in_prompt(value):
     elif isinstance(value, numpy.ndarray):
         repr_str, classname = get_truncated_repr(value)
         shape = value.shape
+        # if one dimensional
+        if len(shape) == 1 and shape[0] > 3:
+            repr_str = "[{:.4f},{:.4f},...,{:.4f}]".format(float(value[0]),
+                                                           float(value[1]),
+                                                           float(value[-1]))
         return f"{repr_str} Type: numpy array, Shape: {shape}"
     elif isinstance(value, ModuleType):
         name = value.__name__.split(".")[-1]

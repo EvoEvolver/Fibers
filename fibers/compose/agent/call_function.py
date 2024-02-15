@@ -25,7 +25,7 @@ def get_codes_in_prompt(nodes: List[Node]):
         if node_type == "function":
             func = get_obj(node)
             func_header = get_function_header(func)
-            prompt += "Function:\n"
+            prompt += "\n"
             if node.has_attr(CodeSummary):
                 summary = CodeSummary.get_summary(node)
                 prompt += f"# {summary}\n"
@@ -176,7 +176,7 @@ f"""There exist some variables you can use.
                       node.get_attr(CodeData).module_tree_type == "function"]
     func_env = get_node_list_prompt(function_nodes, func_content_map)
     func_env = \
-f"""There exist some functions that might be used to implement the instructions.
+f"""There exist some functions that might be used to implement the instructions. The implementation is omitted.
 <functions start>
 {func_env}       
 <functions end>

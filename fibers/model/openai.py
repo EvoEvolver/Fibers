@@ -32,7 +32,7 @@ vision_model = "gpt-4-vision-preview"
 model_list = [normal_model, expensive_model, vision_model, "gpt-4"]
 
 default_options = {
-    "temperature": 0.3,
+    "temperature": 0.4,
     "timeout": 20,
 }
 

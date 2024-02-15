@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from fibers.helper.image import matplotlib_plot_to_image
 from fibers.model.chat import Chat
 
 from PIL import Image
@@ -24,23 +25,6 @@ def call_chat_model(prompt) -> str:
     return res
 
 
-def ask_vision_model(image: Image, question: str) -> bool:
-    """
-    Ask the vision model a question with answer being True or False.
-    :param image: The image send to the vision model.
-    :param question: The question for the vision model to answer.
-    :return: The response from the vision model with answer being True or False.
-    """
-    chat = Chat(system_message="You are a helpful assistant who only answer in `yes` of `no`")
-    chat.add_image_message_by_obj(image)
-    chat.add_user_message(question)
-    res = chat.complete_chat()
-    if "yes" in res.lower():
-        return True
-    else:
-        return False
-
-
 def ask_human(question: str):
     """
     Ask a human a question.
@@ -51,6 +35,28 @@ def ask_human(question: str):
     print(question)
     res = input()
     return res
+
+
+
+def ask_vision_model_about_data(data: np.array, question) -> bool:
+    """
+    Plot the data and ask a question about the data shape.
+    For example, the number of peaks, or whether the data is nearly periodic.
+    The answer is either True or False.
+    :param data: a one dimensional numpy array.
+    :param question: the question to ask.
+    :return: the response to the question.
+    """
+    image = draw_x_y_plot(np.arange(len(data)), data)
+    chat = Chat(
+        system_message="You are a helpful assistant who only answer in `yes` of `no`")
+    chat.add_image_message_by_obj(image)
+    chat.add_user_message(question)
+    res = chat.complete_chat()
+    if "yes" in res.lower():
+        return True
+    else:
+        return False
 
 
 """
@@ -68,6 +74,28 @@ def display_image(image: Image):
     plt.axis('off')
     plt.show()
 
+
+"""
+# Plot
+"""
+
+def draw_x_y_plot(x, y, x_label="", y_label="") -> Image:
+    """
+    Draw an x-y plot.
+    Args:
+        x (np.ndarray): The x-axis data.
+        y (np.ndarray): The y-axis data.
+        x_label (str): The label for the x-axis.
+        y_label (str): The label for the y-axis.
+    :return: The image object.
+    """
+    plt.plot(x, y)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    # plt to fig
+    fig = plt.gcf()
+    img = matplotlib_plot_to_image(fig)
+    return img
 
 
 
