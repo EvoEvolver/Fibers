@@ -1,3 +1,4 @@
+import PIL
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -5,8 +6,6 @@ from fibers.helper.image import matplotlib_plot_to_image
 from fibers.model.chat import Chat
 
 from PIL import Image
-
-
 
 """
 # Large language model and vision models
@@ -37,6 +36,25 @@ def ask_human(question: str):
     return res
 
 
+def ask_vision_model_about_image(img: PIL.Image, question) -> bool:
+    """
+    Plot the data and ask a question about the data shape.
+    For example, the number of peaks, or whether the data is nearly periodic.
+    The answer is either True or False.
+    :param img: a PIL image.
+    :param question: the question to ask.
+    :return: the response to the question.
+    """
+    chat = Chat(
+        system_message="You are a helpful assistant who only answer in `yes` of `no`")
+    chat.add_image_message_by_obj(img)
+    chat.add_user_message(question)
+    res = chat.complete_chat()
+    if "yes" in res.lower():
+        return True
+    else:
+        return False
+
 
 def ask_vision_model_about_data(data: np.array, question) -> bool:
     """
@@ -63,6 +81,7 @@ def ask_vision_model_about_data(data: np.array, question) -> bool:
 # Text and Image Input/Output
 """
 
+
 def display_image(image: Image):
     """
     Display an image.
@@ -78,6 +97,7 @@ def display_image(image: Image):
 """
 # Plot
 """
+
 
 def draw_x_y_plot(x, y, x_label="", y_label="") -> Image:
     """
@@ -98,12 +118,10 @@ def draw_x_y_plot(x, y, x_label="", y_label="") -> Image:
     return img
 
 
-
 if __name__ == '__main__':
     from q_lab import draw_x_y_plot
+
     img = draw_x_y_plot(np.array([1, 2, 3]), np.array([1, 2, 3]), x_label='X',
                         y_label='Y')
     res = ask_vision_model(img, "Is the x-y plot a straight line?")
     print(res)
-
-
