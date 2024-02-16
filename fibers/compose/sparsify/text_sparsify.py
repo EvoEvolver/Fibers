@@ -1,4 +1,8 @@
-from tqdm import tqdm
+from fibers.helper.utils import is_running_in_jupyter
+if is_running_in_jupyter():
+    from tqdm.notebook import tqdm
+else:
+    from tqdm import tqdm
 
 from fibers.compose.decorate.text_summary import TextSummary
 from fibers.data_loader.bad_text_node_class import has_bad_reason, remove_bad_reason, \

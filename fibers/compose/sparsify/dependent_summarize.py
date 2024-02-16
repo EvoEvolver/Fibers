@@ -4,7 +4,12 @@ from fibers.compose.sparsify.shape_optimize import make_all_content_on_leaf, \
     combine_single_child
 from fibers.tree.node_attr import Attr
 from moduler.decorator import example
-from tqdm import tqdm
+
+from fibers.helper.utils import is_running_in_jupyter
+if is_running_in_jupyter():
+    from tqdm.notebook import tqdm
+else:
+    from tqdm import tqdm
 
 from fibers.data_loader.bad_text_node_class import has_bad_reason
 from fibers.data_loader.html_to_tree import html_to_tree
@@ -19,6 +24,7 @@ from fibers.tree.prompt_utils import get_node_list_prompt
 class Chunked(Attr):
     pass
 
+
 class LayeredSummary(Attr):
     def __init__(self, node: Node):
         super().__init__(node)
@@ -26,11 +32,9 @@ class LayeredSummary(Attr):
         self.children_dict = None
 
 
-
-
 @example
 def example():
-    #tree = load_sample_tree("Feyerabend.md")
+    # tree = load_sample_tree("Feyerabend.md")
     data = extract_dataset("QuALITY.v1.0.1.dev", 1)
     tree = html_to_tree(data["article"], to_markdown=False)
     make_all_content_on_leaf(tree)
@@ -42,8 +46,8 @@ def example():
         if node == tree.root:
             continue
         if not node.has_attr(Chunked):
-            LayeredSummary.get(node).layered_summary=[[]]
-            LayeredSummary.get(node).children_dict={}
+            LayeredSummary.get(node).layered_summary = [[]]
+            LayeredSummary.get(node).children_dict = {}
         else:
             up_context_on_tree = find_up_context_on_tree(node, group_size=group_size)
             dependent_summarize_node(node, up_context_on_tree, group_size=group_size, summary_limit=summary_limit)
@@ -60,7 +64,7 @@ def example():
             layer_lists = LayeredSummary.get(node).layered_summary
             make_tree_from_layered_summary(node, layer_lists, children_dict)
 
-    #tree.show_tree_gui()
+    # tree.show_tree_gui()
 
     leaf_nodes = []
     for node in tree.all_nodes():
@@ -71,7 +75,7 @@ def example():
     question_dict = data["questions"][1]
     qa(question_dict, leaf_nodes)
 
-    #caching.save_used()
+    # caching.save_used()
 
 
 def qa(question_dict, leaf_nodes):
@@ -83,6 +87,7 @@ def qa(question_dict, leaf_nodes):
     print("Question:", question_prompt)
     print("Options:", question_dict["options"])
     print("Golden answer:", i_golden_answer + 1)
+
     def find_clue_for_node(node: Node):
         res = find_clue(question_prompt, node)
         return res
@@ -92,8 +97,10 @@ def qa(question_dict, leaf_nodes):
         return res
 
     for i, res in parallel_map(find_clue_for_node, leaf_nodes):
-        #if res != -1:
+        # if res != -1:
         print(i, res)
+
+
 # Hello 2023-Nov-15
 def directly_answer(question_dict, node):
     ancestors = []
@@ -106,7 +113,7 @@ def directly_answer(question_dict, node):
     context = get_node_list_prompt(ancestors)
     question = question_dict["question"]
     options = question_dict["options"]
-    option_in_prompt = "\n".join([f"{i+1}. {option}" for i, option in enumerate(options)])
+    option_in_prompt = "\n".join([f"{i + 1}. {option}" for i, option in enumerate(options)])
     prompt = f"""
 You are trying to answer a question by finding a clue from the content and context.
 
@@ -175,7 +182,7 @@ def make_tree_from_layered_summary(node: Node, layer_lists, children_dict):
     for i, layer in enumerate(layer_lists):
         parsed_layer = []
         for j, summary in enumerate(layer):
-            parsed_layer.append((str((i,j)), summary))
+            parsed_layer.append((str((i, j)), summary))
         parsed_layer_lists.append(parsed_layer)
 
     node_pos_map = {}
@@ -193,6 +200,7 @@ def make_tree_from_layered_summary(node: Node, layer_lists, children_dict):
                 (title, content) = parsed_layer_lists[child_pos[0]][child_pos[1]]
                 child_node = parent_node.s(title).be(content)
                 node_pos_map[child_pos] = child_node
+
 
 def moving_window_decompose_impl(content, window_size, overlap_size):
     if len(content) <= window_size:
@@ -214,6 +222,7 @@ def moving_window_decompose_impl(content, window_size, overlap_size):
             break
 
     return contents_by_window
+
 
 def make_layer_summary_for_ancestor(node: Node, new_summary, group_size=3, summary_limit=50):
     parent = node.parent()
@@ -266,21 +275,22 @@ def moving_window_decompose(root: Node, window_size=50, overlap_size=10):
                 child.remove_self()
 
         if has_chunked_children:
-            LayeredSummary.get(node).layered_summary= [[]]
+            LayeredSummary.get(node).layered_summary = [[]]
 
 
 def dependent_summarize_node(node: Node, up_context_on_tree: List[str], group_size=3, summary_limit=50):
     assert node.has_attr(Chunked)
     chunks = Chunked.get(node).chunks
     layer_lists, children_dict = dependent_summarize_impl(chunks, up_context_on_tree, group_size, summary_limit)
-    LayeredSummary.get(node).layered_summary=layer_lists
-    LayeredSummary.get(node).children_dict=children_dict
-    #tree = get_tree_of_layer_lists(layer_lists, children_dict)
-    #tree.show_tree_gui()
+    LayeredSummary.get(node).layered_summary = layer_lists
+    LayeredSummary.get(node).children_dict = children_dict
+    # tree = get_tree_of_layer_lists(layer_lists, children_dict)
+    # tree.show_tree_gui()
     caching.save()
 
+
 def dependent_summarize_impl(chunks: List[str], up_context_on_tree: List[str], group_size=3, summary_limit=50):
-    layer_lists = [[],]
+    layer_lists = [[], ]
     children_dict = {}
 
     for i_chunk in tqdm(range(len(chunks))):
@@ -294,7 +304,6 @@ def dependent_summarize_impl(chunks: List[str], up_context_on_tree: List[str], g
 
 def build_layer_list(group_size, layer_lists, up_context_on_tree, children_dict,
                      summary_limit):
-
     def summarize_bottom():
         if len(layer_lists) <= 1:
             layer_lists.append([])
@@ -335,7 +344,7 @@ def build_layer_list(group_size, layer_lists, up_context_on_tree, children_dict,
                                  summary_limit)
 
         next_layer.append(summary)
-        #next_layer.append(str(summary_to_be_grouped))
+        # next_layer.append(str(summary_to_be_grouped))
 
         assert new_position == (i_layer + 1, len(next_layer) - 1)
 
@@ -348,7 +357,6 @@ def build_layer_list(group_size, layer_lists, up_context_on_tree, children_dict,
     for i_layer in range(1, len(layer_lists)):
         summarize_higher_summary_for_layer(i_layer)
     caching.save()
-
 
 
 def position_list_to_src(position_list, layer_lists):
@@ -398,7 +406,7 @@ Start your answer with `Summary:`
     return res
 
 
-def find_up_context_in_layer_lists(layer_lists, position, group_size)->List[str]:
+def find_up_context_in_layer_lists(layer_lists, position, group_size) -> List[str]:
     i_layer, in_layer_position = position
     up_context_pos = []
     i_pos = in_layer_position
@@ -414,7 +422,8 @@ def find_up_context_in_layer_lists(layer_lists, position, group_size)->List[str]
     up_context = position_list_to_src(up_context_pos, layer_lists)
     return up_context
 
-def find_up_context_on_tree(node: Node, group_size)->List[str]:
+
+def find_up_context_on_tree(node: Node, group_size) -> List[str]:
     parent = node.parent()
     if parent is node.tree.root:
         return []
@@ -454,7 +463,8 @@ def process_remaining_contents(group_size, layer_lists, up_context_on_tree, chil
         for i in range(len(last_group)):
             no_parent_positions.pop()
         for i, pos in enumerate(no_parent_positions):
-            if (new_position[0] == pos[0] and new_position[1] < pos[1]) or new_position[0] > pos[0] or i == len(no_parent_positions) - 1:
+            if (new_position[0] == pos[0] and new_position[1] < pos[1]) or new_position[0] > pos[0] or i == len(
+                    no_parent_positions) - 1:
                 no_parent_positions.insert(i, new_position)
                 break
 

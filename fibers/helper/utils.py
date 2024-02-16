@@ -8,7 +8,25 @@ from typing import List
 
 from tenacity import retry, stop_after_attempt, wait_fixed, \
     retry_if_exception, stop_after_delay
-from tqdm import tqdm
+
+
+def is_running_in_jupyter():
+    """
+    Check if the code is running in Jupyter notebook.
+
+    Returns:
+        bool: True if running in Jupyter notebook.
+    """
+
+    # Just a dirty hack, but works for most of the time
+    in_jupyter = sys.argv[-1].endswith("json")
+    return in_jupyter
+
+
+if is_running_in_jupyter():
+    from tqdm.notebook import tqdm
+else:
+    from tqdm import tqdm
 
 
 class RobustParse:
@@ -30,7 +48,7 @@ class RobustParse:
         if start == -1 or end == -1:
             raise ValueError(f"Invalid json: {src}")
         try:
-            #res = ast.literal_eval(src[start:end + 1])
+            # res = ast.literal_eval(src[start:end + 1])
             res = json.loads(src[start:end + 1])
         except:
             raise ValueError(f"Invalid json: {src}")
@@ -45,7 +63,7 @@ class RobustParse:
         if start == -1 or end == -1:
             raise ValueError(f"Invalid json: {src}")
         try:
-            #res = ast.literal_eval(src[start:end + 1])
+            # res = ast.literal_eval(src[start:end + 1])
             res = json.loads(src[start:end + 1])
         except:
             raise ValueError(f"Invalid json: {src}")
