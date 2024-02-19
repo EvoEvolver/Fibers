@@ -128,7 +128,7 @@ f"""There exist variables that have define in the scope.
                       node.get_attr(CodeData).module_tree_type == "function"]
     func_env = get_node_list_prompt(function_nodes, func_content_map)
     func_env = \
-f"""Some functions that might be used to implement the instructions have been defined in the scope. The function body is omitted.
+f"""Some functions that might be used to implement the instructions have been defined in the scope. The function body is omitted and you can directly call them.
 <functions start>
 {func_env}       
 <functions end>
@@ -152,14 +152,16 @@ f"""Some functions that might be used to implement the instructions have been de
 @auto_cache
 def get_next_step(context: str) -> str:
     prompt = f"""
-You are trying to implement some instructions by calling Python functions.
+You are trying to implement some instructions.
 
 {context}
 
 You are going to generate one next step for finishing the instruction.
 Output your answer by a JSON dict with first key being "analysis" for a string that analyze the situation. Notice that the information above might be irrelevant to the next step. 
 Then second key "next_step" being a string for a detailed plan for the next step.
-The next step should be a minimal step that can be executed. You should only use the information above to generate the next step. If you think the instruction is already finished, you should output a empty string.
+The next step should be a minimal step that can be executed.
+You should only use the information above to generate the next step. 
+If you think the instruction is already finished, you should output a empty string.
 """
     chat = Chat(prompt, "You are an helpful analyzer for planing who only output JSON")
     res = chat.complete_chat_expensive()
