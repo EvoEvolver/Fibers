@@ -5,7 +5,7 @@ from fibers.compose.agent.var_table import VariableTable
 from fibers.helper.utils import standard_multi_attempts
 from fibers.tree.node_class.code_node import get_obj, CodeData, get_source
 
-from fibers.model.chat import Chat
+from fibers.model.chat import Chat, reduce_multiple_new_lines
 
 from fibers.compose.decorate.code_summary import CodeSummary
 from fibers.compose.utils_code.header import get_function_header
@@ -52,8 +52,8 @@ def call_function_node(context: str, requirement: str, var_table: VariableTable,
 
     prompt += f"""
 Requirement of code generation:
+Your code will be run in the context/scope defined above, using the functions and variables provided.
 You should only use variable that is in the current scope.
-You must not use import statement!
 In the end of the code, you should add documentation of important variables you produces in your code that might be used in following steps. You should also add documentation to the variables you are required to define in instruction. You should not add any document for the variable generated not by the current code.
 The documentation should be in the following format:
 #$ variable1_name: documentation
@@ -66,6 +66,7 @@ Again, the requirement is:
 
 Start your answer with "```python"
 """
+    prompt = reduce_multiple_new_lines(prompt)
     chat = Chat(prompt,
                 "You are a code generator who only outputs Python code.")
 
@@ -166,7 +167,7 @@ def get_code_gen_context(code_nodes, var_table, external_module_docs, func_conte
 
     if var_env != "":
         var_env = \
-f"""There exist some variables you can use.
+f"""There exist variables that have define in the scope.
 <variables start>
 {var_env}
 <variables end>
@@ -176,7 +177,7 @@ f"""There exist some variables you can use.
                       node.get_attr(CodeData).module_tree_type == "function"]
     func_env = get_node_list_prompt(function_nodes, func_content_map)
     func_env = \
-f"""There exist some functions that might be used to implement the instructions. The implementation is omitted.
+f"""Some functions that might be used to implement the instructions have been defined in the scope. The function body is omitted.
 <functions start>
 {func_env}       
 <functions end>

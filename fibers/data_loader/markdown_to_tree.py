@@ -5,10 +5,12 @@ from fibers.data_loader.html_to_tree import html_to_raw_tree, html_to_markdown
 from fibers.tree import Tree
 
 
-def markdown_to_tree(src: str, title="") -> Tree:
+def markdown_to_tree(src: str, title="", keep_markdown=False) -> Tree:
     html = markdown.markdown(src)
     soup = BeautifulSoup(html, "html.parser")
     tree = html_to_raw_tree(soup, title=title)
+    if keep_markdown:
+        html_to_markdown(tree.root)
     return tree
 
 if __name__ == "__main__":

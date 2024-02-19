@@ -23,7 +23,7 @@ map_to_code_summary = ContentMap(lambda n: CodeSummary.get_summary(n) or n.conte
 
 
 class InstructionRunner:
-    def __init__(self, modules, docs_tree=None, external_modules=None,
+    def __init__(self, modules, external_modules=None,
                  variable_table=None):
         self.modules = modules
         self.var_table = variable_table or VariableTable()
@@ -63,7 +63,7 @@ class InstructionRunner:
         self.grow_instruction_tree(root)
 
     def run_short_instruction(self, inst_node: Node, code_nodes: List[Node]):
-        instruction = NormInst.get(inst_node).get_prompt()
+        instruction = inst_node.content
 
         # Add the functions to the hidden var table
         self.var_table_hidden = self.var_table_hidden.push_new_table()
@@ -74,13 +74,13 @@ class InstructionRunner:
 
         map_to_code_header = ContentMap(lambda n: get_codes_in_prompt([n]))
 
-        progress_env = InstRes.get(inst_node).report_of_self
-        if progress_env != "":
-            progress_env = f"What you have done before:\n{progress_env}"
 
-        self.var_table = self.var_table.push_new_table()
-
-        context = get_code_gen_context(code_nodes, self.var_table, self.external_module_docs, map_to_code_header, progress_env)
+        #self.var_table = self.var_table.push_new_table()
+        parent = inst_node.parent()
+        other_context = """
+        
+        """
+        context = get_code_gen_context(code_nodes, self.var_table, self.external_module_docs, map_to_code_header, context = other_context)
 
         # Run the code
 
@@ -94,17 +94,15 @@ class InstructionRunner:
         inst_info.code = code
         inst_info.var_table_at_run = self.var_table.get_prompt()
         report, useful_vars = code_to_report(code, instruction, new_variables)
-        self.var_table = self.var_table.pop_table()
-        for var in useful_vars:
-            obj, docs = new_variables.get_variable(var)
-            self.var_table.add_variable(var, obj, docs)
+        #self.var_table = self.var_table.pop_table()
+        #for var in useful_vars:
+        #    obj, docs = new_variables.get_variable(var)
+        #    self.var_table.add_variable(var, obj, docs)
         inst_info.report_of_self = report
 
 
 
     def grow_instruction_tree(self, inst_node: Node):
-        if not inst_node.has_attr(NormInst):
-            parallel_map(normalize_inst_node, inst_node.iter_subtree_with_dfs())
 
         caching.save()
 
@@ -118,26 +116,19 @@ class InstructionRunner:
                 inst_res.report_of_self, finished = merge_reports(inst_res.report_of_self,
                                                          child.get_attr(
                                                              InstRes).report_of_self,
-                                                         NormInst.get(
-                                                             inst_node).get_prompt())
+                                                         inst_node.content)
                 # Whenever go up to parent, we try discard some variables
                 #if i != len(inst_node.children()) - 1:
                    # self.var_table = reduce_var_table(self.var_table, inst_node, NormInst.get(inst_node).get_procedure_prompt())
             return
 
-        norm_inst = NormInst.get(inst_node)
-        norm_inst.procedure = [inst_node.content]
-        if len(norm_inst.procedure) == 0:
-            return
 
         # The inst_node is not empty
         # The inst_node has no child
         # This two points implies we need to grow the tree
 
         # Search for related functions
-        norm_inst.result = []
-        norm_inst.knowledge = []
-        function_requirement = "The function can be used to implement the following instruction \n" + norm_inst.get_prompt() + "<instruction end>"
+        function_requirement = "The function can be used to implement the following instruction \n" + inst_node.content + "<instruction end>"
         related_func_nodes = self.code_searcher.search(function_requirement,
                                                        ["function"])
 
@@ -148,27 +139,25 @@ class InstructionRunner:
 
             print("generating next step")
 
-            next_step = get_next_step(
-                norm_inst.get_prompt(), env)
+            next_step = get_next_step(inst_node.content, env)
 
             if len(next_step) > 0:
                 new_child = inst_node.new_child(f"Step {len(inst_node.children()) + 1}")
-                child_norm_inst = NormInst(new_child)
-                child_norm_inst.procedure = [next_step]
+                new_child.be(next_step)
                 InstRes.get(new_child).report_of_self = ""
                 new_child.tree.update_tree_gui()
                 @standard_multi_attempts
                 def search_and_run():
-                    function_requirement = "The function can be used to implement the following instruction \n" + child_norm_inst.get_prompt() + "<instruction end>"
-                    related_func_nodes = self.code_searcher.search(function_requirement,
+                    _function_requirement = "The function can be used to implement the following instruction \n" + new_child.content + "<instruction end>"
+                    _related_func_nodes = self.code_searcher.search(_function_requirement,
                                                                    ["function"])
 
-                    self.run_short_instruction(new_child, related_func_nodes)
+                    self.run_short_instruction(new_child, _related_func_nodes)
                 search_and_run()
 
                 inst_res.report_of_self, finished = merge_reports(inst_res.report_of_self,
                                                            InstRes.get(new_child).report_of_self,
-                                                           norm_inst.get_prompt())
+                                                           inst_node.content)
                 #self.var_table = reduce_var_table(self.var_table, inst_node, next_step)
                 if finished:
                     break
@@ -202,7 +191,7 @@ def filter_variables(var_table, inst_node: Node, next_step):
     report = InstRes.get(inst_node).report_of_self
     prompt = f"""
 You are trying to follow the instruction below.
-{NormInst.get(inst_node).get_prompt()}
+{inst_node.content}
 <instruction end>
 Here is the progress you have made:
 {report}
@@ -271,6 +260,7 @@ Here is the results you have got:
     prompt += """
 You are trying to give a *minimal* report of progress of the implementation of the instruction.
 The objective of the minimal report is to help others locate the progress of the implementation and decide the next step.
+You can imply a little bit of the next step in the report.
 Based on the report, you are required is to decide which variables are needed in the following steps and which are not.
 Output your answer in a JSON dict with the first key being "report", whose values is a string.
 The second key should be "useful_variables" whose value is a list of strings, each string is a variable name that is useful in the future as implied by the instruction.

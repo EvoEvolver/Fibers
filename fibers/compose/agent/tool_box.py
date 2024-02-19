@@ -1,4 +1,3 @@
-import PIL
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -14,7 +13,7 @@ from PIL import Image
 
 def call_chat_model(prompt) -> str:
     """
-    Call the chat model.
+    Call the chat model. You can use it when you need intelligent responses.
     :param prompt: The prompt for the language model.
     :return: The response from the chat model.
     """
@@ -26,7 +25,7 @@ def call_chat_model(prompt) -> str:
 
 def ask_human(question: str):
     """
-    Ask a human a question.
+    Ask a human a question. You can use it when you need feedback from a human.
     :param question: The question for the human to answer.
     :return: The response from the human.
     """
@@ -36,31 +35,12 @@ def ask_human(question: str):
     return res
 
 
-def ask_vision_model_about_image(img: PIL.Image, question) -> bool:
-    """
-    Plot the data and ask a question about the data shape.
-    For example, the number of peaks, or whether the data is nearly periodic.
-    The answer is either True or False.
-    :param img: a PIL image.
-    :param question: the question to ask.
-    :return: the response to the question.
-    """
-    chat = Chat(
-        system_message="You are a helpful assistant who only answer in `yes` of `no`")
-    chat.add_image_message_by_obj(img)
-    chat.add_user_message(question)
-    res = chat.complete_chat()
-    if "yes" in res.lower():
-        return True
-    else:
-        return False
-
 
 def ask_vision_model_about_data(data: np.array, question) -> bool:
     """
-    Plot the data and ask a question about the data shape.
-    For example, the number of peaks, or whether the data is nearly periodic.
+    Ask a question about the data shape. For example, the number of peaks, or whether the data is nearly periodic.
     The answer is either True or False.
+    You should use it when you need to analyze the data.
     :param data: a one dimensional numpy array.
     :param question: the question to ask.
     :return: the response to the question.
@@ -98,10 +78,9 @@ def display_image(image: Image):
 # Plot
 """
 
-
 def draw_x_y_plot(x, y, x_label="", y_label="") -> Image:
     """
-    Draw an x-y plot.
+    Make an x-y plot.
     Args:
         x (np.ndarray): The x-axis data.
         y (np.ndarray): The y-axis data.
@@ -118,10 +97,12 @@ def draw_x_y_plot(x, y, x_label="", y_label="") -> Image:
     return img
 
 
+
 if __name__ == '__main__':
     from q_lab import draw_x_y_plot
-
     img = draw_x_y_plot(np.array([1, 2, 3]), np.array([1, 2, 3]), x_label='X',
                         y_label='Y')
     res = ask_vision_model(img, "Is the x-y plot a straight line?")
     print(res)
+
+

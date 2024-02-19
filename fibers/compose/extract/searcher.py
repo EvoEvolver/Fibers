@@ -30,7 +30,7 @@ class CodeSearcher:
         descriptions = get_code_descriptions(requirement)
         nodes_from_vector = []
         for description in descriptions:
-            nodes_from_vector += self.vector_indexing.get_top_k_nodes(description, 3)
+            nodes_from_vector += self.vector_indexing.get_top_k_nodes(description, 5)
         nodes_related = list(set(nodes_from_beam + nodes_from_vector))
         nodes_related = [node for node in nodes_related if get_type(
                          node) in code_types]
@@ -42,6 +42,8 @@ class CodeSearcher:
                                           self.content_map)
         return nodes_related
 
+
+@standard_multi_attempts
 def get_code_descriptions(requirement: str):
     prompt = f"""
 You are trying to find Python functions based on a requirement:
@@ -118,13 +120,13 @@ Here are a few Python objects:
 
 You are trying to find Python objects that most satisfy the following requirement:
 {requirement}
-<requirement end>
 
 Output the indices that meet the requirement the most by a JSON dict with key "indices" whose value is a list of numbers.
 """
     chat = Chat(user_message=prompt,
                 system_message="You are a very smart assistant.")
     res = chat.complete_chat_expensive()
+    print(chat)
     res = RobustParse.dict(res)
     res = res["indices"]
     matched_node = [nodes[i] for i in res]
@@ -139,5 +141,6 @@ if __name__ == '__main__':
     tree = Tree("Moduler")
     add_module_tree_to_node(q_lab, tree.root)
     add_module_tree_to_node(tool_box, tree.root)
+    tree.show_tree_gui_react()
     searcher = CodeSearcher(tree.root)
     print(searcher.search(req, ["function"]))
