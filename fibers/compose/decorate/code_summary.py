@@ -2,6 +2,7 @@ import inspect
 
 from fibers.data_loader.module_to_tree import get_tree_for_module
 from fibers.helper.cache.cache_service import cached_function, auto_cache, caching
+from fibers.helper.utils import parallel_map
 from fibers.model.chat import Chat
 from fibers.compose.decorate.tree_map import node_map_with_dependency
 from fibers.compose.utils_code.code_env import get_function_module_env
@@ -144,12 +145,15 @@ def summarize_code_node(node: Node) -> bool:
 
 
 @auto_cache
-def summary_needing_situation(node: Node):
+def summary_needing_situation_0(node: Node):
+    module_tree_type = get_type(node)
+    if module_tree_type != "function":
+        return
     function = get_obj(node)
     function_src = inspect.getsource(function)
     function_env = get_function_module_env(node)
     prompt = f"""
-    You are required to summarize when the following function is needed in 15 words.
+    You are required to summarize when the following function is needed in 30 words.
     You are provided with the environment of the function for a better understanding, but you should not mention it in your summary. 
     """
     prompt += f"""
@@ -164,10 +168,36 @@ def summary_needing_situation(node: Node):
     chat = Chat(prompt, "You are a helpful assistant who help Python programmers")
     res = chat.complete_chat()
     res = res.replace("Summary: ", "")
-    return res
+    CodeSummary.set_summary(node, res)
+
+@auto_cache
+def summary_needing_situation(node: Node):
+    module_tree_type = get_type(node)
+    if module_tree_type != "function":
+        return
+    function = get_obj(node)
+    function_src = inspect.getsource(function)
+    prompt = f"""
+    You are required to summarize when the following function is needed in 30 words.
+    You should not add any information beyond the function signature, docstring and the function body.
+    """
+    prompt += f"""
+    Function:
+    {function_src}
+
+    Start your answer with "Summary: The function"
+    """
+    chat = Chat(prompt, "You are a helpful assistant who help Python programmers")
+    res = chat.complete_chat()
+    res = res.replace("Summary: ", "")
+    CodeSummary.set_summary(node, res)
 
 def summarize_code_tree(tree: Tree):
     node_map_with_dependency(list(tree.iter_with_dfs())[:-1], summarize_code_node)
+
+
+def summarize_function_for_needing_situation(tree: Tree):
+    parallel_map(summary_needing_situation, list(tree.iter_with_dfs())[:-1])
 
 
 if __name__ == "__main__":

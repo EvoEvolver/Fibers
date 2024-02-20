@@ -1,6 +1,6 @@
 from typing import List, Dict
 from fibers.compose.decorate.code_summary import CodeSummary, \
-    summarize_code_tree
+    summarize_code_tree, summarize_function_for_needing_situation
 from fibers.compose.extract.searcher import CodeSearcher
 from fibers.compose.agent.call_function import get_codes_in_prompt
 from fibers.compose.agent.var_table import VariableTable, get_repr_in_prompt
@@ -31,7 +31,7 @@ class InstructionRunner:
         for module in modules:
             add_module_tree_to_node(module, self.module_tree.root)
 
-        summarize_code_tree(self.module_tree)
+        summarize_function_for_needing_situation(self.module_tree)
 
         self.code_searcher: CodeSearcher = CodeSearcher(self.module_tree.root)
 
@@ -186,7 +186,9 @@ def call_function_node(context: str, requirement: str, var_table: VariableTable,
     prompt += f"""
 Requirement of code generation:
 Your code will be run in the context/scope defined above, using the functions and variables provided.
-You should only use variable that is in the current scope. You are encourage to add concise documentation. You are not encourage to define functions in the output.
+You should only use variable that is in the current scope. 
+You are encourage to add concise documentation. 
+You are not encourage to define functions in the output and you should not define unnecessary variables.
 ...
 
 Again, the requirement is:
