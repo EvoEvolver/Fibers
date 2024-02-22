@@ -188,7 +188,7 @@ Requirement of code generation:
 Your code will be run in the context/scope defined above, using the functions and variables provided.
 You should only use variable that is in the current scope. 
 You are encourage to add concise documentation. 
-You are not encourage to define functions in the output and you should not define unnecessary variables.
+You should NOT define new functions in your output and you should not define unnecessary variables.
 ...
 
 Again, the requirement is:
