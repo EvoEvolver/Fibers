@@ -1,0 +1,111 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+import base64
+
+
+from vertexai.generative_models import Part, GenerativeModel, Content
+if TYPE_CHECKING:
+    from fibers.model.chat import Chat
+
+
+map_to_google_role = {
+    "user": "user",
+    "assistant": "model",
+    "system": "user"
+}
+
+def get_request_contents(chat: Chat):
+    contents = []
+    parts = []
+    current_role = "user"
+    for message in chat.history:
+        if message["role"] == "system":
+            message["content"] = "System message: " + message["content"] + "\n"
+        new_role = map_to_google_role[message["role"]]
+        if new_role != current_role:
+            if len(parts) > 0:
+                contents.append(Content(parts=parts, role=current_role))
+            parts = []
+            current_role = new_role
+
+        add_message_to_parts(message, parts)
+    if len(parts) > 0:
+        contents.append(Content(parts=parts, role=current_role))
+    return contents
+
+
+def add_message_to_parts(message, parts):
+    content = message["content"]
+    if isinstance(content, str):
+        role = message["role"]
+        if role == "user":
+            parts.append(Part.from_text(content))
+        elif role == "assistant":
+            parts.append(Part.from_text(content))
+        elif role == "system":
+            parts.append(Part.from_text("System message: " + content + "System message end\n"))
+    elif isinstance(content, list):
+        for item in content:
+            if item["type"] == "image_url":
+                image_item = item["image_url"]
+                image_url = image_item["url"]
+                if image_url.startswith("data:image/jpeg;base64,"):
+                    img = Part.from_data(data=base64.b64decode(image_url[23:]),
+                                         mime_type="image/jpeg")
+                    parts.append(img)
+                else:
+                    raise NotImplementedError("Only base64 encoded images are supported for google")
+                    img = Part.from_uri(image_url,
+                                        mime_type="image/jpeg")
+                    parts.append(img)
+
+
+service_initiated = False
+
+def init_service():
+    global service_initiated
+    if not service_initiated:
+        service_initiated = True
+
+def _complete_chat(chat: Chat, options=None):
+    options = options or {}
+    contents = get_request_contents(chat)
+    model = options.get("model", "gemini-1.0-pro")
+    init_service()
+    gemini_pro_model = GenerativeModel(model)
+    model_response = gemini_pro_model.generate_content(
+        contents,
+        generation_config = {
+            "max_output_tokens": 2048,
+            "temperature": 0.4,
+            "top_p": 1,
+            "top_k": 32
+        },
+    )
+    res = model_response.candidates[0].content.parts
+    assert len(res) == 1
+    res = res[0].text
+    chat.add_assistant_message(res)
+    return res
+
+
+google_models = ["gemini-1.0-pro", "gemini-1.0-pro-vision"]
+
+
+def set_default_to_google():
+    from fibers.model.chat import default_models
+    default_models["normal"] = "gemini-1.0-pro"
+    default_models["expensive"] = "gemini-1.0-pro"
+    default_models["vision"] = "gemini-1.0-pro-vision"
+
+
+# To use the Google model, you should follow the instructions here:
+# https://cloud.google.com/vertex-ai/docs/generative-ai/multimodal/sdk-for-gemini/gemini-sdk-overview?hl=en
+
+
+if __name__ == '__main__':
+    from fibers.model.chat import Chat
+    chat = Chat()
+    chat.add_user_message("Hello, I am a user message")
+    print(chat.history)
+    print(_complete_chat(chat))

@@ -1,5 +1,4 @@
 from fibers.model.chat import Chat
-from fibers.model.openai import contains_image
 
 
 def test_image_chat():

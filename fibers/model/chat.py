@@ -9,11 +9,16 @@ from PIL.Image import Image
 from fibers.debug.logger import Logger
 from fibers.gui.dictionary_viewer import show_document_with_key_gui
 from fibers.helper.cache.cache_service import enable_auto_cache
-from fibers.model.openai import (_complete_chat as openai_complete_chat,
-                                 _complete_chat_expensive as openai_complete_chat_expensive,
-                                 model_list as openai_model_list)
-from fibers.model.openllm import (complete_chat as openllm_complete_chat,
-                                  complete_chat_expensive as openllm_complete_chat_expensive)
+from fibers.model.openai_model import (_complete_chat as openai_complete_chat,
+                                       model_list as openai_model_list)
+from fibers.model.google_model import _complete_chat as google_complete_chat
+
+
+default_models = {
+    "normal": "gpt-3.5-turbo",
+    "expensive": "gpt-4-turbo-preview",
+    "vision": "gpt-4-vision-preview"
+}
 
 
 def encode_image(image_file: BytesIO):
@@ -102,43 +107,62 @@ class Chat:
             res.append(message)
         return res
 
+
+    def contains_image(self):
+        for message in self.history:
+            content = message["content"]
+            if isinstance(content, list):
+                for item in content:
+                    if isinstance(item, dict) and item["type"] == "image_url":
+                        return True
+            elif isinstance(content, dict):
+                if content["type"] == "image_url":
+                    return True
+        return False
+
     """
     ## Chat completion functions
     """
 
     def complete_chat(self, options=None):
-        cache = enable_auto_cache(self.get_log_list(), "chat")
-        if cache is not None and cache.is_valid():
-            self.add_assistant_message(cache.value)
-            return cache.value
-
-        options = options or {}
-        if use_openai_model(options):
-            res = openai_complete_chat(self, options=options)
-        else:
-            res = openllm_complete_chat(self, options=options)
-
-        if len(ChatLogger.active_loggers) > 0:
-            for chat_logger in ChatLogger.active_loggers:
-                chat_logger.add_log(self)
-        self.add_assistant_message(res)
-
-        if cache is not None:
-            cache.set_cache(res)
-
-        return res
+        if options is None:
+            options = {}
+        if "model" not in options:
+            options["model"] = default_models["normal"]
+        if self.contains_image():
+            options["model"] = default_models["vision"]
+        return self._complete_chat_impl(options)
 
     def complete_chat_expensive(self, options=None):
+        if options is None:
+            options = {}
+        if "model" not in options:
+            options["model"] = default_models["expensive"]
+        if self.contains_image():
+            options["model"] = default_models["vision"]
+        return self._complete_chat_impl(options)
+
+    def complete_chat_vision(self, options=None):
+        if options is None:
+            options = {}
+        if "model" not in options:
+            options["model"] = default_models["vision"]
+        return self._complete_chat_impl(options)
+
+    def _complete_chat_impl(self, options):
         cache = enable_auto_cache(self.get_log_list(), "chat")
         if cache is not None and cache.is_valid():
             self.add_assistant_message(cache.value)
             return cache.value
 
         options = options or {}
-        if use_openai_model(options):
-            res = openai_complete_chat_expensive(self, options=options)
+        model_name = options.get("model")
+        if model_name.startswith("gpt"):
+            res = openai_complete_chat(self, options=options)
+        elif model_name.startswith("gemini"):
+            res = google_complete_chat(self, options=options)
         else:
-            res = openllm_complete_chat_expensive(self, options=options)
+            raise ValueError(f"Unknown model name: {model_name}")
 
         if len(ChatLogger.active_loggers) > 0:
             for chat_logger in ChatLogger.active_loggers:
@@ -148,6 +172,7 @@ class Chat:
         if cache is not None:
             cache.set_cache(res)
         return res
+
 
     """
     ## Magic methods
@@ -184,4 +209,3 @@ def reduce_multiple_new_lines(text: str) -> str:
             continue
         res.append(line)
     return "\n".join(res)
-

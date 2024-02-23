@@ -6,13 +6,9 @@ from typing import List
 import numpy as np
 
 from fibers.helper.cache.cache_service import caching
-from fibers.model.openai import _get_embeddings
+from fibers.model.openai_model import _get_embeddings
 
 model_for_embedding = "text-embedding-3-large"
-model_to_embedding_dim = {
-    "text-embedding-ada-002": 1536
-}
-
 
 def flatten_nested_list(texts: list[list[str]]) -> (List[float], List[int]):
     flattened_texts = []
