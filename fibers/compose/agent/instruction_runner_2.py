@@ -14,8 +14,8 @@ from fibers.tree.node_class import CodeData
 from fibers.tree.node_class.code_node import get_obj
 from fibers.tree.prompt_utils import get_node_list_prompt
 
-
 map_to_code_summary = ContentMap(lambda n: CodeSummary.get_summary(n) or n.content)
+
 
 class InstructionRunner:
     def __init__(self, modules, external_modules=None,
@@ -35,7 +35,6 @@ class InstructionRunner:
 
         self.code_searcher: CodeSearcher = CodeSearcher(self.module_tree.root)
 
-
     def load_external_modules(self, external_modules):
         external_modules = external_modules or []
         for module in external_modules:
@@ -49,7 +48,7 @@ class InstructionRunner:
             self.external_module_docs[module_name] = module_doc
             self.var_table_hidden.add_variable(module_name, module_obj, module_doc)
 
-    def run_instruction(self, instruction: str):
+    def run_instruction(self, instruction: str, n_step_limit=10000):
 
         caching.save()
 
@@ -71,22 +70,29 @@ The instruction you are trying to implement is:
 {code_context}
 """
 
-            next_step = get_next_step(context)
+            @standard_multi_attempts
+            def plan_search_and_run():
+                next_step = get_next_step(context)
+                if next_step == "":
+                    return ""
 
-            if next_step == "":
-                break
-
-            def search_and_run():
                 _function_requirement = "The function can be used to implement the following instruction \n" + next_step + "<instruction end>"
                 _related_func_nodes = self.code_searcher.search(_function_requirement,
                                                                 ["function"])
 
-                _code = self.run_short_instruction(next_step, _related_func_nodes, "".join(code_cells))
+                _code = self.run_short_instruction(next_step, _related_func_nodes,
+                                                   "".join(code_cells))
                 return _code
-            code = search_and_run()
+
+            code = plan_search_and_run()
+            if code == "":
+                return "success", code_cells
+
             code_cells.append(code)
             print({"".join(code_cells)})
 
+            if len(code_cells) > n_step_limit:
+                return "failed", code_cells
 
     def run_short_instruction(self, instruction, code_nodes: List[Node], prev_code):
 
@@ -106,19 +112,22 @@ Here is the code that you have implemented so far:
             prev_code_context = ""
 
         context = get_code_gen_context(code_nodes, self.var_table,
-                                       self.external_module_docs, map_to_code_header, context=prev_code_context)
+                                       self.external_module_docs, map_to_code_header,
+                                       context=prev_code_context)
 
         code = call_function_node(context, instruction, self.var_table,
-                                                 self.var_table_hidden)
+                                  self.var_table_hidden)
 
         return code
 
-def get_code_gen_context(code_nodes, var_table, external_module_docs, func_content_map, context: str = ""):
+
+def get_code_gen_context(code_nodes, var_table, external_module_docs, func_content_map,
+                         context: str = ""):
     var_env = var_table.get_prompt()
 
     if var_env != "":
         var_env = \
-f"""There exist variables that have define in the scope.
+            f"""There exist variables that have define in the scope.
 <variables start>
 {var_env}
 <variables end>
@@ -128,7 +137,7 @@ f"""There exist variables that have define in the scope.
                       node.get_attr(CodeData).module_tree_type == "function"]
     func_env = get_node_list_prompt(function_nodes, func_content_map)
     func_env = \
-f"""Some functions that might be used to implement the instructions have been defined in the scope. The function body is omitted and you can directly call them.
+        f"""Some functions that might be used to implement the instructions have been defined in the scope. The function body is omitted and you can directly call them.
 <functions start>
 {func_env}       
 <functions end>
@@ -148,6 +157,7 @@ f"""Some functions that might be used to implement the instructions have been de
 """
 
     return code_gen_env
+
 
 @auto_cache
 def get_next_step(context: str) -> str:
@@ -232,6 +242,7 @@ def process_and_run_code(code_raw, var_table, hidden_var_table=None):
             new_vars.add(var_name)
     var_value = []
     for var_name in new_vars:
-        var_value.append(f"# {var_name}: {get_repr_in_prompt(interpreter.symtable[var_name])}")
+        var_value.append(
+            f"# {var_name}: {get_repr_in_prompt(interpreter.symtable[var_name])}")
     code_exec = code_raw + "\n" + "\n".join(var_value)
     return code_exec
