@@ -3,8 +3,12 @@ import webbrowser
 import os
 from multiprocessing import Process
 
-from fibers.gui.forest_connector.server import main
-from forest import build_dir, asset_dir, lazy_build, build
+try:
+    from fibers.gui.forest_connector.server import main
+    from forest import lazy_build
+except Exception:
+    pass
+
 import time
 import requests
 import json

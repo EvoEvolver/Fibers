@@ -2,8 +2,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import base64
 
+try:
+    from vertexai.generative_models import Part, GenerativeModel, Content
+except Exception:
+    pass
 
-from vertexai.generative_models import Part, GenerativeModel, Content
 if TYPE_CHECKING:
     from fibers.model.chat import Chat
 
@@ -13,6 +16,7 @@ map_to_google_role = {
     "assistant": "model",
     "system": "user"
 }
+
 
 def get_request_contents(chat: Chat):
     contents = []
@@ -43,7 +47,8 @@ def add_message_to_parts(message, parts):
         elif role == "assistant":
             parts.append(Part.from_text(content))
         elif role == "system":
-            parts.append(Part.from_text("System message: " + content + "System message end\n"))
+            parts.append(
+                Part.from_text("System message: " + content + "System message end\n"))
     elif isinstance(content, list):
         for item in content:
             if item["type"] == "image_url":
@@ -54,7 +59,8 @@ def add_message_to_parts(message, parts):
                                          mime_type="image/jpeg")
                     parts.append(img)
                 else:
-                    raise NotImplementedError("Only base64 encoded images are supported for google")
+                    raise NotImplementedError(
+                        "Only base64 encoded images are supported for google")
                     img = Part.from_uri(image_url,
                                         mime_type="image/jpeg")
                     parts.append(img)
@@ -62,10 +68,12 @@ def add_message_to_parts(message, parts):
 
 service_initiated = False
 
+
 def init_service():
     global service_initiated
     if not service_initiated:
         service_initiated = True
+
 
 def _complete_chat(chat: Chat, options=None):
     options = options or {}
@@ -75,7 +83,7 @@ def _complete_chat(chat: Chat, options=None):
     gemini_pro_model = GenerativeModel(model)
     model_response = gemini_pro_model.generate_content(
         contents,
-        generation_config = {
+        generation_config={
             "max_output_tokens": 2048,
             "temperature": 0.4,
             "top_p": 1,
@@ -105,6 +113,7 @@ def set_default_to_google():
 
 if __name__ == '__main__':
     from fibers.model.chat import Chat
+
     chat = Chat()
     chat.add_user_message("Hello, I am a user message")
     print(chat.history)

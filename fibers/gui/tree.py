@@ -6,7 +6,6 @@ import plotly.graph_objects as go
 from hyphen import Hyphenator
 
 from fibers.gui.utlis import hypenate_texts
-from fibers.tree.node import ContentMap
 
 if TYPE_CHECKING:
     from fibers.tree import Node, Tree
