@@ -22,9 +22,7 @@ def get_request_contents(chat: Chat):
     contents = []
     parts = []
     current_role = "user"
-    for message in chat.history:
-        if message["role"] == "system":
-            message["content"] = "System message: " + message["content"] + "\n"
+    for message in chat.get_log_list():
         new_role = map_to_google_role[message["role"]]
         if new_role != current_role:
             if len(parts) > 0:
@@ -48,7 +46,7 @@ def add_message_to_parts(message, parts):
             parts.append(Part.from_text(content))
         elif role == "system":
             parts.append(
-                Part.from_text("System message: " + content + "System message end\n"))
+                Part.from_text("System message: " + content + "\nSystem message end\n"))
     elif isinstance(content, list):
         for item in content:
             if item["type"] == "image_url":
@@ -91,8 +89,12 @@ def _complete_chat(chat: Chat, options=None):
         },
     )
     res = model_response.candidates[0].content.parts
-    assert len(res) == 1
-    res = res[0].text
+    if len(res) == 1:
+        res = res[0].text
+    else:
+        res = [part.text for part in res]
+        res = "\n".join(res)
+        print("Warning: Experimental feature: Multiple parts in response")
     chat.add_assistant_message(res)
     return res
 
