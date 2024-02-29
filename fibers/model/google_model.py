@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import base64
 
 try:
-    from vertexai.generative_models import Part, GenerativeModel, Content
+    from vertexai.generative_models import Part, GenerativeModel, Content, HarmCategory, HarmBlockThreshold
 except Exception:
     pass
 
@@ -86,6 +86,12 @@ def _complete_chat(chat: Chat, options=None):
             "temperature": 0.4,
             "top_p": 1,
             "top_k": 32
+        },
+        safety_settings={
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
         },
     )
     res = model_response.candidates[0].content.parts
