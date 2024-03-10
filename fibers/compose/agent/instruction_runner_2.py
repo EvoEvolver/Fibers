@@ -1,6 +1,5 @@
 from typing import List, Dict
-from fibers.compose.decorate.code_summary import CodeSummary, \
-    summarize_code_tree, summarize_function_for_needing_situation
+from fibers.compose.decorate.code_summary import CodeSummary, summarize_function_for_needing_situation
 from fibers.compose.extract.searcher import CodeSearcher
 from fibers.compose.agent.call_function import get_codes_in_prompt
 from fibers.compose.agent.var_table import VariableTable, get_repr_in_prompt
@@ -53,6 +52,8 @@ class InstructionRunner:
         caching.save()
 
         code_cells = []
+        steps = []
+
         while True:
             code_context = \
                 f"""
@@ -69,7 +70,6 @@ The instruction you are trying to implement is:
 <instruction end>
 {code_context}
 """
-
             @standard_multi_attempts
             def plan_search_and_run():
                 next_step = get_next_step(context)
@@ -82,14 +82,16 @@ The instruction you are trying to implement is:
 
                 _code = self.run_short_instruction(next_step, _related_func_nodes,
                                                    "".join(code_cells))
-                return _code
+                return _code, next_step
 
-            code = plan_search_and_run()
+            code, step = plan_search_and_run()
+            code_cells.append(code)
+            steps.append(step)
+
+            print({"".join(code_cells)})
+
             if code == "":
                 return "success", code_cells
-
-            code_cells.append(code)
-            print({"".join(code_cells)})
 
             if len(code_cells) > n_step_limit:
                 return "failed", code_cells
