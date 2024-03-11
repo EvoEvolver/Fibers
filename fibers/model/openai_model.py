@@ -45,6 +45,39 @@ default_options = {
     "timeout": 20,
 }
 
+def get_request_contents(chat: Chat):
+    request_list = []
+    message_list = list(chat.get_log_list())
+    if chat.system_message is not None:
+        message_list.insert(0, {
+            "role": "system",
+            "content": [{
+                "type": "text",
+                "text": chat.system_message
+            }]
+        })
+    for message in message_list:
+        current_role = message["role"]
+        contents = message["content"]
+        contents_in_request = []
+        assert isinstance(contents, list)
+        for item in contents:
+            if item["type"] == "text":
+                contents_in_request.append(item)
+            elif item["type"] == "image":
+                image_source = item["source"]
+                contents_in_request.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{image_source['media_type']};base64,{image_source['data']}"
+                    }
+                })
+        request_list.append({
+            "role": current_role,
+            "content": contents_in_request
+        })
+    return request_list
+
 
 def _complete_chat(chat: Chat, options=None):
     init_service()
@@ -53,8 +86,9 @@ def _complete_chat(chat: Chat, options=None):
     if chat.contains_image():
         _options["model"] = "gpt-4-vision-preview"
         _options["max_tokens"] = 2000
+    request_contents = get_request_contents(chat)
     return client.chat.completions.create(
-        messages=chat.get_log_list(), **_options).choices[
+        messages=request_contents, **_options).choices[
         0].message.content
 
 

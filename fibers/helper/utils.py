@@ -69,8 +69,11 @@ class RobustParse:
             raise ValueError(f"Invalid json: {src}")
         return res
 
+default_parallel_map_config = {
+    "n_workers": 8
+}
 
-def parallel_map(func, *args, n_workers=8):
+def parallel_map(func, *args, n_workers=None):
     """
     Example usage: `for i, res in parallel_map(lambda x: x + 1, [1, 2, 3, 4, 5], n_workers=4): do_something`
     :param func: The function to apply on each element of args
@@ -81,12 +84,14 @@ def parallel_map(func, *args, n_workers=8):
     # Use concurrent.futures.ThreadPoolExecutor to parallelize
     # Use tqdm to show progress bar
     from fibers.helper.cache.cache_service import caching
+    if n_workers is None:
+        n_workers = default_parallel_map_config["n_workers"]
 
     arg_lists = [list(arg) for arg in args]
     start_time = time.time()
     with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
         results = []
-        for result in tqdm(executor.map(func, *arg_lists, timeout=30), total=len(arg_lists[0]),
+        for result in tqdm(executor.map(func, *arg_lists, timeout=None), total=len(arg_lists[0]),
                            desc=func.__name__):
             results.append(result)
             time_now = time.time()

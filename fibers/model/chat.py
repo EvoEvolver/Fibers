@@ -4,15 +4,30 @@ import base64
 import copy
 from io import BytesIO
 
+import httpx
 from PIL.Image import Image
 
 from fibers.debug.logger import Logger
 from fibers.gui.dictionary_viewer import show_document_with_key_gui
 from fibers.helper.cache.cache_service import enable_auto_cache
-from fibers.model.openai_model import (_complete_chat as openai_complete_chat,
-                                       model_list as openai_model_list)
-from fibers.model.google_model import _complete_chat as google_complete_chat
-
+n_available_models = 0
+try:
+    from fibers.model.openai_model import _complete_chat as openai_complete_chat
+    n_available_models += 1
+except:
+    pass
+try:
+    from fibers.model.google_model import _complete_chat as google_complete_chat
+    n_available_models += 1
+except:
+    pass
+try:
+    from fibers.model.anthropic_model import _complete_chat as anthropic_complete_chat
+    n_available_models += 1
+except:
+    pass
+if n_available_models == 0:
+    raise ImportError("No LLM is available")
 
 default_models = {
     "normal": "gpt-3.5-turbo",
@@ -51,44 +66,59 @@ class Chat:
 
     def _add_message(self, content: any, role: str):
         self.history.append({
-            "content": content,
-            "role": role
+            "role": role,
+            "content": {
+                "type": "text",
+                "text": content
+            }
         })
 
-    def _add_image_message(self, url: str, detail: str):
+
+    def _add_image_message(self, data: str, media_type: str, more: dict = None):
+        if more is None:
+            more = {}
         self.history.append({
             "role": "user",
-            "content": [{
-                "type": "image_url",
-                "image_url": {
-                    "url": url,
-                    "detail": detail}
-                }]
+            "content": {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": f"image/{media_type}",
+                    "data": data
+                },
+                "more": more
+            }
         })
+
 
     def add_user_message(self, content: any):
         self._add_message(content, "user")
 
-    def add_image_message(self, image_path: str, from_internet=False, detail="auto"):
+    def add_image_message(self, image_path: str, from_internet=False, more: dict = None):
         """
         :param from_internet: Whether the path is a url
         :param image_path: The path of the image
-        :param detail: Low or high fidelity image understanding ("auto", "low", "high")
         """
+        media_type = image_path.split(".")[-1]
+        media_type = media_type.lower()
+        assert media_type in ["jpg", "jpeg", "png", "gif", "webp"]
+        if media_type == "jpg":
+            media_type = "jpeg"
+
         if not from_internet:
             with open(image_path, "rb") as image_file:
                 base64_image = encode_image(image_file)
-            url = f"data:image/jpeg;base64,{base64_image}"
+            data = base64_image
         else:
-            url = image_path
-        self._add_image_message(url, detail)
+            data = base64.b64encode(httpx.get(image_path).content).decode("utf-8")
 
-    def add_image_message_by_obj(self, image: Image, detail="auto"):
+        self._add_image_message(data, media_type, more)
+
+    def add_image_message_by_obj(self, image: Image, more: dict = None):
         buffered = BytesIO()
-        image.save(buffered, format="png")
+        image.save(buffered, format="jpeg")
         base64_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        url = f"data:image/jpeg;base64,{base64_image}"
-        self._add_image_message(url, detail)
+        self._add_image_message(base64_image, "jpeg", more)
 
     def add_assistant_message(self, content: any):
         self._add_message(content, "assistant")
@@ -98,13 +128,27 @@ class Chat:
         :return: chat log for sending to the OpenAI API
         """
         res = []
-        if self.system_message is not None:
-            res.append({
-                "content": str(self.system_message),
-                "role": "system"
-            })
+        if len(self.history) == 0:
+            return res
+        content_list = []
+        curr_role = self.history[0]["role"]
+        content_dict = {
+            "role": curr_role,
+            "content": content_list
+        }
+        res.append(content_dict)
+
         for message in self.history:
-            res.append(message)
+            if message["role"] != curr_role:
+                content_list = []
+                curr_role = message["role"]
+                content_dict = {
+                    "role": curr_role,
+                    "content": content_list
+                }
+                res.append(content_dict)
+            content_list.append(message["content"])
+
         return res
 
 
@@ -113,10 +157,10 @@ class Chat:
             content = message["content"]
             if isinstance(content, list):
                 for item in content:
-                    if isinstance(item, dict) and item["type"] == "image_url":
+                    if isinstance(item, dict) and item["type"] == "image":
                         return True
             elif isinstance(content, dict):
-                if content["type"] == "image_url":
+                if content["type"] == "image":
                     return True
         return False
 
@@ -161,6 +205,8 @@ class Chat:
             res = openai_complete_chat(self, options=options)
         elif model_name.startswith("gemini"):
             res = google_complete_chat(self, options=options)
+        elif model_name.startswith("claude"):
+            res = anthropic_complete_chat(self, options=options)
         else:
             raise ValueError(f"Unknown model name: {model_name}")
 
@@ -192,10 +238,6 @@ class Chat:
         new_chat_log = Chat(system_message=self.system_message)
         new_chat_log.history = copy.deepcopy(self.history)
         return new_chat_log
-
-
-def use_openai_model(options) -> bool:
-    return options.get("model", "gpt-3.5-turbo") in openai_model_list
 
 
 def reduce_multiple_new_lines(text: str) -> str:

@@ -1,11 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-import base64
 
-try:
-    from vertexai.generative_models import Part, GenerativeModel, Content, HarmCategory, HarmBlockThreshold
-except Exception:
-    pass
+from vertexai.generative_models import Part, GenerativeModel, Content, HarmCategory, HarmBlockThreshold
 
 if TYPE_CHECKING:
     from fibers.model.chat import Chat
@@ -19,49 +15,37 @@ map_to_google_role = {
 
 
 def get_request_contents(chat: Chat):
-    contents = []
-    parts = []
-    current_role = "user"
-    for message in chat.get_log_list():
-        new_role = map_to_google_role[message["role"]]
-        if new_role != current_role:
-            if len(parts) > 0:
-                contents.append(Content(parts=parts, role=current_role))
-            parts = []
-            current_role = new_role
+    request_list = []
+    message_list = list(chat.get_log_list())
+    if chat.system_message is not None:
+        system_message_dict = {
+            "type": "text",
+            "text": f"System message: {chat.system_message} \nSystem message end\n"
+        }
+        if message_list[0]["role"] == "user":
+            content_list = message_list[0]["content"]
+            content_list.insert(0, system_message_dict)
+        else:
+            message_list.insert(0, {
+                "role": "user",
+                "content": [system_message_dict]
+            })
+    for message in message_list:
+        parts = []
+        current_role = message["role"]
+        contents = message["content"]
+        assert isinstance(contents, list)
+        for item in contents:
+            if item["type"] == "text":
+                parts.append(Part.from_text(item["text"]))
+            elif item["type"] == "image":
+                image_source = item["source"]
+                img = Part.from_data(data=image_source["data"],
+                                     mime_type=image_source["media_type"])
+                parts.append(img)
 
-        add_message_to_parts(message, parts)
-    if len(parts) > 0:
-        contents.append(Content(parts=parts, role=current_role))
-    return contents
-
-
-def add_message_to_parts(message, parts):
-    content = message["content"]
-    if isinstance(content, str):
-        role = message["role"]
-        if role == "user":
-            parts.append(Part.from_text(content))
-        elif role == "assistant":
-            parts.append(Part.from_text(content))
-        elif role == "system":
-            parts.append(
-                Part.from_text("System message: " + content + "\nSystem message end\n"))
-    elif isinstance(content, list):
-        for item in content:
-            if item["type"] == "image_url":
-                image_item = item["image_url"]
-                image_url = image_item["url"]
-                if image_url.startswith("data:image/jpeg;base64,"):
-                    img = Part.from_data(data=base64.b64decode(image_url[23:]),
-                                         mime_type="image/jpeg")
-                    parts.append(img)
-                else:
-                    raise NotImplementedError(
-                        "Only base64 encoded images are supported for google")
-                    img = Part.from_uri(image_url,
-                                        mime_type="image/jpeg")
-                    parts.append(img)
+        request_list.append(Content(parts=parts, role=current_role))
+    return request_list
 
 
 service_initiated = False
