@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
-
-
 if TYPE_CHECKING:
     from fibers.model.chat import Chat
 
@@ -59,9 +57,6 @@ normal_model = "claude-3-sonnet-20240229"
 def _complete_chat(chat: Chat, options=None):
     options = options or {}
     _options = {"model": normal_model, **options, **default_options}
-    if chat.contains_image():
-        _options["model"] = normal_model
-        _options["max_tokens"] = 2000
     request_contents = get_request_contents(chat)
     message = client.messages.create(
         system=NOT_GIVEN if chat.system_message is None else chat.system_message,
