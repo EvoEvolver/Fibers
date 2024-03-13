@@ -48,7 +48,7 @@ def ask_vision_model_about_data(data: np.array, question) -> bool:
     image = draw_x_y_plot(np.arange(len(data)), data)
     chat = Chat(
         system_message="You are a helpful assistant who only answer in `yes` of `no`")
-    chat.add_image_message_by_obj(image)
+    chat.add_image_message(image)
     chat.add_user_message(question)
     res = chat.complete_chat()
     if "yes" in res.lower():

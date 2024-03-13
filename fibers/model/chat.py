@@ -94,38 +94,40 @@ class Chat:
     def add_user_message(self, content: any):
         self._add_message(content, "user")
 
-    def add_image_message(self, image_path: str, from_internet=False, more: dict = None):
+    def add_image_message(self, image_or_image_path: str|Image, more: dict = None):
         """
-        :param from_internet: Whether the path is a url
         :param image_path: The path of the image
         """
-        media_type = image_path.split(".")[-1]
-        media_type = media_type.lower()
+
+        if isinstance(image_or_image_path, str):
+            from_internet = image_or_image_path.startswith("http://") or image_or_image_path.startswith("https://")
+            if not from_internet:
+                img_io = open(image_or_image_path, "rb")
+            else:
+                img_io = BytesIO(httpx.get(image_or_image_path).content)
+            media_type = image_or_image_path.split(".")[-1]
+            media_type = media_type.lower()
+        else:
+            img_io = BytesIO()
+            image_or_image_path.save(img_io, format="jpeg")
+            media_type = "jpeg"
+
+
         assert media_type in ["jpg", "jpeg", "png", "gif", "webp"]
         if media_type == "jpg":
             media_type = "jpeg"
 
-        if not from_internet:
-            with open(image_path, "rb") as image_file:
-                base64_image = encode_image(image_file)
-            data = base64_image
-        else:
-            data = base64.b64encode(httpx.get(image_path).content).decode("utf-8")
-
+        base64_image = encode_image(img_io)
+        data = base64_image
+        img_io.close()
         self._add_image_message(data, media_type, more)
-
-    def add_image_message_by_obj(self, image: Image, more: dict = None):
-        buffered = BytesIO()
-        image.save(buffered, format="jpeg")
-        base64_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        self._add_image_message(base64_image, "jpeg", more)
 
     def add_assistant_message(self, content: any):
         self._add_message(content, "assistant")
 
     def get_log_list(self):
         """
-        :return: chat log for sending to the OpenAI API
+        :return: chat log for sending to model APIs
         """
         res = []
         if len(self.history) == 0:
