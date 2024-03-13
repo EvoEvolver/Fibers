@@ -107,20 +107,20 @@ class Chat:
                 img_io = BytesIO(httpx.get(image_or_image_path).content)
             media_type = image_or_image_path.split(".")[-1]
             media_type = media_type.lower()
+            base64_image = encode_image(img_io)
         else:
             img_io = BytesIO()
-            image_or_image_path.save(img_io, format="jpeg")
-            media_type = "jpeg"
+            image_or_image_path.save(img_io, format="png")
+            media_type = "png"
+            base64_image = base64.b64encode(img_io.getvalue()).decode('utf-8')
 
 
         assert media_type in ["jpg", "jpeg", "png", "gif", "webp"]
         if media_type == "jpg":
             media_type = "jpeg"
 
-        base64_image = encode_image(img_io)
-        data = base64_image
         img_io.close()
-        self._add_image_message(data, media_type, more)
+        self._add_image_message(base64_image, media_type, more)
 
     def add_assistant_message(self, content: any):
         self._add_message(content, "assistant")
