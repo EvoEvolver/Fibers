@@ -14,13 +14,13 @@ client = anthropic.Anthropic(
     api_key=os.environ.get("ANTHROPIC_API_KEY")
 )
 
-def set_default_to_anthropic():
+def set_default_to_anthropic(expensive_vision_model=False):
     from fibers.model.chat import default_models
     from fibers.helper.utils import default_parallel_map_config
     default_parallel_map_config["n_workers"] = 1
     default_models["normal"] = "claude-3-sonnet-20240229"
     default_models["expensive"] = "claude-3-opus-20240229"
-    default_models["vision"] = "claude-3-sonnet-20240229"
+    default_models["vision"] = "claude-3-sonnet-20240229" if not expensive_vision_model else "claude-3-opus-20240229"
 
 
 def get_request_contents(chat: Chat):

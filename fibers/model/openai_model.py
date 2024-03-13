@@ -42,7 +42,7 @@ model_list = [normal_model, expensive_model, vision_model, "gpt-4"]
 
 default_options = {
     "temperature": 0.4,
-    "timeout": 20,
+    "timeout": 40,
 }
 
 def get_request_contents(chat: Chat):
