@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Fibers"
+description = "Knowledge-centered AI system"
+version = "0.1.0"
+authors = [
+    { name = "Zijian Zhang" }
+]
+
+dependencies = [
+    "plotly==5.16.1",
+    "numpy==1.25.2",
+    "pyyaml~=6.0.1",
+    "pyhyphen==4.0.3",
+    "dill~=0.3.7",
+    "bidict~=0.22.1",
+    "tenacity~=8.2.2",
+    "jsonlines",
+    "rope",
+    "asteval",
+    "Markdown==3.5.1",
+    "Flask==3.0.0",
+    "Flask-SocketIO==5.3.6",
+    "Werkzeug==3.0.1",
+    "simple-websocket==1.0.0",
+    "pillow",
+    "MinimalLLM@git+https://github.com/EvoEvolver/MinimalLLM",
+    "Moduler@git+https://github.com/EvoEvolver/Moduler"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest"
+]
+
+
+[tool.setuptools]
+packages = ["fibers"]

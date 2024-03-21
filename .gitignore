@@ -1,0 +1,8 @@
+.idea
+temp
+**/__pycache__/
+**/.fibers_cache/
+*.egg-info
+setup.py
+.run
+**/.pytest_cache/
