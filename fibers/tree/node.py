@@ -135,11 +135,11 @@ class Node:
 
     def __str__(self):
         if len(self.content) == 0:
-            return "Path" + str(self.path())
+            return "Title" + str(self.title)
         return self.content
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}> {str(self.path())}"
+        return f"Node({str(self.title)})"
 
     def __hash__(self):
         return self.node_id
@@ -220,3 +220,20 @@ class Node:
             return
         else:
             forest_connector.update_tree(tree_json, self.node_id)
+
+
+class ContentMap:
+    def __init__(self, content_map=None, title_map=None):
+        self._content_map: Callable[
+            [Node], str] = content_map if content_map is not None else lambda x: x.content
+        self._title_map: Callable[
+            [Node], str] = title_map if title_map is not None else lambda x: x.title()
+
+    def get_title_and_content(self, node: Node):
+        """
+        Usage: title, content = content_map.get_title_and_content(node)
+        """
+        return self._title_map(node), self._content_map(node)
+
+
+default_map = ContentMap()
