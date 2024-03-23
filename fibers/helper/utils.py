@@ -83,7 +83,7 @@ def parallel_map(func, *args, n_workers=None):
     """
     # Use concurrent.futures.ThreadPoolExecutor to parallelize
     # Use tqdm to show progress bar
-    from fibers.helper.cache.cache_service import caching
+    from mllm import caching
     if n_workers is None:
         n_workers = default_parallel_map_config["n_workers"]
 
