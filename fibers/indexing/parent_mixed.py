@@ -7,13 +7,13 @@ from mllm import get_embeddings
 
 from fibers.indexing.indexing import VectorIndexing
 from fibers.tree import Node
-from fibers.tree.node import ContentMap
+from fibers.tree.node import NodeMap
 
 
 class ParentMixedIndexing(VectorIndexing):
 
-    def __init__(self, nodes, content_map: ContentMap):
-        self.content_map = content_map
+    def __init__(self, nodes, node_map: NodeMap):
+        self.node_map = node_map
         super().__init__(nodes)
 
     def get_vectors(self, nodes: List[Node]) -> [List[np.ndarray], List[Node]]:
@@ -23,7 +23,7 @@ class ParentMixedIndexing(VectorIndexing):
         for node in nodes:
             if len(node.content) > 0:
                 non_empty_nodes.append(node)
-                content, weight = ParentMixedIndexing.get_source_content(self.content_map, node)
+                content, weight = ParentMixedIndexing.get_source_content(self.node_map, node)
                 contents.append(content)
                 weights.append(weight)
         flattened_contents = []
@@ -42,7 +42,7 @@ class ParentMixedIndexing(VectorIndexing):
         return np.array(text_embedding[0])
 
     @staticmethod
-    def get_source_content(content_map: ContentMap, node: Node) -> (List[str], List[float]):
+    def get_source_content(node_map: NodeMap, node: Node) -> (List[str], List[float]):
         source_nodes = [node]
         parent = node.parent()
         if parent is not None:
@@ -52,7 +52,7 @@ class ParentMixedIndexing(VectorIndexing):
                 source_nodes.append(grand_parent)
         source_contents = []
         for node in source_nodes:
-            title, content = content_map.get_title_and_content(node)
+            title, content = node_map.get_title_and_content(node)
             source_contents.append(title+": "+content)
         source_weight = [1.0, 0.2, 0.1][:len(source_contents)]
         weight_sum = sum(source_weight)

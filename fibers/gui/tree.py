@@ -9,7 +9,7 @@ from fibers.gui.utlis import hypenate_texts
 
 if TYPE_CHECKING:
     from fibers.tree import Node, Tree
-    content_map_type = Callable[[Node], Tuple[str, str] | str]
+    node_map_type = Callable[[Node], Tuple[str, str] | str]
 
 h_en = Hyphenator('en_US')
 

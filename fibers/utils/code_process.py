@@ -2,6 +2,7 @@ import inspect
 from functools import wraps
 from textwrap import dedent, indent
 
+from fibers.tree import Node
 from fibers.tree.node_attr.code_node import get_type
 
 
