@@ -28,7 +28,8 @@ dependencies = [
     "simple-websocket==1.0.0",
     "pillow",
     "MinimalLLM@git+https://github.com/EvoEvolver/MinimalLLM",
-    "Moduler@git+https://github.com/EvoEvolver/Moduler"
+    "Moduler@git+https://github.com/EvoEvolver/Moduler",
+    "Forest@git+https://github.com/EvoEvolver/Forest",
 ]
 
 [project.optional-dependencies]
