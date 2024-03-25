@@ -56,22 +56,21 @@ def get_function_module_env(function_node: Node):
     :param function_node: The node of the function
     :return: Lines of text, in which each line is a name of an ancestor node
     """
-    parent_nodes = [function_node.parent()]
-    root = function_node.tree.root
+    ancestor_nodes = [function_node.parent()]
     while True:
-        last_parent = parent_nodes[-1]
+        last_parent = ancestor_nodes[-1]
         last_parent_parent = last_parent.parent()
-        if last_parent_parent is root:
+        if last_parent_parent.parent() is None:
             break
-        parent_nodes.append(last_parent_parent)
+        ancestor_nodes.append(last_parent_parent)
         if get_type(last_parent) == "module":
             break
 
-    parent_nodes = parent_nodes[::-1]
+    parent_nodes = ancestor_nodes[::-1]
     res = []
     if len(parent_nodes) == 0:
         return "The node is root"
 
     for i, node in enumerate(parent_nodes):
-        res.append(">" * i + get_type(node) + ":" + node.title())
+        res.append(">" * i + get_type(node) + ":" + node.title)
     return "\n".join(res)

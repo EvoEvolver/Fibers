@@ -50,6 +50,9 @@ class Node:
     def children(self) -> List[Node]:
         return self._children
 
+    def parent(self) -> Node | None:
+        return self._parent
+
     def has_child(self):
         return len(self.children()) > 0
 
@@ -65,11 +68,18 @@ class Node:
     def index_in_siblings(self) -> int:
         return self.sibling().index(self)
 
-
     def root(self) -> Node:
         if self._parent is None:
             return self
         return self._parent.root()
+
+    def path_to_root(self) -> List[Node]:
+        ancestors = []
+        curr_node = self
+        while curr_node is not None:
+            ancestors.append(curr_node)
+            curr_node = curr_node._parent
+        return ancestors
 
     """
     ## Functions for adding children of node
@@ -135,8 +145,8 @@ class Node:
 
     def __str__(self):
         if len(self.content) == 0:
-            return "Title" + str(self.title)
-        return self.content
+            return f"Node(title={str(self.title)})"
+        return f"Node(content={str(self.content)})"
 
     def __repr__(self):
         return f"Node({str(self.title)})"
@@ -223,17 +233,17 @@ class Node:
 
 
 class NodeMap:
-    def __init__(self, node_map=None, title_map=None):
-        self._node_map: Callable[
-            [Node], str] = node_map if node_map is not None else lambda x: x.content
+    def __init__(self, content_map=None, title_map=None):
+        self._content_map: Callable[
+            [Node], str] = content_map if content_map is not None else lambda x: x.content
         self._title_map: Callable[
             [Node], str] = title_map if title_map is not None else lambda x: x.title
 
     def get_title_and_content(self, node: Node):
         """
-        Usage: title, content = node_map.get_title_and_content(node)
+        Usage: title, content = content_map.get_title_and_content(node)
         """
-        return self._title_map(node), self._node_map(node)
+        return self._title_map(node), self._content_map(node)
 
 
 default_map = NodeMap()
