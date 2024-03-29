@@ -4,40 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Fibers"
-description = "Knowledge-centered AI system"
+description = "Tree-based knowledge management system"
 version = "0.1.0"
 authors = [
     { name = "Zijian Zhang" }
 ]
 
-dependencies = [
-    "plotly==5.16.1",
-    "numpy==1.26.0",
-    "pyyaml~=6.0.1",
-    "pyhyphen==4.0.3",
-    "dill~=0.3.7",
-    "bidict~=0.22.1",
-    "tenacity~=8.2.2",
-    "jsonlines",
-    "asteval",
-    "Markdown==3.5.1",
-    "Flask==3.0.0",
-    "Flask-SocketIO==5.3.6",
-    "Werkzeug==3.0.1",
-    "simple-websocket==1.0.0",
-    "pillow",
-    "html2text~=2020.1.16",
-    "beautifulsoup4~=4.12.3",
-    "MinimalLLM@git+https://github.com/EvoEvolver/MinimalLLM",
-    "Moduler@git+https://github.com/EvoEvolver/Moduler",
-    "Forest@git+https://github.com/EvoEvolver/Forest",
-]
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [project.optional-dependencies]
-dev = [
-    "pytest"
-]
-
+dev = ["pytest"]
 
 [tool.setuptools]
 packages = ["fibers"]
