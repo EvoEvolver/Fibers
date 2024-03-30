@@ -23,9 +23,9 @@ class Node:
         super().__init__()
 
         # content is string no matter what _content_type is
-        self.content: str = title
+        self.content: str = content
         #
-        self.title: str = content
+        self.title: str = title
         # The attr data is used to store the data of the node
         self.attrs: Dict[Type[Attr], Attr] = {}
         # The node id is used to identify the node
