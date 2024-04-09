@@ -99,6 +99,9 @@ class Node:
         """
         :return: The new child node
         """
+        for child in self.children():
+            if child.title == title:
+                return child
         child = self.new_child()
         child.title = title
         return child
@@ -161,7 +164,7 @@ class Node:
     ## Node iterators
     """
 
-    def iter_subtree_with_dfs(self):
+    def iter_subtree_with_dfs(self, exclude_self=False):
         """
         Iterate the subtree with depth first search.
         Output the deepest nodes first.
@@ -169,7 +172,8 @@ class Node:
         """
         for child in self.children():
             yield from child.iter_subtree_with_dfs()
-        yield self
+        if not exclude_self:
+            yield self
 
     def iter_subtree_with_bfs(self):
         """
