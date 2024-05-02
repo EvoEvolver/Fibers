@@ -1,5 +1,5 @@
 plotly==5.16.1
-numpy==1.26.0
+numpy
 pyyaml~=6.0.1
 pyhyphen==4.0.3
 dill~=0.3.7
