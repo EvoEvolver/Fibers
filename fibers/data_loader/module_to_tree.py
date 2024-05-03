@@ -48,37 +48,26 @@ def build_tree_for_struct(curr_struct: Struct, root_note: Node) -> Node:
     set_code_obj(curr_node, curr_struct.struct_type, curr_struct.obj)
 
     for child_struct in curr_struct.children:
-        match child_struct.struct_type:
-            case "function":
-                build_tree_for_struct(child_struct, curr_node)
-            case "module":
-                build_tree_for_struct(child_struct, curr_node)
-            case "class":
-                build_tree_for_struct(child_struct, curr_node)
-            case "comment":
-                # Add the comment to the content of the current node
-                curr_node.be(curr_node.content + "\n" + child_struct.obj)
-            case "section":
-                build_tree_for_struct(child_struct, curr_node)
-            case "todo":
-                build_tree_for_struct(child_struct, curr_node)
-            case "example":
-                example_node = build_tree_for_struct(child_struct, curr_node)
-                example_function_node = example_node.children()[0]
-                example_node.get_attr(
-                    CodeData).module_tree_obj = example_function_node.get_attr(
-                    CodeData).module_tree_obj
-                example_function_node.remove_self()
-
-            case "document":
-                markdown_src = child_struct.obj
-                readme_tree_root = markdown_to_tree(markdown_src, title="README")
-                curr_node.add_child(readme_tree_root)
-                new_node = curr_node.s("README")
-                set_code_obj(new_node, "document",
-                             child_struct.obj)
-            case _:
-                raise ValueError("Unknown struct type: " + child_struct.struct_type)
+        if child_struct.struct_type in ["function", "module", "class", "section", "todo"]:
+            build_tree_for_struct(child_struct, curr_node)
+        elif child_struct.struct_type == "comment":
+            curr_node.be(curr_node.content + "\n" + child_struct.obj)
+        elif child_struct.struct_type == "example":
+            example_node = build_tree_for_struct(child_struct, curr_node)
+            example_function_node = example_node.children()[0]
+            example_node.get_attr(
+                CodeData).module_tree_obj = example_function_node.get_attr(
+                CodeData).module_tree_obj
+            example_function_node.remove_self()
+        elif child_struct.struct_type == "document":
+            markdown_src = child_struct.obj
+            readme_tree_root = markdown_to_tree(markdown_src, title="README")
+            curr_node.add_child(readme_tree_root)
+            new_node = curr_node.s("README")
+            set_code_obj(new_node, "document",
+                         child_struct.obj)
+        else:
+            raise ValueError("Unknown struct type: " + child_struct.struct_type)
     return curr_node
 
 
