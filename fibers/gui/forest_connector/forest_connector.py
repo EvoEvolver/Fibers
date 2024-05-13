@@ -41,12 +41,12 @@ class ForestConnector:
         self.port = 30000 + os.getpid() % 10000 if not dev_mode else 29999
         self.p = None
         self.dev_mode = dev_mode
+        os.environ['NO_PROXY'] = f'127.0.0.1'
 
     def update_tree(self, tree, tree_id):
 
         self.trees[tree_id] = tree
         url = f'http://127.0.0.1:{self.port}/updateTree'
-
         payload = json.dumps({
             "tree": tree,
             "tree_id": tree_id
@@ -56,6 +56,7 @@ class ForestConnector:
         }
         print(f"Updating tree {tree_id} to http://127.0.0.1:{self.port}/visualization")
         response = requests.request("PUT", url, headers=headers, data=payload)
+        print("Updated tree")
 
     def run(self):
         # check if current process has finished its bootstrapping phase or not.
