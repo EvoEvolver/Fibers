@@ -97,6 +97,9 @@ class Node:
         self.add_child(node)
         return node
 
+    def set_children(self, children: List[Node]):
+        self._children = children[:]
+
     def s(self, title: str) -> Node:
         """
         :return: The new child node
