@@ -99,6 +99,8 @@ class Node:
 
     def set_children(self, children: List[Node]):
         self._children = children[:]
+        for child in children:
+            child._parent = self
 
     def s(self, title: str) -> Node:
         """
