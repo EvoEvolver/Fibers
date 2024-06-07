@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import inspect
 from copy import copy
 from typing import TYPE_CHECKING, Dict, List, Type, Callable
 
 from fibers.gui.forest_connector import ForestConnector
 from fibers.gui.forest_connector.forest_connector import node_connector_pool
 from fibers.gui.renderer import Renderer
+from fibers.tree.node_attr.code_node import get_obj
 
 if TYPE_CHECKING:
     from fibers.tree.node_attr import Attr
@@ -124,10 +126,8 @@ class Node:
     ## Function for change node's environment on its tree
     """
 
-
     def remove_self(self):
         self._parent.remove_child(self)
-
 
     """
     ## Section for extract related nodes
@@ -213,7 +213,6 @@ class Node:
     def display_whole_tree(self):
         self.root().display()
 
-
     def display(self, renderer=None, dev_mode=False):
         """
         Show the tree in a webpage
@@ -224,7 +223,6 @@ class Node:
             forest_connector.run()
         self.update_gui(renderer)
 
-
     def update_gui(self, renderer=None):
         if renderer is None:
             renderer = Renderer
@@ -234,6 +232,15 @@ class Node:
             return
         else:
             forest_connector.update_tree(tree_json, self.node_id)
+
+    def src(self) -> str:
+        """
+        Get the source code of the node
+        """
+        try:
+            return inspect.getsource(get_obj(self))
+        except:
+            return ""
 
 
 class NodeMap:
