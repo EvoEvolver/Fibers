@@ -46,7 +46,16 @@ def html_to_tree(parent: ArxivNode):
         title = title.text
         source = parent.get_soup().find('div', class_="ltx_abstract", recursive=True)
         content_wraper = source.find('p', class_='ltx_p')
-        Abstract = ArxivNode(source, content_wraper.get('id'), "abstract", title, content_wraper.text)
+        parent.title = title
+        author = parent.get_soup().find('div', class_="ltx_authors", recursive=True)
+        if author is None:
+            print("Can't resolve author")
+        else:
+            # TODO: Need fix visualization, for some special character, the web can't render correctly, will cause the whole content be blank
+            # parent.content = re.sub(r'[^\w@._\,\(\)\n&\{\} ]+','', author.text)
+            # print(parent.content)
+            print(author.text)
+        Abstract = ArxivNode(source, content_wraper.get('id'), "abstract", "Abstract", content_wraper.text)
         parent.add_child(Abstract)
         children = []
         for section in parent.get_soup().find_all('section', class_='ltx_section', recursive=True):
@@ -87,48 +96,36 @@ def html_to_tree(parent: ArxivNode):
         parent.set_children(children)
     elif parent.get_label() == "subsection":
         children = []
+        index = 1
         for paragraph in parent.get_soup().find_all('div', class_='ltx_para', recursive=False):
             if not re.match(r'^S\d+\.SS\d+\.p.$', paragraph['id']):
                 continue
             print(f"section: {paragraph['id']}")
             # print(section)
             Paragraph = ArxivNode(paragraph, paragraph['id'], "paragraph",
-                                   "paragraph title", paragraph.text)
+                                   "paragraph "+str(index), paragraph.text)
             children.append(Paragraph)
+            index+=1
 
             print("----------")
         parent.set_children(children)
     return
-    # sub_sections = section.find_all('section', class_='ltx_subsection', recursive=False)
-    # if len(sub_sections) > 0:  # Case that need to handel subsections
-    #     for sub_section in sub_sections:
-    #         print(f"subsection: {sub_section['id']}")
-    #         print(sub_section)
-    #         print("----------")
-    # else:  # Case that directly handel paragraph
-    #     pass
-    # print("\n\n\n\n\n")
 
+if __name__ == '__main__':
+    html_srouce = requests.get("https://arxiv.org/html/2404.04326v1").text
+    soup = BeautifulSoup(html_srouce, "html.parser")
+    pre_process_html_tree(soup)
+    head = ArxivNode(soup, "root", "root", "Title", "Content")
+    html_to_tree(head)
+    head.display()
 
-html_srouce = requests.get("https://arxiv.org/html/2404.04326v1").text
-soup = BeautifulSoup(html_srouce, "html.parser")
-pre_process_html_tree(soup)
-
-url = "https://arxiv.org/html/2404.04326v1"
-soup = BeautifulSoup(html_srouce, "html.parser")
-pre_process_html_tree(soup)
-
-# This regex matches IDs that follow the pattern of any characters separated by dots
-# regex for all section classes.
-
-section_re = re.compile(r'^ltx.*section$')
-
-elements = soup.find_all('section', class_=section_re)
-
-for e in elements:
-    print(e.get('id'))
-    print(e.find_all(class_='ltx_title')[0].text)
-head = ArxivNode(soup, "root", "root", "Title", "Content")
-html_to_tree(head)
-print(head)
-head.display()
+    # # This regex matches IDs that follow the pattern of any characters separated by dots
+    # # regex for all section classes.
+    #
+    # section_re = re.compile(r'^ltx.*section$')
+    #
+    # elements = soup.find_all('section', class_=section_re)
+    #
+    # for e in elements:
+    #     print(e.get('id'))
+    #     print(e.find_all(class_='ltx_title')[0].text)
