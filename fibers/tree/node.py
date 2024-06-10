@@ -37,6 +37,8 @@ class Node:
         self._children: List[Node] = []
         #
         self._parent: Node | None = None
+        # Store figure link
+        self._figure = ""
 
     def copy_to(self):
         new_node = Node(self.title, self.content)

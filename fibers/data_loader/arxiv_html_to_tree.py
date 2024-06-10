@@ -15,6 +15,8 @@ from fibers.tree import Node
 from fibers.tree.node_attr import Attr
 
 
+arxiv_url = ""
+
 class ArxivNode(Node):
     def __init__(self, source: BeautifulSoup, id: str, label: str, title: str = "", content: str = ""):
         super().__init__(title, content)
@@ -61,26 +63,52 @@ def get_section_nodes(rootSoup: BeautifulSoup) -> list[ArxivNode]:
 
         Section = ArxivNode(section, section['id'], "section",
                             section.find_all_next('h2', class_="ltx_title ltx_title_section")[0].text, content)
-        html_to_tree(Section)
+        build_tree(Section)
         children.append(Section)
         print("----------")
     return children
 
 
 def get_subsection_nodes(sectionSoup: BeautifulSoup) -> list[ArxivNode]:
+    global arxiv_url
     children = []
-    for section in sectionSoup.find_all('section', class_='ltx_subsection', recursive=False):
-        if not re.match(r'^S\d+\.SS\d+$', section['id']):
+    index_para = 1
+    index_figure = 1
+    for i, e in enumerate(sectionSoup.children):
+        if not isinstance(e, Tag):
             continue
-        print(f"section: {section['id']}")
-        # print(section)
-        SubSection = ArxivNode(section, section['id'], "subsection",
-                               section.find('h3', class_="ltx_title ltx_title_subsection").text, "")
-        html_to_tree(SubSection)
-        children.append(SubSection)
+        class_ = e.get('class')
+        print(i,e.name, class_)
+        if e.name == 'div' and 'ltx_para' in class_:
+            if not re.match(r'^S\d+\.p.$', e['id']):
+                continue
+            print(f"section: {e['id']}")
+            # print(section)
+            Paragraph = ArxivNode(e, e['id'], "paragraph",
+                                  "paragraph " + str(index_para),
+                                  '<!DOCTYPE html><meta content=\"text/html; charset=utf-8\" http-equiv=\"content-type\"/>' + e.__str__())
+            children.append(Paragraph)
+            index_para += 1
+        elif e.name == 'section' and 'ltx_subsection' in class_:
+            if not re.match(r'^S\d+\.SS\d+$', e['id']):
+                continue
+            print(f"section: {e['id']}")
+            # print(section)
+            SubSection = ArxivNode(e, e['id'], "subsection",
+                                   e.find('h3', class_="ltx_title ltx_title_subsection").text, "")
+            build_tree(SubSection)
+            children.append(SubSection)
 
-        print("----------")
+            print("----------")
+        elif e.name == 'figure' and 'ltx_figure' in class_:
+            if not re.match(r'^S\d+\.F\d+$', e['id']):
+                continue
+            Figure = ArxivNode(e, e['id'], "figure", "figure "+ str(index_figure), e.find('figcaption', class_="ltx_caption").text)
+            Figure._figure = arxiv_url + '/' + e.find('img', class_='ltx_graphics').get('src')
+            Figure.content += "\bimage_url:" + Figure._figure
+            children.append(Figure)
     return children
+
 
 def get_paragraph_nodes(subsectionSoup: BeautifulSoup) -> list[ArxivNode]:
     children = []
@@ -91,7 +119,8 @@ def get_paragraph_nodes(subsectionSoup: BeautifulSoup) -> list[ArxivNode]:
         print(f"section: {paragraph['id']}")
         # print(section)
         Paragraph = ArxivNode(paragraph, paragraph['id'], "paragraph",
-                              "paragraph " + str(index), '<!DOCTYPE html><meta content=\"text/html; charset=utf-8\" http-equiv=\"content-type\"/>'+paragraph.__str__())
+                              "paragraph " + str(index),
+                              '<!DOCTYPE html><meta content=\"text/html; charset=utf-8\" http-equiv=\"content-type\"/>' + paragraph.__str__())
         children.append(Paragraph)
         index += 1
 
@@ -99,7 +128,7 @@ def get_paragraph_nodes(subsectionSoup: BeautifulSoup) -> list[ArxivNode]:
     return children
 
 
-def html_to_tree(parent: ArxivNode):
+def build_tree(parent: ArxivNode):
     if parent.get_id() == "root":
         title = parent.get_soup().find('h1', class_="ltx_title ltx_title_document", recursive=True)
         if title is None:
@@ -124,20 +153,28 @@ def html_to_tree(parent: ArxivNode):
         parent.set_children(get_paragraph_nodes(parent.get_soup()))
     return
 
-
-if __name__ == '__main__':
-    # html_source = requests.get("https://arxiv.org/html/2404.04326v1").text
-    # with open("cached_page.html", "w", encoding="utf-8") as f:
-    #     f.write(html_source)
-    try:
-        with open("cached_page.html", "r", encoding="utf-8") as f:
-            html_source = f.read()
-    except FileNotFoundError:
-        print("Error: Cached HTML file not found.")
+def url_to_tree(url: str) -> ArxivNode:
+    global arxiv_url
+    arxiv_url = url
+    html_source = requests.get(url).text
+    # try:
+    #     with open("cached_page.html", "r", encoding="utf-8") as f:
+    #         html_source = f.read()
+    # except FileNotFoundError:
+    #     print("Error: Cached HTML file not found.")
     soup = BeautifulSoup(html_source, "html.parser")
     pre_process_html_tree(soup)
     head = ArxivNode(soup, "root", "root", "", "")
-    html_to_tree(head)
+    build_tree(head)
+    return head
+
+if __name__ == '__main__':
+
+    # html_source = requests.get("https://arxiv.org/html/2404.04326v1").text
+    # with open("cached_page.html", "w", encoding="utf-8") as f:
+    #     f.write(html_source)
+
+    head = url_to_tree("https://arxiv.org/html/2404.04326v1")
     head.display()
 
     # # This regex matches IDs that follow the pattern of any characters separated by dots
