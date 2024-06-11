@@ -14,8 +14,8 @@ from fibers.data_loader.bad_text_node_class import add_bad_reason
 from fibers.tree import Node
 from fibers.tree.node_attr import Attr
 
-
 arxiv_url = ""
+
 
 class ArxivNode(Node):
     def __init__(self, source: BeautifulSoup, id: str, label: str, title: str = "", content: str = ""):
@@ -78,7 +78,7 @@ def get_subsection_nodes(sectionSoup: BeautifulSoup) -> list[ArxivNode]:
         if not isinstance(e, Tag):
             continue
         class_ = e.get('class')
-        print(i,e.name, class_)
+        print(i, e.name, class_)
         if e.name == 'div' and 'ltx_para' in class_:
             if not re.match(r'^S\d+\.p.$', e['id']):
                 continue
@@ -103,12 +103,36 @@ def get_subsection_nodes(sectionSoup: BeautifulSoup) -> list[ArxivNode]:
         elif e.name == 'figure' and 'ltx_figure' in class_:
             if not re.match(r'^S\d+\.F\d+$', e['id']):
                 continue
-            Figure = ArxivNode(e, e['id'], "figure", "figure "+ str(index_figure), e.find('figcaption', class_="ltx_caption").text)
+            Figure = ArxivNode(e, e['id'], "figure", "figure " + str(index_figure),
+                               e.find('figcaption', class_="ltx_caption").text)
             Figure._figure = arxiv_url + '/' + e.find('img', class_='ltx_graphics').get('src')
             Figure.content += "\bimage_url:" + Figure._figure
             children.append(Figure)
     return children
 
+
+# def get_paragraph_nodes(subsectionSoup: BeautifulSoup) -> list[ArxivNode]:
+#     children = []
+#     index = 1
+#     for paragraph in subsectionSoup.find_all('div', class_='ltx_para', recursive=False):
+#         if not re.match(r'^S\d+\.SS\d+\.p.$', paragraph['id']):
+#             continue
+#         print(f"section: {paragraph['id']}")
+#         # print(section)
+#         Paragraph = ArxivNode(paragraph, paragraph['id'], "paragraph",
+#                               "paragraph " + str(index),
+#                               '<!DOCTYPE html><meta content=\"text/html; charset=utf-8\" http-equiv=\"content-type\"/>' + paragraph.__str__())
+#         children.append(Paragraph)
+#         index += 1
+#
+#         print("----------")
+#     return children
+
+def remove_tag(html_str, tag):
+    import re
+
+    pattern = rf'<{tag}[^>]*>.*?</{tag}>'
+    return re.sub(pattern, '', html_str)
 
 def get_paragraph_nodes(subsectionSoup: BeautifulSoup) -> list[ArxivNode]:
     children = []
@@ -125,6 +149,21 @@ def get_paragraph_nodes(subsectionSoup: BeautifulSoup) -> list[ArxivNode]:
         index += 1
 
         print("----------")
+    index = 1
+    for figure in subsectionSoup.find_all('figure', recursive=False):
+        print("*************************")
+        # if not re.match(r'^S\d+\.SS\d+\.F\d+$', figure['id']):
+        #     continue
+        print(figure)
+
+        html_code = remove_tag(remove_tag(figure.__str__(), 'annotation'),'annotation-xml')
+
+        Figure = ArxivNode(figure, figure['id'], "figure",
+                              "figure " + str(index),
+                              '<!DOCTYPE html><meta content=\"text/html; charset=utf-8\" http-equiv=\"content-type\"/>' + html_code)
+        index += 1
+        children.append(Figure)
+
     return children
 
 
@@ -153,6 +192,7 @@ def build_tree(parent: ArxivNode):
         parent.set_children(get_paragraph_nodes(parent.get_soup()))
     return
 
+
 def url_to_tree(url: str) -> ArxivNode:
     global arxiv_url
     arxiv_url = url
@@ -168,6 +208,7 @@ def url_to_tree(url: str) -> ArxivNode:
     build_tree(head)
     return head
 
+
 if __name__ == '__main__':
 
     # html_source = requests.get("https://arxiv.org/html/2404.04326v1").text
@@ -175,7 +216,12 @@ if __name__ == '__main__':
     #     f.write(html_source)
 
     head = url_to_tree("https://arxiv.org/html/2404.04326v1")
-    head.display()
+    head.display(dev_mode=True)
+    # # sleep for 10 seconds to keep the server running
+    import time
+
+    while True:
+        time.sleep(1)
 
     # # This regex matches IDs that follow the pattern of any characters separated by dots
     # # regex for all section classes.
