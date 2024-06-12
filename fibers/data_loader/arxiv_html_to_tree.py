@@ -14,7 +14,9 @@ from fibers.data_loader.bad_text_node_class import add_bad_reason
 from fibers.tree import Node
 from fibers.tree.node_attr import Attr
 
-arxiv_url = ""
+arxiv_url = "https://arxiv.org/html/2401.11314v2"
+
+#arxiv_url = "https://arxiv.org/html/2404.04326v1"
 
 
 class ArxivNode(Node):
@@ -52,17 +54,9 @@ def get_section_nodes(rootSoup: BeautifulSoup) -> list[ArxivNode]:
         if not re.match(r'^S\d+$', section['id']):
             continue
         print(f"section: {section['id']}")
-        content = ""
-        subsection = section.find('section', class_='ltx_subsection', recursive=False)
-        if subsection:  # if there are subsection, try to find leading paragraph before the first subsection to set them as the content of the section
-            for e in subsection.previous_siblings:
-                if isinstance(e, Tag) and e.name == 'div' and 'ltx_para' in e.get('class', []):
-                    content += e.get_text()
-        # else:  # if there are no subsection, the content of the section is directly set.
-        #     content += section.get_text()
 
         Section = ArxivNode(section, section['id'], "section",
-                            section.find_all_next('h2', class_="ltx_title ltx_title_section")[0].text, content)
+                            section.find_all_next('h2', class_="ltx_title ltx_title_section")[0].text, "")
         build_tree(Section)
         children.append(Section)
         print("----------")
@@ -100,33 +94,32 @@ def get_subsection_nodes(sectionSoup: BeautifulSoup) -> list[ArxivNode]:
             children.append(SubSection)
 
             print("----------")
-        elif e.name == 'figure' and 'ltx_figure' in class_:
-            if not re.match(r'^S\d+\.F\d+$', e['id']):
-                continue
-            Figure = ArxivNode(e, e['id'], "figure", "figure " + str(index_figure),
-                               e.find('figcaption', class_="ltx_caption").text)
-            Figure._figure = arxiv_url + '/' + e.find('img', class_='ltx_graphics').get('src')
-            Figure.content += "\bimage_url:" + Figure._figure
+        elif e.name == 'figure':
+            # if not re.match(r'^S\d+\.F\d+$', e['id']):
+            #     continue
+            # Figure = ArxivNode(e, e['id'], "figure", "figure " + str(index_figure),
+            #                    e.find('figcaption', class_="ltx_caption").text)
+            # Figure._figure = arxiv_url + '/' + e.find('img', class_='ltx_graphics').get('src')
+            # Figure.content += "\bimage_url:" + Figure._figure
+            image_tags = e.find_all('img', class_='ltx_graphics', recursive=True)
+            for image_tag in image_tags:
+                if image_tag is not None:
+                    if 'src' in image_tag.attrs:
+                        image_tag['src'] = arxiv_url + '/' + image_tag['src']
+                    if 'width' in image_tag.attrs and 'height' in image_tag.attrs:
+                        # Make sure the image fit in the window
+                        w, h = int(image_tag['width']), int(image_tag['height'])
+                        div_max_width = 500
+                        if w > div_max_width:
+                            image_tag['width'] = str(div_max_width)
+                            image_tag['height'] = f"{int(h * (div_max_width / w))}"
+                            image_tag['style'] = "object-fit: contain;"
+
+            Figure = ArxivNode(e, e['id'], "figure", "figure " + str(index_figure), e.__str__())
+            # Figure = ArxivNode(e, e['id'], "figure", "figure " + str(index_figure), re.sub(r"\"([^\"]+)\.(png|jpg)\"", regrex_str, e.__str__()))
             children.append(Figure)
+            index_figure += 1
     return children
-
-
-# def get_paragraph_nodes(subsectionSoup: BeautifulSoup) -> list[ArxivNode]:
-#     children = []
-#     index = 1
-#     for paragraph in subsectionSoup.find_all('div', class_='ltx_para', recursive=False):
-#         if not re.match(r'^S\d+\.SS\d+\.p.$', paragraph['id']):
-#             continue
-#         print(f"section: {paragraph['id']}")
-#         # print(section)
-#         Paragraph = ArxivNode(paragraph, paragraph['id'], "paragraph",
-#                               "paragraph " + str(index),
-#                               '<!DOCTYPE html><meta content=\"text/html; charset=utf-8\" http-equiv=\"content-type\"/>' + paragraph.__str__())
-#         children.append(Paragraph)
-#         index += 1
-#
-#         print("----------")
-#     return children
 
 def remove_tag(html_str, tag):
     import re
@@ -135,34 +128,48 @@ def remove_tag(html_str, tag):
     return re.sub(pattern, '', html_str)
 
 def get_paragraph_nodes(subsectionSoup: BeautifulSoup) -> list[ArxivNode]:
+
     children = []
-    index = 1
-    for paragraph in subsectionSoup.find_all('div', class_='ltx_para', recursive=False):
-        if not re.match(r'^S\d+\.SS\d+\.p.$', paragraph['id']):
+    index_para = 1
+    index_figure = 1
+    for i, e in enumerate(subsectionSoup.children):
+        if not isinstance(e, Tag):
             continue
-        print(f"section: {paragraph['id']}")
-        # print(section)
-        Paragraph = ArxivNode(paragraph, paragraph['id'], "paragraph",
-                              "paragraph " + str(index),
-                              '<!DOCTYPE html><meta content=\"text/html; charset=utf-8\" http-equiv=\"content-type\"/>' + paragraph.__str__())
-        children.append(Paragraph)
-        index += 1
+        class_ = e.get('class')
+        print(i, e.name, class_)
+        if e.name == 'div' and 'ltx_para' in class_:
+            if not re.match(r'^S\d+\.SS\d+\.p.$', e['id']):
+                continue
+            print(f"section: {e['id']}")
+            # print(section)
+            Paragraph = ArxivNode(e, e['id'], "paragraph",
+                                  "paragraph " + str(index_para),
+                                  '<!DOCTYPE html><meta content=\"text/html; charset=utf-8\" http-equiv=\"content-type\"/>' + e.__str__())
+            children.append(Paragraph)
+            index_para += 1
 
-        print("----------")
-    index = 1
-    for figure in subsectionSoup.find_all('figure', recursive=False):
-        print("*************************")
-        # if not re.match(r'^S\d+\.SS\d+\.F\d+$', figure['id']):
-        #     continue
-        print(figure)
+            print("----------")
+        elif e.name == 'figure':
+            # if not re.match(r'^S\d+\.SS\d+\.F\d+$', e['id']) and not re.match(r'alg\d+', e['id']):
+            #     continue
+            image_tags = e.find_all('img', class_='ltx_graphics', recursive=True)
+            for image_tag in image_tags:
+                if image_tag is not None:
+                    if 'src' in image_tag.attrs:
+                        image_tag['src'] = arxiv_url + '/' + image_tag['src']
+                    if 'width' in image_tag.attrs and 'height' in image_tag.attrs:
+                        # Make sure the image fit in the window
+                        w, h = int(image_tag['width']), int(image_tag['height'])
+                        div_max_width = 500
+                        if w > div_max_width:
+                            image_tag['width'] = str(div_max_width)
+                            image_tag['height'] = f"{int(h * (div_max_width / w))}"
+                            image_tag['style'] = "object-fit: contain;"
 
-        html_code = remove_tag(remove_tag(figure.__str__(), 'annotation'),'annotation-xml')
+            Figure = ArxivNode(e, e['id'], "figure", "figure " + str(index_figure), e.__str__())
 
-        Figure = ArxivNode(figure, figure['id'], "figure",
-                              "figure " + str(index),
-                              '<!DOCTYPE html><meta content=\"text/html; charset=utf-8\" http-equiv=\"content-type\"/>' + html_code)
-        index += 1
-        children.append(Figure)
+            children.append(Figure)
+            index_figure += 1
 
     return children
 
@@ -179,8 +186,7 @@ def build_tree(parent: ArxivNode):
         if author is None:
             print("Can't resolve author")
         else:
-            # TODO: Need fix visualization, for some special character, the web can't render correctly, will cause the whole content be blank
-            parent.content = re.sub(r'[^\w@._\,\(\)\n&\{\} ]+', '', author.text)
+            parent.content = author.__str__()
 
         Abstract = get_abstract_node(parent.get_soup())
         parent.add_child(Abstract)
@@ -215,21 +221,10 @@ if __name__ == '__main__':
     # with open("cached_page.html", "w", encoding="utf-8") as f:
     #     f.write(html_source)
 
-    head = url_to_tree("https://arxiv.org/html/2404.04326v1")
+    head = url_to_tree(arxiv_url)
     head.display(dev_mode=True)
     # # sleep for 10 seconds to keep the server running
     import time
 
     while True:
         time.sleep(1)
-
-    # # This regex matches IDs that follow the pattern of any characters separated by dots
-    # # regex for all section classes.
-    #
-    # section_re = re.compile(r'^ltx.*section$')
-    #
-    # elements = soup.find_all('section', class_=section_re)
-    #
-    # for e in elements:
-    #     print(e.get('id'))
-    #     print(e.find_all(class_='ltx_title')[0].text)
