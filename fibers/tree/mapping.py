@@ -1,6 +1,7 @@
 from typing import List, Callable
 
-from fibers.helper.utils import parallel_map
+from mllm.utils import parallel_map
+
 from fibers.tree import Node
 
 

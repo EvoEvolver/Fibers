@@ -5,14 +5,14 @@ pyhyphen==4.0.3
 dill~=0.3.7
 bidict~=0.22.1
 tenacity~=8.2.2
-jsonlines
+jsonlines~=4.0.0
 asteval
 Markdown==3.5.1
 Flask==3.0.0
 Flask-SocketIO==5.3.6
 Werkzeug==3.0.1
 simple-websocket==1.0.0
-pillow
+pillow~=10.0.1
 html2text~=2020.1.16
 beautifulsoup4~=4.12.3
 flask_cors
