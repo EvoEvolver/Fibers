@@ -138,8 +138,6 @@ def html_to_raw_tree(soup: BeautifulSoup, title="") -> Node:
 
     return root
 
-segment_length_threshold = 1500
-
 def set_content(node: Node, contents: List[PageElement]):
     segment_contents = [""]
     for segment in contents:
@@ -215,5 +213,5 @@ def html_to_markdown(root: Node):
 
 
 if __name__ == "__main__":
-    doc = url_to_tree("https://plato.stanford.edu/entries/feyerabend/")
+    doc = url_to_tree("https://scholar.google.com/scholar_case?case=16062632215534775045&q=trump&hl=en&as_sdt=2006")
     doc.display()

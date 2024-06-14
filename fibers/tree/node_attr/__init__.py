@@ -10,6 +10,7 @@ class Attr:
             raise Exception(f"Node {node} already has attr {self.__class__}")
         node.attrs[self.__class__] = self
         self.to_render = False
+        self.node: Node = node
 
 
     @classmethod
