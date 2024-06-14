@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from copy import copy
 from typing import TYPE_CHECKING, Dict, List, Type, Callable
 
@@ -17,8 +18,6 @@ class Node:
     The relation between nodes are stored in the Tree class instance (self.tree).
     """
 
-    node_id = 0
-
     def __init__(self, title="", content=""):
         super().__init__()
 
@@ -29,8 +28,7 @@ class Node:
         # The attr data is used to store the data of the node
         self.attrs: Dict[Type[Attr], Attr] = {}
         # The node id is used to identify the node
-        self.node_id = Node.node_id
-        Node.node_id += 1
+        self.node_id = uuid.uuid4().int
         #
         self._children: List[Node] = []
         #
@@ -108,6 +106,7 @@ class Node:
 
     def remove_child(self, node: Node):
         self._children.remove(node)
+        node._parent = None
 
     """
     ## Functions for setting content of node

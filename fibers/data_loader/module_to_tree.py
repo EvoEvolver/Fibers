@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 
-from fibers.tree.node_attr.code_node import set_code_obj
+from fibers.tree.node_attr.code import set_code_obj
 
 try:
     from moduler.core import build_module_tree
@@ -13,7 +13,7 @@ except ImportError:
 from fibers.data_loader.markdown_to_tree import markdown_to_tree
 from fibers.tree import Node
 
-from fibers.tree.node_attr.code_node import CodeData
+from fibers.tree.node_attr.code import CodeData
 
 """
 This modules is for extract the information from python modules and build a tree for it.
@@ -56,8 +56,8 @@ def build_tree_for_struct(curr_struct: Struct, root_note: Node) -> Node:
             example_node = build_tree_for_struct(child_struct, curr_node)
             example_function_node = example_node.children()[0]
             example_node.get_attr(
-                CodeData).module_tree_obj = example_function_node.get_attr(
-                CodeData).module_tree_obj
+                CodeData).obj = example_function_node.get_attr(
+                CodeData).obj
             example_function_node.remove_self()
         elif child_struct.struct_type == "document":
             markdown_src = child_struct.obj

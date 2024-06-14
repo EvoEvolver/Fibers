@@ -3,7 +3,7 @@ from functools import wraps
 from textwrap import dedent, indent
 
 from fibers.tree import Node
-from fibers.tree.node_attr.code_node import get_type
+from fibers.tree.node_attr.code import get_type
 
 
 def get_function_header(function):

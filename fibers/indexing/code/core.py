@@ -8,7 +8,7 @@ from fibers.indexing.indexing import VectorIndexing
 from mllm.chat import Chat
 from fibers.tree import Node
 from fibers.tree.node_attr import Attr
-from fibers.tree.node_attr.code_node import CodeData
+from fibers.tree.node_attr.code import CodeData
 from fibers.utils.code_process import get_function_header
 
 
@@ -44,9 +44,9 @@ def gen_code_indexing(node: Node):
     if not node.has_attr(CodeData):
         return
     code_data = CodeData.get(node)
-    if code_data.module_tree_type != "function":
+    if code_data.obj_type != "function":
         return
-    header = get_function_header(code_data.module_tree_obj)
+    header = get_function_header(code_data.obj)
     if header.strip() == "":
         return
     indexing = break_into_key_sentences(header)

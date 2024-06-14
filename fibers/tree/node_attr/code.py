@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 class CodeData(Attr):
     def __init__(self, node: Node):
         super().__init__(node)
-        self.module_tree_type = None
-        self.module_tree_obj = None
+        self.obj_type = None
+        self.obj = None
 
     @classmethod
     def render(cls, node: Node, rendered):
@@ -37,14 +37,14 @@ class CodeData(Attr):
 def set_code_obj(node: Node, type_name: str, obj: Any):
     assert type_name in ["function", "class", "module", "document", "section", "todo", "example"]
     code_data = CodeData(node)
-    code_data.module_tree_type = type_name
-    code_data.module_tree_obj = obj
+    code_data.obj_type = type_name
+    code_data.obj = obj
 
 def get_type(node: Node):
-    return node.get_attr(CodeData).module_tree_type
+    return node.get_attr(CodeData).obj_type
 
 def get_obj(node: Node) -> object:
-    return node.get_attr(CodeData).module_tree_obj
+    return node.get_attr(CodeData).obj
 
 def get_docs(node: Node):
     raise NotImplementedError
