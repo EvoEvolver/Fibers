@@ -8,7 +8,7 @@ import html2text
 import requests
 from bs4 import BeautifulSoup, PageElement
 
-from fibers.data_loader.bad_text_node_class import add_bad_reason
+from fibers.data_loader.bad_text_attr import BadText
 from fibers.tree import Node
 from fibers.tree.node_attr import Attr
 
@@ -152,8 +152,9 @@ def set_content(node: Node, contents: List[PageElement]):
 
     for i, segment in enumerate(segment_contents):
         node_added = node.s(f"Segment {i+1}").be(segment)
-        add_bad_reason(node_added, "overlap_to_sibling")
-        add_bad_reason(node_added, "bad_title")
+        bad_text_attr = BadText.get(node_added)
+        bad_text_attr.add_bad_reason("overlap_to_sibling")
+        bad_text_attr.add_bad_reason("bad_title")
 
 
 def unwrap_useless_tags(content: PageElement):

@@ -123,10 +123,8 @@ class Node:
     ## Function for change node's environment on its tree
     """
 
-
     def remove_self(self):
         self._parent.remove_child(self)
-
 
     """
     ## Section for extract related nodes
@@ -212,7 +210,6 @@ class Node:
     def display_whole_tree(self):
         self.root().display()
 
-
     def display(self, renderer=None, dev_mode=False):
         """
         Show the tree in a webpage
@@ -223,7 +220,6 @@ class Node:
             forest_connector.run()
         self.update_gui(renderer)
 
-
     def update_gui(self, renderer=None):
         if renderer is None:
             renderer = Renderer
@@ -233,5 +229,3 @@ class Node:
             return
         else:
             forest_connector.update_tree(tree_json, self.node_id)
-
-
