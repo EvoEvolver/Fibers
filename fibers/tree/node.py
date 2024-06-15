@@ -51,6 +51,11 @@ class Node:
     def parent(self) -> Node | None:
         return self._parent
 
+    def first_child(self) -> Node | None:
+        if len(self._children) > 0:
+            return self._children[0]
+        return None
+
     def has_child(self):
         return len(self.children()) > 0
 

@@ -12,3 +12,31 @@ Instead of using class inheritance to add attributes to a node, we use `Attr` to
 - For each subclass of `Attr`, we can add one instance of the subclass to a node.
 - To add `Attr` to a node (say `XXXAttr`): `attr = XXXAttr(node)`
 - To get the attribute of a node: `attr = XXXAttr.get(node)`
+
+## Make your own `Attr`
+
+To make your own `Attr`, you need to subclass `Attr`.
+    
+```python
+from fibers.tree.node_attr import Attr
+class MyAttr(Attr):
+    def __init__(self, node, some_data):
+        super().__init__(node)
+        self.some_data = some_data
+        
+    def render(self, rendered):
+        # operate the `rendered` object to make visualization in the tree gui
+        ...
+```
+
+To add `MyAttr` to a node, you can do the following:
+
+```python
+attr = MyAttr(node, some_data)
+```
+
+To access the attribute of a node, you can do the following:
+
+```python
+attr = MyAttr.get(node)
+```

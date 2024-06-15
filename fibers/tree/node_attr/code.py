@@ -4,7 +4,7 @@ import html
 import inspect
 from typing import TYPE_CHECKING, Any
 
-from fibers.tree.node_attr import Attr
+from .base import Attr
 
 if TYPE_CHECKING:
     from fibers.tree import Node
@@ -15,19 +15,18 @@ class CodeData(Attr):
         self.obj_type = None
         self.obj = None
 
-    @classmethod
-    def render(cls, node: Node, rendered):
+    def render(self, rendered):
         content = []
-        if get_type(node) in ["function", "example"]:
+        if get_type(self.node) in ["function", "example"]:
             content.append(f"""
         <Code
-        code="{html.escape(get_source(node))}"
+        code="{html.escape(get_source(self.node))}"
         """ + f"""
         language="python"
         />
         
         """)
-        content.append(f"Type: {get_type(node)}")
+        content.append(f"Type: {get_type(self.node)}")
 
         del rendered.tabs["content"]
         rendered.tabs["code"] = "<br/>".join(content)

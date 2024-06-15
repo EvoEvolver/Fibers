@@ -33,7 +33,7 @@ class Renderer:
 
     def node_handler(self, node: Node, rendered: Rendered):
         for attr_class, attr_value in node.attrs.items():
-            attr_value.render(node, rendered)
+            attr_value.render(rendered)
 
     def render(self, node: Node) -> Rendered:
         rendered = Rendered()
