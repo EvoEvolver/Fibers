@@ -1,7 +1,7 @@
 from typing import List
 
 from fibers.tree import Node
-from fibers.tree.node import NodeMap
+from fibers.utils.mapping import NodeMap
 
 """
 # Represent nodes in prompt

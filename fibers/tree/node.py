@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from copy import copy
-from typing import TYPE_CHECKING, Dict, List, Type, Callable
+from typing import TYPE_CHECKING, Dict, List, Type
 
 from fibers.gui.forest_connector import ForestConnector
 from fibers.gui.forest_connector.forest_connector import node_connector_pool
@@ -235,18 +235,3 @@ class Node:
             forest_connector.update_tree(tree_json, self.node_id)
 
 
-class NodeMap:
-    def __init__(self, content_map=None, title_map=None):
-        self._content_map: Callable[
-            [Node], str] = content_map if content_map is not None else lambda x: x.content
-        self._title_map: Callable[
-            [Node], str] = title_map if title_map is not None else lambda x: x.title
-
-    def get_title_and_content(self, node: Node):
-        """
-        Usage: title, content = content_map.get_title_and_content(node)
-        """
-        return self._title_map(node), self._content_map(node)
-
-
-default_map = NodeMap()
