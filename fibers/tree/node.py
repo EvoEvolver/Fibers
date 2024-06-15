@@ -126,6 +126,12 @@ class Node:
     def remove_self(self):
         self._parent.remove_child(self)
 
+    def new_parent(self, parent: Node) -> Node:
+        self.remove_self()
+        parent.add_child(self)
+        self._parent = parent
+        return self
+
     """
     ## Section for extract related nodes
     """

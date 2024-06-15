@@ -116,6 +116,7 @@ def html_to_raw_tree(soup: BeautifulSoup, title="") -> Node:
     curr_content: List[PageElement] = []
     curr_level = -1
     for child in soup.children:
+        child = unwrap_useless_tags(child)
         # check whether it's hn use regex
         if hasattr(child, "name") and child.name and hn_pattern.match(child.name):
             set_content(curr_node, curr_content)
@@ -158,6 +159,8 @@ def set_content(node: Node, contents: List[PageElement]):
 
 
 def unwrap_useless_tags(content: PageElement):
+    if not hasattr(content, "name"):
+        return content
     if content.name in ["p", "div", "span"]:
         # return all children
         if len(content.contents) == 1:
