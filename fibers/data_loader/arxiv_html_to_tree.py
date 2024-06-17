@@ -14,7 +14,6 @@ from fibers.data_loader.bad_text_node_class import add_bad_reason
 from fibers.tree import Node
 from fibers.tree.node_attr import Attr
 
-
 # arxiv_url = "https://arxiv.org/html/2401.11314v2"
 
 # arxiv_url = "https://arxiv.org/html/2404.04326v1"
@@ -44,9 +43,9 @@ def replace_math_with_tex(soup: BeautifulSoup):
         if not isinstance(tag, Tag):
             continue
         latex = tag.get("alttext")
-        alt_tag = soup.new_tag("tex")
+        alt_tag = soup.new_tag("TeX")
         if latex is not None:
-            alt_tag.string = latex
+            alt_tag['src'] = latex
             tag.replace_with(alt_tag)
         else:
             tag.decompose()
@@ -202,7 +201,7 @@ def build_tree(parent: ArxivNode):
 
         Abstract = get_abstract_node(parent.get_soup())
 
-        parent.set_children([Abstract]+get_section_nodes(parent.get_soup()))
+        parent.set_children([Abstract] + get_section_nodes(parent.get_soup()))
 
     elif parent.get_label() == "section":
         parent.set_children(get_subsection_nodes(parent.get_soup()))
