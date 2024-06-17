@@ -14,6 +14,7 @@ from fibers.data_loader.bad_text_node_class import add_bad_reason
 from fibers.tree import Node
 from fibers.tree.node_attr import Attr
 
+
 # arxiv_url = "https://arxiv.org/html/2401.11314v2"
 
 # arxiv_url = "https://arxiv.org/html/2404.04326v1"
@@ -200,8 +201,8 @@ def build_tree(parent: ArxivNode):
             parent.content = author.__str__()
 
         Abstract = get_abstract_node(parent.get_soup())
-        parent.add_child(Abstract)
-        Abstract.set_children(get_section_nodes(parent.get_soup()))
+
+        parent.set_children([Abstract]+get_section_nodes(parent.get_soup()))
 
     elif parent.get_label() == "section":
         parent.set_children(get_subsection_nodes(parent.get_soup()))
