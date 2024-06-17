@@ -14,13 +14,15 @@ from fibers.data_loader.bad_text_node_class import add_bad_reason
 from fibers.tree import Node
 from fibers.tree.node_attr import Attr
 
-arxiv_url = "https://arxiv.org/html/2401.11314v2"
+# arxiv_url = "https://arxiv.org/html/2401.11314v2"
 
-#arxiv_url = "https://arxiv.org/html/2404.04326v1"
+# arxiv_url = "https://arxiv.org/html/2404.04326v1"
+
+arxiv_url = "https://arxiv.org/html/2406.07003v1"
 
 
 class ArxivNode(Node):
-    def __init__(self, source: BeautifulSoup, id: str, label: str, title: str = "", content: str = ""):
+    def __init__(self, source: BeautifulSoup | Tag, id: str, label: str, title: str = "", content: str = ""):
         super().__init__(title, content)
         self._label: str = label
         self._id: str = id
@@ -34,6 +36,19 @@ class ArxivNode(Node):
 
     def get_soup(self) -> BeautifulSoup:
         return self._html_soup
+
+
+def replace_math_with_tex(soup: BeautifulSoup):
+    for tag in soup.find_all("math", recursive=True):
+        if not isinstance(tag, Tag):
+            continue
+        latex = tag.get("alttext")
+        alt_tag = soup.new_tag("tex")
+        if latex is not None:
+            alt_tag.string = latex
+            tag.replace_with(alt_tag)
+        else:
+            tag.decompose()
 
 
 def pre_process_html_tree(soup: BeautifulSoup):
@@ -69,6 +84,7 @@ def get_subsection_nodes(sectionSoup: BeautifulSoup) -> list[ArxivNode]:
     index_para = 1
     index_figure = 1
     for i, e in enumerate(sectionSoup.children):
+
         if not isinstance(e, Tag):
             continue
         class_ = e.get('class')
@@ -95,15 +111,9 @@ def get_subsection_nodes(sectionSoup: BeautifulSoup) -> list[ArxivNode]:
 
             print("----------")
         elif e.name == 'figure':
-            # if not re.match(r'^S\d+\.F\d+$', e['id']):
-            #     continue
-            # Figure = ArxivNode(e, e['id'], "figure", "figure " + str(index_figure),
-            #                    e.find('figcaption', class_="ltx_caption").text)
-            # Figure._figure = arxiv_url + '/' + e.find('img', class_='ltx_graphics').get('src')
-            # Figure.content += "\bimage_url:" + Figure._figure
             image_tags = e.find_all('img', class_='ltx_graphics', recursive=True)
             for image_tag in image_tags:
-                if image_tag is not None:
+                if image_tag is not None and isinstance(image_tag, Tag):
                     if 'src' in image_tag.attrs:
                         image_tag['src'] = arxiv_url + '/' + image_tag['src']
                     if 'width' in image_tag.attrs and 'height' in image_tag.attrs:
@@ -121,14 +131,15 @@ def get_subsection_nodes(sectionSoup: BeautifulSoup) -> list[ArxivNode]:
             index_figure += 1
     return children
 
+
 def remove_tag(html_str, tag):
     import re
 
     pattern = rf'<{tag}[^>]*>.*?</{tag}>'
     return re.sub(pattern, '', html_str)
 
-def get_paragraph_nodes(subsectionSoup: BeautifulSoup) -> list[ArxivNode]:
 
+def get_paragraph_nodes(subsectionSoup: BeautifulSoup) -> list[ArxivNode]:
     children = []
     index_para = 1
     index_figure = 1
@@ -137,9 +148,9 @@ def get_paragraph_nodes(subsectionSoup: BeautifulSoup) -> list[ArxivNode]:
             continue
         class_ = e.get('class')
         print(i, e.name, class_)
-        if e.name == 'div' and 'ltx_para' in class_:
-            if not re.match(r'^S\d+\.SS\d+\.p.$', e['id']):
-                continue
+        if e.name == 'div' and ('ltx_para' in class_ or 'ltx_theorem' in class_):
+            # if not re.match(r'^S\d+\.SS\d+\.p.$', e['id']):
+            #     continue
             print(f"section: {e['id']}")
             # print(section)
             Paragraph = ArxivNode(e, e['id'], "paragraph",
@@ -154,7 +165,7 @@ def get_paragraph_nodes(subsectionSoup: BeautifulSoup) -> list[ArxivNode]:
             #     continue
             image_tags = e.find_all('img', class_='ltx_graphics', recursive=True)
             for image_tag in image_tags:
-                if image_tag is not None:
+                if image_tag is not None and isinstance(image_tag, Tag):
                     if 'src' in image_tag.attrs:
                         image_tag['src'] = arxiv_url + '/' + image_tag['src']
                     if 'width' in image_tag.attrs and 'height' in image_tag.attrs:
@@ -209,6 +220,7 @@ def url_to_tree(url: str) -> ArxivNode:
     # except FileNotFoundError:
     #     print("Error: Cached HTML file not found.")
     soup = BeautifulSoup(html_source, "html.parser")
+    replace_math_with_tex(soup)
     pre_process_html_tree(soup)
     head = ArxivNode(soup, "root", "root", "", "")
     build_tree(head)
@@ -216,11 +228,9 @@ def url_to_tree(url: str) -> ArxivNode:
 
 
 if __name__ == '__main__':
-
     # html_source = requests.get("https://arxiv.org/html/2404.04326v1").text
     # with open("cached_page.html", "w", encoding="utf-8") as f:
     #     f.write(html_source)
-
     head = url_to_tree(arxiv_url)
     head.display(dev_mode=True)
     # # sleep for 10 seconds to keep the server running
