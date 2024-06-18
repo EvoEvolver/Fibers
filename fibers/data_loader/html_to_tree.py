@@ -128,7 +128,7 @@ def html_to_raw_tree(soup: BeautifulSoup, title="") -> Node:
                 while len(node_stack) > 0 and node_stack[-1][1] > this_level:
                     node_stack.pop()
                 parent_node = node_stack[-1][0]
-                new_node = parent_node.s(child.text.strip())
+                new_node = parent_node.s(child.text.strip(), False)
 
             curr_content = []
             curr_level = this_level

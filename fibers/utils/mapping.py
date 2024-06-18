@@ -17,7 +17,7 @@ def node_map_with_dependency(nodes_to_map: List[Node], mapping_func: Callable[[N
     while len(nodes_to_map) > 0:
         indices_to_remove = []
         has_new_finished = False
-        for i, finished in parallel_map(mapping_func, nodes_to_map, n_workers=n_workers):
+        for i, finished in parallel_map(mapping_func, nodes_to_map, n_workers=n_workers, title="summary"):
             if finished:
                 indices_to_remove.append(i)
                 has_new_finished = True
