@@ -2,7 +2,7 @@ from __future__ import annotations
 import webbrowser
 import os
 from multiprocessing import Process
-
+import multiprocessing as mp
 try:
     from fibers.gui.forest_connector.server import main
     from forest import lazy_build
@@ -42,6 +42,7 @@ class ForestConnector:
         self.p = None
         self.dev_mode = dev_mode
         os.environ['NO_PROXY'] = f'127.0.0.1'
+        self.message_to_main = mp.Queue()
 
     def update_tree(self, tree, tree_id):
 
@@ -67,7 +68,8 @@ class ForestConnector:
             # throw error
             raise Exception(f"Port {self.port} is not available.")
         # self.p = subprocess.Popen(['python3', f'{project_root}/server.py', str(self.port)])
-        self.p = Process(target=main, args=(self.port,))
+
+        self.p = Process(target=main, args=(self.port, self.message_to_main))
         self.p.start()
         #if not self.keep_alive_at_exit:
         atexit.register(cleanup_subprocess, self.p)
@@ -87,6 +89,16 @@ class ForestConnector:
         # Open the URL in the default web browser
         if not self.dev_mode:
             webbrowser.open(url)
+
+
+
+    def process_message_from_frontend(self):
+        print("Press Ctrl+C to stop the server.")
+        # get information from the server by message_to_main
+        while True:
+            message = self.message_to_main.get()
+            print(f"Message from server: {message}")
+
 
     def stop(self):
         try:

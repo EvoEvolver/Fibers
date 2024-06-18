@@ -1,4 +1,5 @@
 import json
+from multiprocessing import Queue
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
@@ -18,7 +19,7 @@ class ServerData:
         self.tree_id = None
         self.trees = {}
 
-def main(port):
+def main(port, message_to_main: Queue):
     app = Flask(__name__, template_folder=build_dir, static_folder=asset_dir,
                 static_url_path='/assets')
     CORS(app)
@@ -34,6 +35,8 @@ def main(port):
     cli = sys.modules['flask.cli']
     cli.show_server_banner = lambda *x: None
 
+
+
     @socketio.on('connect')
     def handle_connect():
         emit('Connected!')
@@ -42,9 +45,16 @@ def main(port):
     def requestTree():
         emit('requestTree', data.trees)
 
+    @socketio.on('message_to_main')
+    def recv_message_to_main(data):
+        # get the attached message and put it into the message_to_main queue.
+        message_to_main.put(data)
+
+
     @app.route('/visualization')
     def visualization():
         return render_template('index.html')
+
 
     # update tree
     @app.route('/updateTree', methods=['PUT'])

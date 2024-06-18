@@ -221,7 +221,7 @@ class Node:
     def display_whole_tree(self):
         self.root().display()
 
-    def display(self, renderer=None, dev_mode=False):
+    def display(self, renderer=None, dev_mode=False, interactive=False):
         """
         Show the tree in a webpage
         """
@@ -230,6 +230,8 @@ class Node:
             node_connector_pool[Node] = forest_connector
             forest_connector.run()
         self.update_gui(renderer)
+        if interactive:
+            forest_connector.process_message_from_frontend()
 
     def update_gui(self, renderer=None):
         if renderer is None:
