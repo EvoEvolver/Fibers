@@ -28,3 +28,7 @@ class Attr:
 class MessageResult:
     def __init__(self):
         self.node_to_re_render = set()
+
+    def rerender(self, node: Node):
+        self.node_to_re_render.add(node)
+        return self

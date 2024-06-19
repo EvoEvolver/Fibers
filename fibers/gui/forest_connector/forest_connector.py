@@ -124,7 +124,8 @@ class ForestConnector:
             return
         renderer = Renderer()
         for node in node_to_re_render:
-            node_json = renderer.render(node).to_json_without_children(str(node.parent().node_id))
+            parent_id = str(node.parent().node_id) if node.parent() is not None else None
+            node_json = renderer.render(node).to_json_without_children(parent_id)
             node_dict[str(node.node_id)] = node_json
         tree_data = {
             "selectedNode": None,
