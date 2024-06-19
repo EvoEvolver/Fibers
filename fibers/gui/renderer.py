@@ -13,17 +13,19 @@ class Rendered:
         self.children = []
         self.title = ""
 
-    def to_json(self) -> dict:
-        children = []
+    def to_json(self, node_dict, parent_id) -> dict:
+        children_id = []
         for child in self.children:
-            children.append(child.to_json())
-        return {
+            child.to_json(node_dict, str(self.node.node_id))
+            children_id.append(str(child.node.node_id))
+        node_dict[str(self.node.node_id)] = {
             "title": self.title,
             "tabs": self.tabs,
             "tools": self.tools,
-            "children": children,
-            "node_id": str(self.node.node_id),
-            "data": {}
+            "children_id": children_id,
+            "id": str(self.node.node_id),
+            "parent_id": parent_id,
+            "data": {},
         }
 
 
@@ -45,4 +47,9 @@ class Renderer:
         return rendered
 
     def render_to_json(self, node: Node) -> dict:
-        return self.render(node).to_json()
+        node_dict = {}
+        self.render(node).to_json(node_dict, None)
+        return {
+            "selectedNode": str(node.node_id),
+            "nodeDict": node_dict,
+        }

@@ -52,12 +52,12 @@ class ForestConnector:
         os.environ['NO_PROXY'] = f'127.0.0.1'
         self.message_to_main = mp.Queue()
 
-    def update_tree(self, tree_json, root_id):
+    def update_tree(self, tree_data, root_id):
 
-        self.roots[root_id] = tree_json
+        self.roots[root_id] = tree_data
         url = f'http://127.0.0.1:{self.backend_port}/updateTree'
         payload = json.dumps({
-            "tree": tree_json,
+            "tree": tree_data,
             "tree_id": root_id
         })
         headers = {

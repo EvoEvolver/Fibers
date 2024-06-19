@@ -239,9 +239,10 @@ class Node:
     def update_gui(self, renderer=None):
         if renderer is None:
             renderer = Renderer
-        tree_json = renderer().render_to_json(self)
+        tree_data = renderer().render_to_json(self)
+        tree_data["selected"] = str(self.node_id)
         forest_connector = node_connector_pool.get(Node)
         if forest_connector is None:
             return
         else:
-            forest_connector.update_tree(tree_json, self.node_id)
+            forest_connector.update_tree(tree_data, self.node_id)
