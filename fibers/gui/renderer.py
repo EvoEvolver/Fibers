@@ -22,9 +22,9 @@ class Rendered:
             "title": self.title,
             "tabs": self.tabs,
             "tools": self.tools,
-            "children_id": children_id,
+            "children": children_id,
             "id": str(self.node.node_id),
-            "parent_id": parent_id,
+            "parent": parent_id,
             "data": {},
         }
 
