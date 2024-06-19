@@ -96,4 +96,4 @@ def main(port, message_to_main: Queue):
 
 if __name__ == '__main__':
     port = int(sys.argv[1])
-    main(port)
+    main(port, Queue())

@@ -227,11 +227,11 @@ class Node:
         Show the tree in a webpage
         """
         if self not in node_connector_pool.keys():
-            forest_connector = ForestConnector(dev_mode=dev_mode)
+            forest_connector = ForestConnector(dev_mode=dev_mode, interactive_mode=interactive)
             node_connector_pool[Node] = forest_connector
             forest_connector.run()
         self.update_gui(renderer)
-        if interactive:
+        if interactive or dev_mode:
             forest_connector.process_message_from_frontend()
 
     def update_gui(self, renderer=None):
