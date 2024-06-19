@@ -6,7 +6,7 @@ from typing import List
 
 import html2text
 import requests
-from bs4 import BeautifulSoup, PageElement
+from bs4 import BeautifulSoup, PageElement, Tag
 
 from fibers.data_loader.bad_text_attr import BadText
 from fibers.tree import Node
@@ -58,6 +58,11 @@ def pre_process_html_tree(soup: BeautifulSoup):
     for script in soup(["script", "style"]):
         # remove all javascript and stylesheet code
         script.decompose()
+    redundant_tags = soup.find_all(class_=lambda x: x and 'gsl_pagenum' in x, recursive=True)
+    for tag in redundant_tags:
+        if tag.parent and tag.parent.name == 'h2':
+            tag.decompose()
+
 
 
 def remove_attrs(root: Node, attrs_to_keep: List[str]):
@@ -128,7 +133,7 @@ def html_to_raw_tree(soup: BeautifulSoup, title="") -> Node:
                 while len(node_stack) > 0 and node_stack[-1][1] > this_level:
                     node_stack.pop()
                 parent_node = node_stack[-1][0]
-                new_node = parent_node.s(child.text.strip(), False)
+                new_node = parent_node.s(child.text.strip())
 
             curr_content = []
             curr_level = this_level
