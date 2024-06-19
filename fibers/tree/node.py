@@ -11,6 +11,7 @@ from fibers.gui.renderer import Renderer
 if TYPE_CHECKING:
     from fibers.tree.node_attr import Attr
 
+All_Node = {}
 
 class Node:
     """
@@ -29,6 +30,7 @@ class Node:
         self.attrs: Dict[Type[Attr], Attr] = {}
         # The node id is used to identify the node
         self.node_id = uuid.uuid4().int
+        All_Node[str(self.node_id)] = self
         #
         self._children: List[Node] = []
         #

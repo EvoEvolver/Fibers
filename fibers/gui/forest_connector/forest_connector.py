@@ -3,6 +3,13 @@ import webbrowser
 import os
 from multiprocessing import Process
 import multiprocessing as mp
+
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fibers.tree.node import Node
+
 try:
     from fibers.gui.forest_connector.server import main
     from forest import lazy_build
@@ -97,7 +104,14 @@ class ForestConnector:
         # get information from the server by message_to_main
         while True:
             message = self.message_to_main.get()
-            print(f"Message from server: {message}")
+            self.handle_message(message)
+
+    def handle_message(self, message):
+        from fibers.tree.node import All_Node
+        target_node_id = message['node_id']
+        node: Node = All_Node[target_node_id]
+        for attr_class, attr_value in node.attrs.items():
+            attr_value.handle_message(message)
 
 
 class ForestConnected:

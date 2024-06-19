@@ -16,3 +16,6 @@ class Attr:
 
     def render(self, rendered):
         pass
+
+    def handle_message(self, message):
+        pass

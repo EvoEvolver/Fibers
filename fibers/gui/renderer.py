@@ -6,7 +6,8 @@ if TYPE_CHECKING:
     from fibers.tree import Node
 
 class Rendered:
-    def __init__(self):
+    def __init__(self, node):
+        self.node: Node = node
         self.tabs = {}
         self.tools = {}
         self.children = []
@@ -22,7 +23,7 @@ class Rendered:
             "tabs": self.tabs,
             "tools": self.tools,
             "children": children,
-            "path": my_path,
+            "path": str(self.node.node_id),
             "data": {}
         }
 
@@ -36,7 +37,7 @@ class Renderer:
             attr_value.render(rendered)
 
     def render(self, node: Node) -> Rendered:
-        rendered = Rendered()
+        rendered = Rendered(node)
         rendered.title = node.title
         rendered.tabs["content"] = node.content
         self.node_handler(node, rendered)
