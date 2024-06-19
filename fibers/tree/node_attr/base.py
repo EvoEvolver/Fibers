@@ -1,7 +1,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
+from fibers.gui.renderer import Rendered
+
 if TYPE_CHECKING:
     from fibers.tree import Node
+
 
 class Attr:
     def __init__(self, node: Node):
@@ -14,8 +18,13 @@ class Attr:
     def get(cls, node: Node):
         return node.get_attr(cls)
 
-    def render(self, rendered):
+    def render(self, rendered: Rendered):
         pass
 
-    def handle_message(self, message):
+    def handle_message(self, message) -> MessageResult:
         pass
+
+
+class MessageResult:
+    def __init__(self):
+        self.node_to_re_render = set()

@@ -13,17 +13,16 @@ class Rendered:
         self.children = []
         self.title = ""
 
-    def to_json(self, parent_path: str = "") -> dict:
+    def to_json(self) -> dict:
         children = []
-        my_path = parent_path + "/" + self.title
         for child in self.children:
-            children.append(child.to_json(my_path))
+            children.append(child.to_json())
         return {
             "title": self.title,
             "tabs": self.tabs,
             "tools": self.tools,
             "children": children,
-            "path": str(self.node.node_id),
+            "node_id": str(self.node.node_id),
             "data": {}
         }
 
@@ -47,21 +46,3 @@ class Renderer:
 
     def render_to_json(self, node: Node) -> dict:
         return self.render(node).to_json()
-
-    def render_to_json_old(self, node: Node) -> dict:
-        def new_to_old(new):
-            new["id"] = new["title"]
-            del new["tools"]
-            tabs = list(new["tabs"].values())
-            if len(tabs) > 0:
-                new["content"] = tabs[0]
-            else:
-                new["content"] = ""
-            new["sections"] = new["children"]
-            del new["tabs"]
-            del new["children"]
-            for child in new["sections"]:
-                new_to_old(child)
-            return new
-
-        return new_to_old(self.render(node).to_json())
