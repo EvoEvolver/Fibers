@@ -240,7 +240,6 @@ class Node:
         if renderer is None:
             renderer = Renderer
         tree_data = renderer().render_to_json(self)
-        tree_data["selected"] = str(self.node_id)
         forest_connector = node_connector_pool.get(Node)
         if forest_connector is None:
             return

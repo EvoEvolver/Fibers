@@ -5,7 +5,9 @@ from multiprocessing import Process
 import multiprocessing as mp
 
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, TypedDict
+
+from fibers.gui.renderer import Renderer
 
 if TYPE_CHECKING:
     from fibers.tree.node import Node
@@ -21,6 +23,10 @@ import time
 import requests
 import json
 import atexit
+
+class TreeData(TypedDict):
+    selectedNode: str
+    nodeDict: Dict[str, dict]
 
 DEFAULT_PORT = 29999
 
@@ -43,7 +49,6 @@ class ForestConnector:
 
     def __init__(self, dev_mode=False, interactive_mode=False):
         lazy_build()
-        self.roots = {}
         self.backend_port = 30000 + os.getpid() % 10000 if not dev_mode else 29999
         self.frontend_port = self.backend_port if not dev_mode else 39999
         self.p = None
@@ -52,9 +57,7 @@ class ForestConnector:
         os.environ['NO_PROXY'] = f'127.0.0.1'
         self.message_to_main = mp.Queue()
 
-    def update_tree(self, tree_data, root_id):
-
-        self.roots[root_id] = tree_data
+    def update_tree(self, tree_data: TreeData, root_id):
         url = f'http://127.0.0.1:{self.backend_port}/updateTree'
         payload = json.dumps({
             "tree": tree_data,
@@ -110,8 +113,26 @@ class ForestConnector:
         from fibers.tree.node import All_Node
         target_node_id = message['node_id']
         node: Node = All_Node[target_node_id]
+        node_to_re_render = set()
         for attr_class, attr_value in node.attrs.items():
-            attr_value.handle_message(message)
+            res = attr_value.handle_message(message)
+            if res is None:
+                continue
+            node_to_re_render.update(res.node_to_re_render)
+        node_dict = {}
+        if len(node_to_re_render) == 0:
+            return
+        renderer = Renderer()
+        for node in node_to_re_render:
+            node_json = renderer.render(node).to_json_without_children(str(node.parent().node_id))
+            node_dict[str(node.node_id)] = node_json
+        tree_data = {
+            "selectedNode": None,
+            "nodeDict": node_dict
+        }
+        self.update_tree(tree_data, str(node.root().node_id))
+
+
 
 
 class ForestConnected:

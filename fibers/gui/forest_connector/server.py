@@ -1,8 +1,13 @@
+from __future__ import annotations
 import json
 from multiprocessing import Queue
+from typing import TYPE_CHECKING
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
+
+if TYPE_CHECKING:
+    from fibers.gui.forest_connector.forest_connector import TreeData
 from forest import build_dir, asset_dir
 from flask_cors import CORS
 import sys
@@ -18,6 +23,26 @@ class ServerData:
         self.tree = {}
         self.tree_id = None
         self.trees = {}
+
+def patch_tree(currTree: TreeData, patchTree: TreeData):
+    if currTree is None:
+        currTree = {
+            "selectedNode": None,
+            "nodeDict": {}
+        }
+    if patchTree["selectedNode"] is not None:
+        currTree["selectedNode"] = patchTree["selectedNode"]
+    if patchTree["nodeDict"] is not None:
+        for key in patchTree["nodeDict"]:
+            new_node = patchTree["nodeDict"][key]
+            if new_node is None:
+                if key in currTree["nodeDict"]:
+                    del currTree["nodeDict"][key]
+            else:
+                if "nodeDict" not in currTree:
+                    currTree["nodeDict"] = {}
+                currTree["nodeDict"][key] = new_node
+    return currTree
 
 def main(port, message_to_main: Queue):
     app = Flask(__name__, template_folder=build_dir, static_folder=asset_dir,
@@ -60,11 +85,12 @@ def main(port, message_to_main: Queue):
     @app.route('/updateTree', methods=['PUT'])
     def updateTree():
         # TODO: check if the tree is valid.
-        data.tree = request.get_json()['tree']
+        tree_patch = request.get_json()['tree']
+        data.tree = patch_tree(data.tree, tree_patch)
         data.tree_id = request.get_json()['tree_id']
         data.trees[data.tree_id] = data.tree
         # TODO: check if the tree_id is valid.
-        socketio.emit('setTree', {"tree": data.tree, "tree_id": data.tree_id})
+        socketio.emit('setTree', {"tree": tree_patch, "tree_id": data.tree_id})
         return "OK"
 
 
