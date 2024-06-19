@@ -95,9 +95,11 @@ class Node:
         node._parent = self
         return node
 
-    def new_child(self) -> Node:
+    def new_child(self, title=None) -> Node:
         node = Node()
         self.add_child(node)
+        if title is not None:
+            node.title = title
         return node
 
     def s(self, title: str) -> Node:
