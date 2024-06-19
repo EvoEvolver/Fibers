@@ -100,14 +100,10 @@ class Node:
         self.add_child(node)
         return node
 
-    def s(self, title: str, check_duplicate = True) -> Node:
+    def s(self, title: str) -> Node:
         """
         :return: The new child node
         """
-        if check_duplicate:
-            for child in self.children():
-                if child.title == title:
-                    return child
         child = self.new_child()
         child.title = title
         return child
