@@ -10,31 +10,30 @@ class Rendered:
     def __init__(self, node):
         self.node: Node = node
         self.tabs = {}
-        self.tools = {}
         self.children = []
         self.title = ""
+        self.data = {}
 
     def to_json(self, node_dict, parent_id) -> dict:
         node_json = self.to_json_without_children(parent_id)
         # Add children
-        children_id = []
         for child in self.children:
             child.to_json(node_dict, str(self.node.node_id))
-            children_id.append(str(child.node.node_id))
-        node_json["children"] = children_id
-
         node_dict[str(self.node.node_id)] = node_json
 
     def to_json_without_children(self, parent_id) -> dict:
-        return {
+        children_id = []
+        for child in self.children:
+            children_id.append(str(child.node.node_id))
+        node_json = {
             "title": self.title,
             "tabs": self.tabs,
-            "tools": self.tools,
-            "children": None,
+            "children": children_id,
             "id": str(self.node.node_id),
             "parent": parent_id,
-            "data": {},
+            "data": self.data,
         }
+        return node_json
 
 
 class Renderer:

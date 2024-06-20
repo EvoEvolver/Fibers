@@ -8,6 +8,7 @@ import multiprocessing as mp
 from typing import TYPE_CHECKING, Dict, TypedDict
 
 from fibers.gui.renderer import Renderer
+from fibers.tree.node_attr.base import MessageResult
 
 if TYPE_CHECKING:
     from fibers.tree.node import Node
@@ -112,15 +113,20 @@ class ForestConnector:
     def handle_message(self, message):
         from fibers.tree.node import All_Node
         target_node_id = message['node_id']
+        if target_node_id not in All_Node:
+            return
         node: Node = All_Node[target_node_id]
+        new_selected_node_id = None
         node_to_re_render = set()
         for attr_class, attr_value in node.attrs.items():
-            res = attr_value.handle_message(message)
+            res: MessageResult = attr_value.handle_message(message["message"])
             if res is None:
                 continue
             node_to_re_render.update(res.node_to_re_render)
+            if res.new_selected_node is not None:
+                new_selected_node_id = res.new_selected_node.node_id
         node_dict = {}
-        if len(node_to_re_render) == 0:
+        if len(node_to_re_render) == 0 and new_selected_node_id is None:
             return
         renderer = Renderer()
         for node in node_to_re_render:
@@ -128,7 +134,7 @@ class ForestConnector:
             node_json = renderer.render(node).to_json_without_children(parent_id)
             node_dict[str(node.node_id)] = node_json
         tree_data = {
-            "selectedNode": None,
+            "selectedNode": str(new_selected_node_id),
             "nodeDict": node_dict
         }
         self.update_tree(tree_data, str(node.root().node_id))

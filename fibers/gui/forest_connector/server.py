@@ -66,9 +66,9 @@ def main(port, message_to_main: Queue):
     def handle_connect():
         emit('Connected!')
 
-    @socketio.on('requestTree')
+    @socketio.on('requestTrees')
     def requestTree():
-        emit('requestTree', data.trees)
+        emit('setTrees', data.trees)
 
     @socketio.on('message_to_main')
     def recv_message_to_main(data):
@@ -90,7 +90,7 @@ def main(port, message_to_main: Queue):
         data.tree_id = request.get_json()['tree_id']
         data.trees[data.tree_id] = data.tree
         # TODO: check if the tree_id is valid.
-        socketio.emit('setTree', {"tree": tree_patch, "tree_id": data.tree_id})
+        socketio.emit('patchTree', {"tree": tree_patch, "tree_id": data.tree_id})
         return "OK"
 
 
