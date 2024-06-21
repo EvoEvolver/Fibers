@@ -4,6 +4,8 @@ import uuid
 from copy import copy
 from typing import TYPE_CHECKING, Dict, List, Type
 
+import dill
+
 from fibers.gui.forest_connector import ForestConnector
 from fibers.gui.forest_connector.forest_connector import node_connector_pool
 from fibers.gui.renderer import Renderer
@@ -243,3 +245,17 @@ class Node:
             return
         else:
             forest_connector.update_tree(tree_data, self.node_id)
+
+    """
+    ## Persistence 
+    """
+
+    def save_sub_tree(self, path):
+        with open(path, "wb") as f:
+            f.write(dill.dumps(self))
+
+    @staticmethod
+    def read_tree(path):
+        with open(path, "rb") as f:
+            return dill.loads(f.read())
+
