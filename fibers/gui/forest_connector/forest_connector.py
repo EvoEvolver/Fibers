@@ -103,6 +103,10 @@ class ForestConnector:
         # Open the URL in the default web browser
         if not self.dev_mode:
             webbrowser.open(url)
+            for i in range(10):
+                message = self.message_to_main.get(timeout=10)
+                if message == "first_request_received":
+                    break
 
 
     def process_message_from_frontend(self):

@@ -1,5 +1,4 @@
 from __future__ import annotations
-import json
 from multiprocessing import Queue
 from typing import TYPE_CHECKING
 
@@ -11,7 +10,6 @@ if TYPE_CHECKING:
 from forest import build_dir, asset_dir
 from flask_cors import CORS
 import sys
-from time import sleep
 
 chattingLock = False
 #TODO: if only one user, chattingLock should be fine to avoid the message being sent when the previous chat hasn't completed yet.
@@ -60,7 +58,7 @@ def main(port, message_to_main: Queue):
     cli = sys.modules['flask.cli']
     cli.show_server_banner = lambda *x: None
 
-
+    first_request_received = False
 
     @socketio.on('connect')
     def handle_connect():
@@ -69,6 +67,8 @@ def main(port, message_to_main: Queue):
     @socketio.on('requestTrees')
     def requestTree():
         emit('setTrees', data.trees)
+        if not first_request_received:
+            message_to_main.put("first_request_received")
 
     @socketio.on('message_to_main')
     def recv_message_to_main(data):
@@ -92,29 +92,6 @@ def main(port, message_to_main: Queue):
         # TODO: check if the tree_id is valid.
         socketio.emit('patchTree', {"tree": tree_patch, "tree_id": data.tree_id})
         return "OK"
-
-
-    # ChatBot interaction.
-    # Currently only support GPT.
-    @app.route('/chatFocusNode', methods=['POST'])
-    def chatFocusNode():
-        global chattingLock
-        # data.tree_id = request.get_json()['tree_id']
-        # data.tree = data.trees[data.tree_id]
-        # socketio.emit('setTree', {"tree": data.tree, "tree_id": data.tree_id})
-        try:
-            if chattingLock:
-                return json.dumps({"message": "Chatting is locked. Please wait for the previous chat to complete.", "status": 400})
-            else:
-                chattingLock = True
-                sleep(3)
-                # TODO: handle input (contexts? history?) and call external APIs.
-                chattingLock = False
-                return json.dumps(
-                    {"message": "Hello", "status": 200})
-        except Exception as e:
-            chattingLock = False
-            return json.dumps({"message": str(e), "status": 500})
 
 
     socketio.run(app, allow_unsafe_werkzeug=True, port=port)
