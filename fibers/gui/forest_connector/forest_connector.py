@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import warnings
 import webbrowser
 import os
 from multiprocessing import Process
@@ -103,12 +105,15 @@ class ForestConnector:
             webbrowser.open(url)
 
 
-
     def process_message_from_frontend(self):
         # get information from the server by message_to_main
         while True:
             message = self.message_to_main.get()
-            self.handle_message(message)
+            try:
+                self.handle_message(message)
+            except Exception as e:
+                warnings.warn(f"Error in handling message: {e}")
+                print("Problematic message:", message)
 
     def handle_message(self, message):
         from fibers.tree.node import All_Node
