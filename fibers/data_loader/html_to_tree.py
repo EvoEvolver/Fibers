@@ -24,12 +24,12 @@ class SoupInfo(Attr):
             node.content = str(SoupInfo.get(node).soup)
 
 
-def url_to_tree(url: str) -> Node:
+def url_to_tree(url: str) -> (Node, BeautifulSoup):
     html = requests.get(url).text
     return html_to_tree(html)
 
 
-def html_to_tree(html: str, to_markdown=False) -> Node:
+def html_to_tree(html: str, to_markdown=False) -> (Node, BeautifulSoup):
     soup = BeautifulSoup(html, "html.parser")
     pre_process_html_tree(soup)
     title = soup.find("title")
@@ -42,7 +42,7 @@ def html_to_tree(html: str, to_markdown=False) -> Node:
     init_soup_info(root)
     if to_markdown:
         html_to_markdown(root)
-    return root
+    return root, soup
 
 
 def init_soup_info(root: Node):
@@ -62,6 +62,14 @@ def pre_process_html_tree(soup: BeautifulSoup):
     for tag in redundant_tags:
         if tag.parent and tag.parent.name == 'h2':
             tag.decompose()
+
+    herf_tags = soup.find_all('a', recursive=True)
+    for tag in herf_tags:
+        if isinstance(tag, Tag) and tag.get('href') is not None and re.match(r'^/scholar_case.+$', tag.get('href')):
+            tag['href'] = "https://scholar.google.com" + tag.get('href')
+
+
+
 
 
 
