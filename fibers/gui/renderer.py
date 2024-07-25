@@ -10,6 +10,7 @@ class Rendered:
     def __init__(self, node):
         self.node: Node = node
         self.tabs = {}
+        self.tools = [{},{}]
         self.children = []
         self.title = ""
         self.data = {}
@@ -32,6 +33,7 @@ class Rendered:
             "id": str(self.node.node_id),
             "parent": parent_id,
             "data": self.data,
+            "tools": self.tools
         }
         return node_json
 
