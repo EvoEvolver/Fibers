@@ -181,23 +181,40 @@ class Node:
         Output the deepest nodes first.
         :return: An iterator of nodes
         """
+        visited = set()
         for child in self.children():
-            yield from child.iter_subtree_with_dfs()
+            yield from child._iter_subtree_with_dfs(visited)
         if not exclude_self:
             yield self
 
-    def iter_subtree_with_bfs(self):
+    def _iter_subtree_with_dfs(self, visited: set):
+        for child in self.children():
+            if child not in visited:
+                visited.add(child)
+                yield from child.iter_subtree_with_dfs()
+        yield self
+
+
+    def iter_subtree_with_bfs(self, exclude_self=False):
         """
         Iterate the tree with breath first search.
         Output the shallowest nodes first.
         :return: An iterator of nodes
         """
         stack = [self]
+        visited = set()
+        visited.add(self)
+        if not exclude_self:
+            yield self
         while len(stack) > 0:
             curr_node = stack.pop(0)
-            yield curr_node
             for child in curr_node.children():
-                stack.append(child)
+                if child not in visited:
+                    yield child
+                    visited.add(child)
+                    stack.append(child)
+
+
 
     """
     ## Node attrs related functions
