@@ -55,6 +55,9 @@ def init_soup_info(root: Node):
 
 
 def pre_process_html_tree(soup: BeautifulSoup):
+    href_tags = soup.find_all('a', href=True)
+    for href_tag in href_tags:
+        href_tag['target'] = '_blank'
     for script in soup(["script", "style"]):
         # remove all javascript and stylesheet code
         script.decompose()
@@ -232,3 +235,5 @@ def html_to_markdown(root: Node):
 if __name__ == "__main__":
     doc = url_to_tree("https://scholar.google.com/scholar_case?case=16062632215534775045&q=trump&hl=en&as_sdt=2006")
     doc.display()
+
+
