@@ -33,7 +33,7 @@ class TreeData(TypedDict):
 
 DEFAULT_PORT = 29999
 
-
+DEFAULT_HOST = "127.0.0.1"
 def cleanup_subprocess(process):
     time.sleep(1.0)
     process.terminate()
@@ -42,7 +42,7 @@ def cleanup_subprocess(process):
 def is_port_in_use(port: int) -> bool:
     import socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('localhost', port)) == 0
+        return s.connect_ex((DEFAULT_HOST, port)) == 0
 
 class ForestConnector:
     """
@@ -61,7 +61,7 @@ class ForestConnector:
         self.message_to_main = mp.Queue()
 
     def update_tree(self, tree_data: TreeData, root_id):
-        url = f'http://127.0.0.1:{self.backend_port}/updateTree'
+        url = f'http://{DEFAULT_HOST}:{self.backend_port}/updateTree'
         payload = json.dumps({
             "tree": tree_data,
             "tree_id": root_id
@@ -89,7 +89,7 @@ class ForestConnector:
         atexit.register(cleanup_subprocess, self.p)
 
         # Wait for the server to start.
-        url = f"http://127.0.0.1:{self.frontend_port}/visualization"
+        url = f"http://{DEFAULT_HOST}:{self.frontend_port}/visualization"
 
         initialization_success = False
         while not initialization_success or not is_port_in_use(self.backend_port):

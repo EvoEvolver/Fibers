@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 
+from fibers.gui.forest_connector import forest_connector
+
 if TYPE_CHECKING:
     from fibers.gui.forest_connector.forest_connector import TreeData
 from forest import build_dir, asset_dir
@@ -94,7 +96,7 @@ def main(port, message_to_main: Queue):
         return "OK"
 
 
-    socketio.run(app, allow_unsafe_werkzeug=True, port=port)
+    socketio.run(app, allow_unsafe_werkzeug=True, port=port, host=forest_connector.DEFAULT_HOST)
 
 
 if __name__ == '__main__':
