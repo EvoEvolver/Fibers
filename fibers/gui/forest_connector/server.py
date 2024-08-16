@@ -44,7 +44,7 @@ def patch_tree(currTree: TreeData, patchTree: TreeData):
                 currTree["nodeDict"][key] = new_node
     return currTree
 
-def main(port, message_to_main: Queue):
+def main(port, host, message_to_main: Queue):
     app = Flask(__name__, template_folder=build_dir, static_folder=asset_dir,
                 static_url_path='/assets')
     CORS(app)
@@ -96,9 +96,9 @@ def main(port, message_to_main: Queue):
         return "OK"
 
 
-    socketio.run(app, allow_unsafe_werkzeug=True, port=port, host=forest_connector.DEFAULT_HOST)
+    socketio.run(app, allow_unsafe_werkzeug=True, port=port, host=host)
 
 
 if __name__ == '__main__':
     port = int(sys.argv[1])
-    main(port, Queue())
+    main(port, "127.0.0.1", Queue())

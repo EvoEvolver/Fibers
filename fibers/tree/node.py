@@ -241,12 +241,12 @@ class Node:
     def display_whole_tree(self):
         self.root().display()
 
-    def display(self, renderer=None, dev_mode=False, interactive=False):
+    def display(self, renderer=None, dev_mode=False, interactive=False, host="127.0.0.1"):
         """
         Show the tree in a webpage
         """
         if self not in node_connector_pool.keys():
-            forest_connector = ForestConnector(dev_mode=dev_mode, interactive_mode=interactive)
+            forest_connector = ForestConnector(dev_mode=dev_mode, interactive_mode=interactive, host=host)
             node_connector_pool[Node] = forest_connector
             forest_connector.run()
         self.update_gui(renderer)

@@ -33,16 +33,15 @@ class TreeData(TypedDict):
 
 DEFAULT_PORT = 29999
 
-DEFAULT_HOST = "127.0.0.1"
 def cleanup_subprocess(process):
     time.sleep(1.0)
     process.terminate()
 
 
-def is_port_in_use(port: int) -> bool:
+def is_port_in_use(port: int, host: str) -> bool:
     import socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex((DEFAULT_HOST, port)) == 0
+        return s.connect_ex((host, port)) == 0
 
 class ForestConnector:
     """
@@ -50,18 +49,19 @@ class ForestConnector:
     Flask and socket will be running to exchange information between.
     """
 
-    def __init__(self, dev_mode=False, interactive_mode=False):
+    def __init__(self, dev_mode=False, interactive_mode=False, host="127.0.0.1"):
         lazy_build()
         self.backend_port = 30000 + os.getpid() % 10000 if not dev_mode else 29999
         self.frontend_port = self.backend_port if not dev_mode else 39999
         self.p = None
+        self.host = host
         self.dev_mode = dev_mode
         self.interactive_mode = interactive_mode or dev_mode
         os.environ['NO_PROXY'] = f'127.0.0.1'
         self.message_to_main = mp.Queue()
 
     def update_tree(self, tree_data: TreeData, root_id):
-        url = f'http://{DEFAULT_HOST}:{self.backend_port}/updateTree'
+        url = f'http://{self.host}:{self.backend_port}/updateTree'
         payload = json.dumps({
             "tree": tree_data,
             "tree_id": root_id
@@ -69,7 +69,7 @@ class ForestConnector:
         headers = {
             'Content-Type': 'application/json'
         }
-        print(f"Updating tree {root_id} to http://127.0.0.1:{self.frontend_port}/visualization")
+        print(f"Updating tree {root_id} to http://{self.host}:{self.frontend_port}/visualization")
         response = requests.request("PUT", url, headers=headers, data=payload)
         print("Updated tree")
 
@@ -78,21 +78,21 @@ class ForestConnector:
         # get project root.
         project_root = os.path.dirname(os.path.abspath(__file__))
 
-        if is_port_in_use(self.backend_port):
+        if is_port_in_use(self.backend_port, self.host):
             # throw error
             raise Exception(f"Port {self.backend_port} is not available.")
         # self.p = subprocess.Popen(['python3', f'{project_root}/server.py', str(self.port)])
 
-        self.p = Process(target=main, args=(self.backend_port, self.message_to_main))
+        self.p = Process(target=main, args=(self.backend_port, self.host, self.message_to_main))
         self.p.start()
         #if not self.keep_alive_at_exit:
         atexit.register(cleanup_subprocess, self.p)
 
         # Wait for the server to start.
-        url = f"http://{DEFAULT_HOST}:{self.frontend_port}/visualization"
+        url = f"http://{self.host}:{self.frontend_port}/visualization"
 
         initialization_success = False
-        while not initialization_success or not is_port_in_use(self.backend_port):
+        while not initialization_success or not is_port_in_use(self.backend_port, self.host):
             try:
                 initialization_success = True
             except Exception as e:
