@@ -51,7 +51,12 @@ class ForestConnector:
 
     def __init__(self, dev_mode=False, interactive_mode=False, host="127.0.0.1"):
         lazy_build()
-        self.backend_port = 30000 + os.getpid() % 10000 if not dev_mode else 29999
+        if ":" not in host:
+            backend_port = 30000 + os.getpid() % 10000 if not dev_mode else 29999
+        else:
+            host, backend_port = host.split(":")
+            backend_port = int(backend_port)
+        self.backend_port = backend_port
         self.frontend_port = self.backend_port if not dev_mode else 39999
         self.p = None
         self.host = host
