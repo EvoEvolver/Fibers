@@ -25,7 +25,9 @@ class SoupInfo(Attr):
 
 
 def url_to_tree(url: str) -> (Node, BeautifulSoup):
-    html = requests.get(url).text
+    browser_headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+    html = requests.get(url, headers=browser_headers).text
     return html_to_tree(html)
 
 
