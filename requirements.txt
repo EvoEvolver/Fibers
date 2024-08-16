@@ -1,6 +1,5 @@
 numpy
 pyyaml~=6.0.1
-pyhyphen==4.0.3
 dill~=0.3.7
 tenacity~=8.2.2
 jsonlines~=4.0.0
