@@ -1,7 +1,7 @@
 numpy
 pyyaml~=6.0.1
 dill~=0.3.7
-tenacity~=8.2.2
+tenacity
 jsonlines~=4.0.0
 asteval
 Markdown==3.5.1
@@ -9,10 +9,10 @@ Flask==3.0.0
 Flask-SocketIO==5.3.6
 Werkzeug==3.0.1
 simple-websocket==1.0.0
-pillow~=10.0.1
+pillow
 html2text~=2020.1.16
 beautifulsoup4~=4.12.3
 flask_cors
-MinimalLLM@git+https://github.com/EvoEvolver/MinimalLLM
+MinimalLLM
 Moduler@git+https://github.com/EvoEvolver/Moduler
 Forest@git+https://github.com/EvoEvolver/Forest

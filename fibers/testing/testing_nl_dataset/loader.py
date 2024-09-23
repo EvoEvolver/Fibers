@@ -9,6 +9,7 @@ url_to_dataset = {
     "QuALITY.v1.0.1.train": "https://raw.githubusercontent.com/nyu-mll/quality/main/data/v1.0.1/QuALITY.v1.0.1.train",
     "QuALITY.v1.0.1.dev": "https://raw.githubusercontent.com/nyu-mll/quality/main/data/v1.0.1/QuALITY.v1.0.1.dev",
     "QuALITY.v1.0.1.test": "https://raw.githubusercontent.com/nyu-mll/quality/main/data/v1.0.1/QuALITY.v1.0.1.test",
+    "QuALITY.v1.0.1.htmlstripped.dev": "https://raw.githubusercontent.com/nyu-mll/quality/main/data/v1.0.1/QuALITY.v1.0.1.htmlstripped.dev",
 }
 
 
@@ -36,6 +37,7 @@ def extract_dataset(name, number):
         if i == number:
             return obj
         i += 1
+    raise ValueError(f"Dataset {name} has only {i} examples")
 
 
 @example
