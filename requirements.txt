@@ -15,4 +15,4 @@ beautifulsoup4~=4.12.3
 flask_cors
 MinimalLLM
 Moduler@git+https://github.com/EvoEvolver/Moduler
-Forest@git+https://github.com/EvoEvolver/Forest
+Forest@git+https://github.com/EvoEvolver/Forest@stable
