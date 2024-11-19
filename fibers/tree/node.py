@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from copy import copy
-from typing import TYPE_CHECKING, Dict, List, Type
+from typing import TYPE_CHECKING, Dict, List, Type, Set
 
 import dill
 
@@ -88,6 +88,23 @@ class Node:
             curr_node = curr_node._parent
         return ancestors
 
+    def find_loop(self):
+        node_on_path = []
+        def dfs(node):
+            if node in node_on_path:
+                return node_on_path[node_on_path.index(node):]
+            node_on_path.append(node)
+            for child in node.children():
+                loop = dfs(child)
+                if loop is not None:
+                    return loop
+            node_on_path.remove(node)
+            return None
+
+        return dfs(self)
+
+
+
     """
     ## Functions for adding children of node
     """
@@ -132,9 +149,10 @@ class Node:
     """
 
     def remove_self(self):
-        self._parent.remove_child(self)
+        if self._parent is not None:
+            self._parent.remove_child(self)
 
-    def new_parent(self, parent: Node) -> Node:
+    def change_parent(self, parent: Node) -> Node:
         self.remove_self()
         parent.add_child(self)
         self._parent = parent
@@ -144,13 +162,13 @@ class Node:
     ## Section for extract related nodes
     """
 
-    def get_nodes_in_subtree(self) -> List[Node]:
+    def get_nodes_in_subtree(self) -> Set[Node]:
         """
         Return all the nodes in the subtree
         """
-        nodes = [self]
+        nodes = set([self])
         for child in self.children():
-            nodes += child.get_nodes_in_subtree()
+            nodes = nodes.union(child.get_nodes_in_subtree())
         return nodes
 
     """
