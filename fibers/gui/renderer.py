@@ -14,6 +14,7 @@ class Rendered:
         self.children = []
         self.title = ""
         self.data = {}
+        self.other_parents = []
 
     def to_json(self, node_dict, parent_id) -> dict:
         node_json = self.to_json_without_children(parent_id)
@@ -33,7 +34,8 @@ class Rendered:
             "id": str(self.node.node_id),
             "parent": parent_id,
             "data": self.data,
-            "tools": self.tools
+            "tools": self.tools,
+            "other_parents": [str(id) for id in self.other_parents]
         }
         return node_json
 

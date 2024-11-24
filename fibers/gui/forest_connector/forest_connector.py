@@ -28,6 +28,7 @@ import json
 import atexit
 
 class TreeData(TypedDict):
+    selectedParent: str
     selectedNode: str
     nodeDict: Dict[str, dict]
 
@@ -149,7 +150,8 @@ class ForestConnector:
             node_dict[str(node.node_id)] = node_json
         tree_data = {
             "selectedNode": str(new_selected_node_id),
-            "nodeDict": node_dict
+            "nodeDict": node_dict,
+            "selectedParent": None
         }
         self.update_tree(tree_data, str(node.root().node_id))
 
