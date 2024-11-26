@@ -3,21 +3,20 @@ from __future__ import annotations
 import warnings
 import webbrowser
 import os
-from multiprocessing import Process
 import multiprocessing as mp
-
+from multiprocessing import Process
 
 from typing import TYPE_CHECKING, Dict, TypedDict
 
 from fibers.gui.renderer import Renderer
 from fibers.tree.node_attr.base import MessageResult
+from nodejs import node
 
 if TYPE_CHECKING:
     from fibers.tree.node import Node
 
 try:
-    from fibers.gui.forest_connector.server import main
-    from forest import lazy_build
+    from forest import lazy_build, server_dir
 except Exception as e:
     print(e)
 
@@ -44,6 +43,9 @@ def is_port_in_use(port: int, host: str) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex((host, port)) == 0
 
+def server_process(port, host):
+    node.run([server_dir, '--BackendPort', str(port), "--Host", host])
+
 class ForestConnector:
     """
     The connector to connect to the Forest visualization.
@@ -58,7 +60,7 @@ class ForestConnector:
             host, backend_port = host.split(":")
             backend_port = int(backend_port)
         self.backend_port = backend_port
-        self.frontend_port = self.backend_port if not dev_mode else 39999
+        #self.frontend_port = self.backend_port if not dev_mode else 39999
         self.p = None
         self.host = host
         self.dev_mode = dev_mode
@@ -75,27 +77,22 @@ class ForestConnector:
         headers = {
             'Content-Type': 'application/json'
         }
-        print(f"Updating tree {root_id} to http://{self.host}:{self.frontend_port}/visualization")
+        print(f"Updating tree {root_id} to http://{self.host}:{self.backend_port}/")
         response = requests.request("PUT", url, headers=headers, data=payload)
         print("Updated tree")
 
     def run(self):
-        # check if current process has finished its bootstrapping phase or not.
-        # get project root.
-        project_root = os.path.dirname(os.path.abspath(__file__))
-
         if is_port_in_use(self.backend_port, self.host):
             # throw error
             raise Exception(f"Port {self.backend_port} is not available.")
-        # self.p = subprocess.Popen(['python3', f'{project_root}/server.py', str(self.port)])
 
-        self.p = Process(target=main, args=(self.backend_port, self.host, self.message_to_main))
+        # use subprocess run node server_dir
+        self.p = Process(target=server_process,
+                         args=(self.backend_port, self.host))
         self.p.start()
-        #if not self.keep_alive_at_exit:
-        atexit.register(cleanup_subprocess, self.p)
 
         # Wait for the server to start.
-        url = f"http://{self.host}:{self.frontend_port}/visualization"
+        url = f"http://{self.host}:{self.backend_port}/"
 
         initialization_success = False
         while not initialization_success or not is_port_in_use(self.backend_port, self.host):
@@ -109,10 +106,9 @@ class ForestConnector:
         # Open the URL in the default web browser
         if not self.dev_mode:
             webbrowser.open(url)
-            for i in range(10):
-                message = self.message_to_main.get(timeout=10)
-                if message == "first_request_received":
-                    break
+
+        if not (self.interactive_mode and self.dev_mode):
+            self.p.terminate()
 
 
     def process_message_from_frontend(self):
@@ -154,12 +150,6 @@ class ForestConnector:
             "selectedParent": None
         }
         self.update_tree(tree_data, str(node.root().node_id))
-
-
-
-
-class ForestConnected:
-    pass
 
 
 node_connector_pool = {}

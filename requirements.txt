@@ -5,14 +5,10 @@ tenacity
 jsonlines~=4.0.0
 asteval
 Markdown==3.5.1
-Flask==3.0.0
-Flask-SocketIO==5.3.6
-Werkzeug==3.0.1
-simple-websocket==1.0.0
 pillow
 html2text~=2020.1.16
 beautifulsoup4~=4.12.3
-flask_cors
+nodejs-bin
 MinimalLLM
 Moduler@git+https://github.com/EvoEvolver/Moduler
 Forest@git+https://github.com/EvoEvolver/Forest@stable
