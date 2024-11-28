@@ -43,8 +43,11 @@ def is_port_in_use(port: int, host: str) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex((host, port)) == 0
 
-def server_process(port, host):
-    node.run([server_dir, '--BackendPort', str(port), "--Host", host])
+def server_process(port, host, make_frontend):
+    if make_frontend:
+        node.run([server_dir, '--BackendPort', str(port), "--Host", host])
+    else:
+        node.run([server_dir, '--BackendPort', str(port), "--Host", host, "--NoFrontend"])
 
 class ForestConnector:
     """
@@ -72,7 +75,7 @@ class ForestConnector:
         url = f'http://{self.host}:{self.backend_port}/updateTree'
         payload = json.dumps({
             "tree": tree_data,
-            "tree_id": root_id
+            "tree_id": str(root_id)
         })
         headers = {
             'Content-Type': 'application/json'
@@ -86,9 +89,12 @@ class ForestConnector:
             # throw error
             raise Exception(f"Port {self.backend_port} is not available.")
 
-        # use subprocess run node server_dir
-        self.p = Process(target=server_process,
-                         args=(self.backend_port, self.host))
+        if self.dev_mode:
+            self.p = Process(target=server_process,
+                             args=(self.backend_port, self.host, False))
+        else:
+            self.p = Process(target=server_process,
+                             args=(self.backend_port, self.host, True))
         self.p.start()
 
         # Wait for the server to start.
