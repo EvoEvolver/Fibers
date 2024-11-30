@@ -87,7 +87,12 @@ class ForestConnector:
     def run(self):
         if is_port_in_use(self.backend_port, self.host):
             # throw error
-            raise Exception(f"Port {self.backend_port} is not available.")
+            if not self.dev_mode:
+                raise Exception(f"Port {self.backend_port} is not available.")
+            else:
+                print(f"Port {self.backend_port} is not available. Assume the server is already running.")
+                return
+
 
         if self.dev_mode:
             self.p = Process(target=server_process,
