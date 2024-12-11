@@ -60,7 +60,7 @@ class Node:
                 new_node.parents.append(node_map[parent])
         return node_map
 
-    def update_sub_tree_parents_list(self):
+    def update_subtree_parents(self):
         nodes = [node for node in self.iter_subtree_with_dfs()]
         for node in nodes:
             node.parents = []
@@ -69,7 +69,7 @@ class Node:
                 if node not in child.parents:
                     child.parents.append(node)
 
-    def update_sub_tree_children_list(self):
+    def update_subtree_children(self):
         nodes = [node for node in self.iter_subtree_with_dfs()]
         for node in nodes:
             node._children = []
