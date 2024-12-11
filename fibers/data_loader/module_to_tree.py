@@ -54,7 +54,7 @@ def build_tree_for_struct(curr_struct: Struct, root_note: Node) -> Node:
             curr_node.be(curr_node.content + "\n" + child_struct.obj)
         elif child_struct.struct_type == "example":
             example_node = build_tree_for_struct(child_struct, curr_node)
-            example_function_node = example_node.children()[0]
+            example_function_node = example_node.children[0]
             example_node.get_attr(
                 CodeData).obj = example_function_node.get_attr(
                 CodeData).obj

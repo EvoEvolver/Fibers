@@ -55,7 +55,7 @@ class Renderer:
         rendered.title = node.title
         rendered.tabs["content"] = node.content
         self.node_handler(node, rendered)
-        for child in node.children():
+        for child in node.children:
             rendered.children.append(self.render(child))
         return rendered
 

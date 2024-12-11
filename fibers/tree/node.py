@@ -32,7 +32,7 @@ class Node:
         # The node id is used to identify the node
         self.node_id = uuid.uuid4().int
         #
-        self._children: List[Node] = []
+        self.children: List[Node] = []
         #
         self.parents: List[Node] = []
         #
@@ -41,7 +41,7 @@ class Node:
     def copy_to(self):
         new_node = Node(self.title, self.content)
         new_node.attrs = copy(self.attrs)
-        new_node._children = copy(self._children)
+        new_node.children = copy(self._children)
         new_node.parents = copy(self.parents)
         return new_node
 
@@ -52,7 +52,7 @@ class Node:
             node_map[node] = Node(node.title, node.content)
         for node in nodes:
             new_node = node_map[node]
-            for child in node.children():
+            for child in node.children:
                 new_node._children.append(node_map[child])
             for parent in node.parents:
                 if parent not in node_map:
@@ -65,17 +65,27 @@ class Node:
         for node in nodes:
             node.parents = []
         for node in nodes:
-            for child in node.children():
+            for child in node.children:
                 if node not in child.parents:
                     child.parents.append(node)
+
+    def update_sub_tree_children_list(self):
+        nodes = [node for node in self.iter_subtree_with_dfs()]
+        for node in nodes:
+            node._children = []
+        for node in nodes:
+            for parent in node.parents:
+                if node not in parent._children:
+                    parent._children.append(node)
 
 
     """
     ## Functions for getting the relation of nodes
     """
 
-    def children(self) -> List[Node]:
-        return self._children
+    @property
+    def _children(self):
+        return self.children
 
     def parent(self) -> Node | None:
         return self._parent
@@ -99,7 +109,7 @@ class Node:
         return None
 
     def has_child(self):
-        return len(self.children()) > 0
+        return len(self.children) > 0
 
     def is_empty(self):
         return len(self.content) == 0
@@ -108,7 +118,7 @@ class Node:
         """
         :return: the children dict of the parent node (i.e. the sibling dict of the node)
         """
-        return self._parent.children()
+        return self._parent.children
 
     def index_in_siblings(self) -> int:
         return self.sibling().index(self)
@@ -132,7 +142,7 @@ class Node:
             if node in node_on_path:
                 return node_on_path[node_on_path.index(node):]
             node_on_path.append(node)
-            for child in node.children():
+            for child in node.children:
                 loop = dfs(child)
                 if loop is not None:
                     return loop
@@ -141,6 +151,8 @@ class Node:
 
         return dfs(self)
 
+    def is_root(self):
+        return len(self.parents) == 0
 
 
     """
@@ -240,7 +252,7 @@ class Node:
         :return: An iterator of nodes
         """
         visited = set()
-        for child in self.children():
+        for child in self.children:
             if child not in visited:
                 visited.add(child)
                 yield from child._iter_subtree_with_dfs(visited)
@@ -248,7 +260,7 @@ class Node:
             yield self
 
     def _iter_subtree_with_dfs(self, visited: set):
-        for child in self.children():
+        for child in self.children:
             if child not in visited:
                 visited.add(child)
                 yield from child.iter_subtree_with_dfs()
@@ -268,7 +280,7 @@ class Node:
             yield self
         while len(stack) > 0:
             curr_node = stack.pop(0)
-            for child in curr_node.children():
+            for child in curr_node.children:
                 if child not in visited:
                     yield child
                     visited.add(child)
@@ -333,7 +345,7 @@ class Node:
             node_dict[node.node_id] = {
                 "title": node.title,
                 "content": node.content,
-                "children": [child.node_id for child in node.children()],
+                "children": [child.node_id for child in node.children],
                 "parents": [parent.node_id for parent in node.parents]
             }
         with open(path, "wb") as f:

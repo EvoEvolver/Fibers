@@ -230,7 +230,7 @@ html2text_handler.ignore_images = True
 
 def html_to_markdown(root: Node):
     root.content = html2text_handler.handle(root.content)
-    for child in root.children():
+    for child in root.children:
         html_to_markdown(child)
 
 
