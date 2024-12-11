@@ -11,4 +11,4 @@ beautifulsoup4~=4.12.3
 nodejs-bin
 MinimalLLM
 Moduler@git+https://github.com/EvoEvolver/Moduler
-Forest@git+https://github.com/EvoEvolver/Forest@stable
+Forest@git+https://github.com/EvoEvolver/Forest
