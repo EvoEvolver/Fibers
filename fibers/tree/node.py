@@ -87,6 +87,10 @@ class Node:
     def _children(self):
         return self.children
 
+    @_children.setter
+    def _children(self, children):
+        self.children = children
+
     def parent(self) -> Node | None:
         return self._parent
 
