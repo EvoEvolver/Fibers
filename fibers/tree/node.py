@@ -13,7 +13,6 @@ from fibers.gui.renderer import Renderer
 if TYPE_CHECKING:
     from fibers.tree.node_attr import Attr
 
-All_Node = {}
 
 class Node:
     """
@@ -32,18 +31,44 @@ class Node:
         self.attrs: Dict[Type[Attr], Attr] = {}
         # The node id is used to identify the node
         self.node_id = uuid.uuid4().int
-        All_Node[str(self.node_id)] = self
         #
         self._children: List[Node] = []
         #
-        self._parent: Node | None = None
+        self.parents: List[Node] = []
+        #
+        self.dirty = False
 
     def copy_to(self):
         new_node = Node(self.title, self.content)
         new_node.attrs = copy(self.attrs)
         new_node._children = copy(self._children)
-        new_node._parent = self._parent
+        new_node.parents = copy(self.parents)
         return new_node
+
+    def copy_whole_sub_tree(self):
+        nodes = [node for node in self.iter_subtree_with_dfs()]
+        node_map = {}
+        for node in nodes:
+            node_map[node] = Node(node.title, node.content)
+        for node in nodes:
+            new_node = node_map[node]
+            for child in node.children():
+                new_node._children.append(node_map[child])
+            for parent in node.parents:
+                if parent not in node_map:
+                    continue
+                new_node.parents.append(node_map[parent])
+        return node_map
+
+    def update_sub_tree_parents_list(self):
+        nodes = [node for node in self.iter_subtree_with_dfs()]
+        for node in nodes:
+            node.parents = []
+        for node in nodes:
+            for child in node.children():
+                if node not in child.parents:
+                    child.parents.append(node)
+
 
     """
     ## Functions for getting the relation of nodes
@@ -54,6 +79,19 @@ class Node:
 
     def parent(self) -> Node | None:
         return self._parent
+
+    @property
+    def _parent(self):
+        return self.parents[0] if len(self.parents) > 0 else None
+
+    @_parent.setter
+    def _parent(self, parent):
+        if parent is None:
+            self.parents = []
+            return
+        if parent in self.parents:
+            self.parents.remove(parent)
+        self.parents = [parent]+self.parents
 
     def first_child(self) -> Node | None:
         if len(self._children) > 0:
@@ -111,7 +149,7 @@ class Node:
 
     def add_child(self, node: Node) -> Node:
         self._children.append(node)
-        node._parent = self
+        node.parents.append(self)
         return node
 
     def new_child(self, title=None) -> Node:
@@ -130,8 +168,12 @@ class Node:
         return child
 
     def remove_child(self, node: Node):
-        self._children.remove(node)
-        node._parent = None
+        try:
+            self._children.remove(node)
+        except ValueError:
+            pass
+        if self in node.parents:
+            node.parents.remove(self)
 
     """
     ## Functions for setting content of node
@@ -149,8 +191,8 @@ class Node:
     """
 
     def remove_self(self):
-        if self._parent is not None:
-            self._parent.remove_child(self)
+        for parent in self.parents:
+            parent.remove_child(self)
 
     def change_parent(self, parent: Node) -> Node:
         self.remove_self()
@@ -166,9 +208,7 @@ class Node:
         """
         Return all the nodes in the subtree
         """
-        nodes = set([self])
-        for child in self.children():
-            nodes = nodes.union(child.get_nodes_in_subtree())
+        nodes = list(self.iter_subtree_with_dfs())
         return nodes
 
     """
@@ -201,7 +241,9 @@ class Node:
         """
         visited = set()
         for child in self.children():
-            yield from child._iter_subtree_with_dfs(visited)
+            if child not in visited:
+                visited.add(child)
+                yield from child._iter_subtree_with_dfs(visited)
         if not exclude_self:
             yield self
 
@@ -286,11 +328,32 @@ class Node:
     """
 
     def save_sub_tree(self, path):
+        node_dict = {}
+        for node in self.iter_subtree_with_dfs():
+            node_dict[node.node_id] = {
+                "title": node.title,
+                "content": node.content,
+                "children": [child.node_id for child in node.children()],
+                "parents": [parent.node_id for parent in node.parents]
+            }
         with open(path, "wb") as f:
-            f.write(dill.dumps(self))
+            f.write(dill.dumps([node_dict, self.node_id]))
+
 
     @staticmethod
     def read_tree(path):
         with open(path, "rb") as f:
-            return dill.loads(f.read())
+            node_dict, root_id = dill.loads(f.read())
+        nodes = {}
+        for node_id, node_data in node_dict.items():
+            node = Node(node_data["title"], node_data["content"])
+            node.node_id = node_id
+            nodes[node_id] = node
+        for node_id, node_data in node_dict.items():
+            node = nodes[node_id]
+            for child_id in node_data["children"]:
+                node._children.append(nodes[child_id])
+            for parent_id in node_data["parents"]:
+                node.parents.append(nodes[parent_id])
+        return nodes[root_id]
 

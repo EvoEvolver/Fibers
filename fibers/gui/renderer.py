@@ -14,28 +14,30 @@ class Rendered:
         self.children = []
         self.title = ""
         self.data = {}
-        self.other_parents = []
 
-    def to_json(self, node_dict, parent_id) -> dict:
-        node_json = self.to_json_without_children(parent_id)
+    def to_json(self, node_dict):
+        if self.node.node_id in node_dict:
+            return
+        node_json = self.to_json_without_children()
         # Add children
         for child in self.children:
-            child.to_json(node_dict, str(self.node.node_id))
+            child.to_json(node_dict)
         node_dict[str(self.node.node_id)] = node_json
 
-    def to_json_without_children(self, parent_id) -> dict:
-        children_id = []
+    def to_json_without_children(self) -> dict:
+        children_ids = []
         for child in self.children:
-            children_id.append(str(child.node.node_id))
+            children_ids.append(str(child.node.node_id))
+        parent_id = str(self.node._parent.node_id) if self.node._parent else None
         node_json = {
             "title": self.title,
             "tabs": self.tabs,
-            "children": children_id,
+            "children": children_ids,
             "id": str(self.node.node_id),
             "parent": parent_id,
             "data": self.data,
             "tools": self.tools,
-            "other_parents": [str(id) for id in self.other_parents]
+            "other_parents": [str(id) for id in self.node.parents[1:]]
         }
         return node_json
 
@@ -59,7 +61,7 @@ class Renderer:
 
     def render_to_json(self, node: Node) -> TreeData:
         node_dict = {}
-        self.render(node).to_json(node_dict, None)
+        self.render(node).to_json(node_dict)
         return {
             "selectedNode": str(node.node_id),
             "nodeDict": node_dict,

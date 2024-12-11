@@ -120,6 +120,8 @@ class ForestConnector:
 
         if not (self.interactive_mode and self.dev_mode):
             self.p.terminate()
+        else:
+            atexit.register(cleanup_subprocess, self.p)
 
 
     def process_message_from_frontend(self):
@@ -133,7 +135,6 @@ class ForestConnector:
                 print("Problematic message:", message)
 
     def handle_message(self, message):
-        from fibers.tree.node import All_Node
         target_node_id = message['node_id']
         if target_node_id not in All_Node:
             return
