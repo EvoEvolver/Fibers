@@ -37,7 +37,7 @@ class Rendered:
             "parent": parent_id,
             "data": self.data,
             "tools": self.tools,
-            "other_parents": [str(id) for id in self.node.parents[1:]]
+            "other_parents": [str(p.node_id) for p in self.node.parents[1:]]
         }
         return node_json
 
