@@ -8,9 +8,11 @@ from multiprocessing import Process
 
 from typing import TYPE_CHECKING, Dict, TypedDict
 
+import psutil
+
 from fibers.gui.renderer import Renderer
 from fibers.tree.node_attr.base import MessageResult
-from nodejs import node
+from nodejs import node as js_node
 
 if TYPE_CHECKING:
     from fibers.tree.node import Node
@@ -33,10 +35,15 @@ class TreeData(TypedDict):
 
 DEFAULT_PORT = 29999
 
+def kill(proc_pid):
+    process = psutil.Process(proc_pid)
+    for proc in process.children(recursive=True):
+        proc.kill()
+    process.kill()
+
 def cleanup_subprocess(process):
     time.sleep(1.0)
-    process.terminate()
-
+    kill(process.pid)
 
 def is_port_in_use(port: int, host: str) -> bool:
     import socket
@@ -45,9 +52,9 @@ def is_port_in_use(port: int, host: str) -> bool:
 
 def server_process(port, host, make_frontend):
     if make_frontend:
-        node.run([server_dir, '--BackendPort', str(port), "--Host", host])
+        return js_node.run([server_dir, '--BackendPort', str(port), "--Host", host])
     else:
-        node.run([server_dir, '--BackendPort', str(port), "--Host", host, "--NoFrontend"])
+        return js_node.run([server_dir, '--BackendPort', str(port), "--Host", host, "--NoFrontend"])
 
 class ForestConnector:
     """
@@ -118,10 +125,11 @@ class ForestConnector:
         if not self.dev_mode:
             webbrowser.open(url)
 
-        if not (self.interactive_mode and self.dev_mode):
-            self.p.terminate()
+        if self.interactive_mode or self.dev_mode:
+            atexit.register(cleanup_subprocess, self.p)
         else:
             atexit.register(cleanup_subprocess, self.p)
+            #cleanup_subprocess(self.p)
 
 
     def process_message_from_frontend(self):

@@ -1,4 +1,6 @@
 numpy
+nodejs-bin
+psutil
 pyyaml~=6.0.1
 dill~=0.3.7
 tenacity
