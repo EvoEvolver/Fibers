@@ -321,23 +321,34 @@ class Node:
         """
         Show the tree in a webpage
         """
+        forest_process = None
         if self not in node_connector_pool.keys():
             forest_connector = ForestConnector(dev_mode=dev_mode, interactive_mode=interactive, host=host)
             node_connector_pool[Node] = forest_connector
-            forest_connector.run()
+            forest_process = forest_connector.run()
         self.update_gui(renderer)
         if interactive or dev_mode:
-            forest_connector.process_message_from_frontend()
+            def process_messages():
+                forest_connector.process_message_from_frontend()
+            import threading
+            forest_thread = threading.Thread(target=process_messages, daemon=True)
+            forest_thread.start()
+            return forest_thread
+        return forest_process
 
     def update_gui(self, renderer=None):
+        print("update gui")
         if renderer is None:
             renderer = Renderer
         tree_data = renderer().render_to_json(self)
         forest_connector = node_connector_pool.get(Node)
+        print("finish update gui")
         if forest_connector is None:
             return
         else:
+            print("try to update tree")
             forest_connector.update_tree(tree_data, self.node_id)
+            print("finish update tree")
 
     """
     ## Persistence 

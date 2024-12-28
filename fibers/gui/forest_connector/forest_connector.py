@@ -109,6 +109,7 @@ class ForestConnector:
                              args=(self.backend_port, self.host, True))
         self.p.start()
 
+
         # Wait for the server to start.
         url = f"http://{self.host}:{self.backend_port}/"
 
@@ -123,13 +124,18 @@ class ForestConnector:
 
         # Open the URL in the default web browser
         if not self.dev_mode:
-            webbrowser.open(url)
+            try:
+                pass
+                webbrowser.open(url)
+            except Exception as e:
+                print(e)
 
         if self.interactive_mode or self.dev_mode:
             atexit.register(cleanup_subprocess, self.p)
         else:
             atexit.register(cleanup_subprocess, self.p)
             #cleanup_subprocess(self.p)
+        return self.p
 
 
     def process_message_from_frontend(self):
