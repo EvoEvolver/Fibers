@@ -130,11 +130,8 @@ class ForestConnector:
             except Exception as e:
                 print(e)
 
-        if self.interactive_mode or self.dev_mode:
-            atexit.register(cleanup_subprocess, self.p)
-        else:
-            atexit.register(cleanup_subprocess, self.p)
-            #cleanup_subprocess(self.p)
+        atexit.register(cleanup_subprocess, self.p)
+
         return self.p
 
 

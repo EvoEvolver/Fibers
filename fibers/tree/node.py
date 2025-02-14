@@ -332,9 +332,10 @@ class Node:
                 forest_connector.process_message_from_frontend()
             import threading
             forest_thread = threading.Thread(target=process_messages, daemon=True)
+            # start the thread and wait for the thread to finish
             forest_thread.start()
+            forest_thread.join()
             return forest_thread
-        return forest_process
 
     def update_gui(self, renderer=None):
         print("update gui")
