@@ -45,10 +45,20 @@ def cleanup_subprocess(process):
     time.sleep(1.0)
     kill(process.pid)
 
+import socket
+
 def is_port_in_use(port: int, host: str) -> bool:
-    import socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex((host, port)) == 0
+
+def check_alive(port: int, host: str) -> bool:
+    # send message to host:port/alive
+    url = f"http://{host}:{port}/alive"
+    try:
+        response = requests.get(url)
+        return response.status_code == 200 or response.status_code == 404
+    except Exception as e:
+        return False
 
 def server_process(port, host, make_frontend):
     if make_frontend:
@@ -104,6 +114,9 @@ class ForestConnector:
         if self.dev_mode:
             self.p = Process(target=server_process,
                              args=(self.backend_port, self.host, False))
+        elif self.interactive_mode:
+            self.p = Process(target=server_process,
+                             args=(self.backend_port, self.host, True))
         else:
             self.p = Process(target=server_process,
                              args=(self.backend_port, self.host, True))
@@ -114,16 +127,17 @@ class ForestConnector:
         url = f"http://{self.host}:{self.backend_port}/"
 
         initialization_success = False
-        while not initialization_success or not is_port_in_use(self.backend_port, self.host):
+        while not initialization_success or not check_alive(self.backend_port, self.host):
             try:
                 initialization_success = True
+                time.sleep(0.5)
             except Exception as e:
                 print(e)
-                time.sleep(0.1)
                 continue
 
+
         # Open the URL in the default web browser
-        if not self.dev_mode:
+        if not self.dev_mode and not self.interactive_mode:
             try:
                 pass
                 webbrowser.open(url)
