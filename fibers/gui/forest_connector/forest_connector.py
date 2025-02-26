@@ -10,8 +10,6 @@ from typing import TYPE_CHECKING, Dict, TypedDict
 
 import psutil
 
-from fibers.gui.renderer import Renderer
-from fibers.tree.node_attr.base import MessageResult
 from nodejs import node as js_node
 
 if TYPE_CHECKING:
@@ -89,17 +87,9 @@ class ForestConnector:
         self.message_to_main = mp.Queue()
 
     def update_tree(self, tree_data: TreeData, root_id):
-        url = f'http://{self.host}:{self.backend_port}/updateTree'
-        payload = json.dumps({
-            "tree": tree_data,
-            "tree_id": str(root_id)
-        })
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        print(f"Updating tree {root_id} to http://{self.host}:{self.backend_port}/")
-        response = requests.request("PUT", url, headers=headers, data=payload)
-        print("Updated tree")
+        send_tree_to_backend(self.host, self.backend_port, tree_data, root_id)
+        if self.dev_mode:
+            print(f"Updated tree available at http://{self.host}:{39999}?id={str(root_id)}")
 
     def run(self):
         if is_port_in_use(self.backend_port, self.host):
@@ -144,6 +134,8 @@ class ForestConnector:
             except Exception as e:
                 print(e)
 
+
+
         atexit.register(cleanup_subprocess, self.p)
 
         return self.p
@@ -159,34 +151,18 @@ class ForestConnector:
                 warnings.warn(f"Error in handling message: {e}")
                 print("Problematic message:", message)
 
-    def handle_message(self, message):
-        target_node_id = message['node_id']
-        if target_node_id not in All_Node:
-            return
-        node: Node = All_Node[target_node_id]
-        new_selected_node_id = None
-        node_to_re_render = set()
-        for attr_class, attr_value in node.attrs.items():
-            res: MessageResult = attr_value.handle_message(message["message"])
-            if res is None:
-                continue
-            node_to_re_render.update(res.node_to_re_render)
-            if res.new_selected_node is not None:
-                new_selected_node_id = res.new_selected_node.node_id
-        node_dict = {}
-        if len(node_to_re_render) == 0 and new_selected_node_id is None:
-            return
-        renderer = Renderer()
-        for node in node_to_re_render:
-            parent_id = str(node.parent.node_id) if node.parent is not None else None
-            node_json = renderer.render(node).to_json_without_children(parent_id)
-            node_dict[str(node.node_id)] = node_json
-        tree_data = {
-            "selectedNode": str(new_selected_node_id),
-            "nodeDict": node_dict,
-            "selectedParent": None
-        }
-        self.update_tree(tree_data, str(node.root().node_id))
-
 
 node_connector_pool = {}
+
+
+def send_tree_to_backend(host, backend_port, tree_data, root_id):
+    url = f'http://{host}:{backend_port}/api/updateTree'
+    payload = json.dumps({
+        "tree": tree_data,
+        "tree_id": str(root_id)
+    })
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    print(f"Updating tree {root_id} to http://{host}:{backend_port}/")
+    response = requests.request("PUT", url, headers=headers, data=payload)
