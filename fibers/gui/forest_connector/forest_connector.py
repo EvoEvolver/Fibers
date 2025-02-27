@@ -164,5 +164,5 @@ def send_tree_to_backend(host, backend_port, tree_data, root_id):
     headers = {
         'Content-Type': 'application/json'
     }
-    print(f"Updating tree {root_id} to http://{host}:{backend_port}/")
+    print(f"Updating tree to http://{host}:{backend_port}/?id={root_id}")
     response = requests.request("PUT", url, headers=headers, data=payload)
