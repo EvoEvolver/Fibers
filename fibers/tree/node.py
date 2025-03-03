@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+import webbrowser
 from copy import copy
 from typing import TYPE_CHECKING, Dict, List, Type, Set
 
@@ -326,6 +327,8 @@ class Node:
             forest_connector = ForestConnector(dev_mode=dev_mode, interactive_mode=interactive, host=host)
             node_connector_pool[Node] = forest_connector
             forest_process = forest_connector.run()
+        else:
+            forest_connector = node_connector_pool.get(Node)
         self.update_gui(renderer)
         if interactive or dev_mode:
             def process_messages():
@@ -336,6 +339,11 @@ class Node:
             forest_thread.start()
             forest_thread.join()
             return forest_thread
+        else:
+            # Open the URL in the default web browser
+            url = f"http://{host}:{forest_connector.backend_port}/?id={self.node_id}"
+            webbrowser.open(url)
+
 
     def update_gui(self, renderer=None):
         print("update gui")

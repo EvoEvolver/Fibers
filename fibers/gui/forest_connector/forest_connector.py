@@ -126,13 +126,7 @@ class ForestConnector:
                 continue
 
 
-        # Open the URL in the default web browser
-        if not self.dev_mode and not self.interactive_mode:
-            try:
-                pass
-                webbrowser.open(url)
-            except Exception as e:
-                print(e)
+
 
 
 
