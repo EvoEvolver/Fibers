@@ -149,8 +149,8 @@ class ForestConnector:
 node_connector_pool = {}
 
 
-def send_tree_to_backend(host, backend_port, tree_data, root_id):
-    url = f'http://{host}:{backend_port}/api/updateTree'
+def send_tree_to_backend(host, tree_data, root_id):
+    url = f'{host}/api/updateTree'
     payload = json.dumps({
         "tree": tree_data,
         "tree_id": str(root_id)
@@ -158,5 +158,7 @@ def send_tree_to_backend(host, backend_port, tree_data, root_id):
     headers = {
         'Content-Type': 'application/json'
     }
-    print(f"Updating tree to http://{host}:{backend_port}/?id={root_id}")
+    print(f"Updating tree to {host}/?id={root_id}")
     response = requests.request("PUT", url, headers=headers, data=payload)
+    response.raise_for_status()
+    return response
