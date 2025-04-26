@@ -87,7 +87,7 @@ class ForestConnector:
         self.message_to_main = mp.Queue()
 
     def update_tree(self, tree_data: TreeData, root_id):
-        send_tree_to_backend(self.host, self.backend_port, tree_data, root_id)
+        send_tree_to_backend(f"http://{self.host}:{self.backend_port}", tree_data, root_id)
         if self.dev_mode:
             print(f"Updated tree available at http://{self.host}:{39999}?id={str(root_id)}")
 
