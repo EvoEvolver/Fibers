@@ -150,10 +150,10 @@ node_connector_pool = {}
 
 
 def send_tree_to_backend(host, tree_data, root_id):
-    url = f'{host}/api/updateTree'
+    url = f'{host}/api/createTree'
     payload = json.dumps({
         "tree": tree_data,
-        "tree_id": str(root_id)
+        "root_id": str(root_id)
     })
     headers = {
         'Content-Type': 'application/json'
