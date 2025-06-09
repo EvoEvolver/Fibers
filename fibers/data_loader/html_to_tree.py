@@ -170,7 +170,7 @@ def set_content(node: Node, contents: List[PageElement]):
         segment_contents.pop(0)
 
     for i, segment in enumerate(segment_contents):
-        node_added = node.s(f"Segment ").be(segment)
+        node_added = node.s(f"").be(segment)
         bad_text_attr = BadText.get(node_added)
         bad_text_attr.add_bad_reason("overlap_to_sibling")
         bad_text_attr.add_bad_reason("bad_title")
