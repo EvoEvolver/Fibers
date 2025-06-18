@@ -63,6 +63,6 @@ class Renderer:
         node_dict = {}
         self.render(node).to_json(node_dict)
         return {
-            "selectedNode": str(node.node_id),
+            "rootId": str(node.node_id),
             "nodeDict": node_dict,
         }
