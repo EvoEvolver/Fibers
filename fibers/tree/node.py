@@ -315,9 +315,6 @@ class Node:
     ## Visualization of tree
     """
 
-    def display_whole_tree(self):
-        self.root().display()
-
     def display(self, renderer=None, dev_mode=False, interactive=False, host="127.0.0.1"):
         """
         Show the tree in a webpage
@@ -330,19 +327,9 @@ class Node:
         else:
             forest_connector = node_connector_pool.get(Node)
         self.update_gui(renderer)
-        if interactive or dev_mode:
-            def process_messages():
-                forest_connector.process_message_from_frontend()
-            import threading
-            forest_thread = threading.Thread(target=process_messages, daemon=True)
-            # start the thread and wait for the thread to finish
-            forest_thread.start()
-            forest_thread.join()
-            return forest_thread
-        else:
-            # Open the URL in the default web browser
-            url = f"http://{host}:{forest_connector.backend_port}/?id={self.node_id}"
-            webbrowser.open(url)
+        # Open the URL in the default web browser
+        url = f"http://{host}:{forest_connector.backend_port}/?id={self.node_id}"
+        print(url)
 
 
     def update_gui(self, renderer=None):

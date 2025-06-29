@@ -6,11 +6,12 @@ if TYPE_CHECKING:
     from fibers.tree import Node
     from fibers.gui.forest_connector.forest_connector import TreeData
 
+
 class Rendered:
     def __init__(self, node):
         self.node: Node = node
         self.tabs = {}
-        self.tools = [{},{}]
+        self.tools = [{}, {}]
         self.children = []
         self.title = ""
         self.data = {}
@@ -63,6 +64,6 @@ class Renderer:
         node_dict = {}
         self.render(node).to_json(node_dict)
         return {
-            "rootId": str(node.node_id),
+            "metadata": {"rootId": str(node.node_id)},
             "nodeDict": node_dict,
         }

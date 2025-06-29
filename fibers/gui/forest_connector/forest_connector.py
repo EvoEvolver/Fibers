@@ -26,9 +26,11 @@ import requests
 import json
 import atexit
 
+class TreeMetaData(TypedDict):
+    rootId: str
+
 class TreeData(TypedDict):
-    selectedParent: str
-    selectedNode: str
+    metadata: TreeMetaData
     nodeDict: Dict[str, dict]
 
 DEFAULT_PORT = 29999
