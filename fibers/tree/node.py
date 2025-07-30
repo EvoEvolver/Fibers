@@ -1,19 +1,13 @@
 from __future__ import annotations
 
 import uuid
-import webbrowser
 from copy import copy
 from typing import TYPE_CHECKING, Dict, List, Type, Set
 
 import dill
 
-from fibers.gui.forest_connector import ForestConnector
-from fibers.gui.forest_connector.forest_connector import node_connector_pool
-from fibers.gui.renderer import Renderer
-
 if TYPE_CHECKING:
     from fibers.tree.node_attr import Attr
-
 
 class Node:
     """
@@ -310,41 +304,6 @@ class Node:
 
     def get_attr_or_none(self, attr_class: Type[Attr]):
         return self.attrs.get(attr_class, None)
-
-    """
-    ## Visualization of tree
-    """
-
-    def display(self, renderer=None, dev_mode=False, interactive=False, host="127.0.0.1"):
-        """
-        Show the tree in a webpage
-        """
-        forest_process = None
-        if self not in node_connector_pool.keys():
-            forest_connector = ForestConnector(dev_mode=dev_mode, interactive_mode=interactive, host=host)
-            node_connector_pool[Node] = forest_connector
-            forest_process = forest_connector.run()
-        else:
-            forest_connector = node_connector_pool.get(Node)
-        self.update_gui(renderer)
-        # Open the URL in the default web browser
-        url = f"http://{host}:{forest_connector.backend_port}/?id={self.node_id}"
-        print(url)
-
-
-    def update_gui(self, renderer=None):
-        print("update gui")
-        if renderer is None:
-            renderer = Renderer
-        tree_data = renderer().render_to_json(self)
-        forest_connector = node_connector_pool.get(Node)
-        print("finish update gui")
-        if forest_connector is None:
-            return
-        else:
-            print("try to update tree")
-            forest_connector.update_tree(tree_data, self.node_id)
-            print("finish update tree")
 
     """
     ## Persistence 

@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from fibers.tree import Node
-    from fibers.gui.forest_connector.forest_connector import TreeData
 
 
 class Rendered:
@@ -60,7 +59,7 @@ class Renderer:
             rendered.children.append(self.render(child))
         return rendered
 
-    def render_to_json(self, node: Node) -> TreeData:
+    def render_to_json(self, node: Node):
         node_dict = {}
         self.render(node).to_json(node_dict)
         return {
